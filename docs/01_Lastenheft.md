@@ -20,7 +20,7 @@ Eine native Mobile-App für iOS & Android, mit klarem Fokus auf Android, die Leb
 | Merkmal | Beschreibung |
 |---|---|
 | Nutzer | Ausschließlich der Entwickler selbst |
-| Geräte | Eigenes Android-Gerät, iOS optional |
+| Geräte | Eigenes Android-Gerät |
 | Markt | Deutsche Supermarktprodukte (Rewe, Edeka, Aldi, Lidl, Penny, …) |
 
 ---
