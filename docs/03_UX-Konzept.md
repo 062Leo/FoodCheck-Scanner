@@ -4,6 +4,8 @@
 **Stand:** 2025  
 **Leitsatz:** Eine Sekunde, eine Antwort. Keine Ablenkung.
 
+**MVP-Abgrenzung:** Der MVP umfasst Scanner und Result Screen. Katalog, Favoriten und Offline-Ansichten sind Soll/v2.
+
 ---
 
 ## 1. Design-Prinzipien
@@ -26,7 +28,7 @@
 └──────────┴───────────┴───────────┘
 ```
 
-Der **Scanner-Tab** ist immer der erste Tab und öffnet direkt die Kamera. Kein Splash, kein Onboarding.
+Der **Scanner-Tab** ist immer der erste Tab und öffnet direkt die Kamera. Kein Splash, kein Onboarding. Katalog und Favoriten sind für v2 vorgesehen.
 
 ---
 
@@ -52,6 +54,7 @@ Der **Scanner-Tab** ist immer der erste Tab und öffnet direkt die Kamera. Kein 
 - Kein Button nötig – Scan passiert automatisch bei Erkennung
 - Nach erfolgreichem Scan: haptisches Feedback + sofortige Navigation zum Result-Screen
 - Fehlerzustand: Toast "Produkt nicht gefunden" wenn OFF-API nichts zurückgibt
+- Favoriten-Toggle und Katalog-Ablage sind erst in v2 relevant
 
 ---
 
@@ -95,7 +98,7 @@ Der **Scanner-Tab** ist immer der erste Tab und öffnet direkt die Kamera. Kein 
 
 ---
 
-### 3.3 Katalog Screen
+### 3.3 Katalog Screen *(v2)*
 
 **Ziel:** Alle gescannten Produkte schnell durchsuchen und wiederfinden.
 
@@ -122,7 +125,7 @@ Der **Scanner-Tab** ist immer der erste Tab und öffnet direkt die Kamera. Kein 
 
 ---
 
-### 3.4 Favoriten Screen
+### 3.4 Favoriten Screen *(v2)*
 
 **Ziel:** Die persönliche "Safe List" – Produkte die der Nutzer regelmäßig kauft und vertraut.
 

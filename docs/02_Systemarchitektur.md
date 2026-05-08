@@ -33,8 +33,8 @@ src/
 ├── screens/              # UI Layer – ein Ordner pro Screen
 │   ├── ScannerScreen/
 │   ├── ResultScreen/
-│   ├── CatalogScreen/
-│   └── FavoritesScreen/
+│   ├── CatalogScreen/     # v2/Soll
+│   └── FavoritesScreen/   # v2/Soll
 │
 ├── components/           # Wiederverwendbare UI-Bausteine
 │   ├── ProductCard/
@@ -59,9 +59,9 @@ src/
 │   │   ├── OpenFoodFactsClient.ts   # HTTP-Client (fetch)
 │   │   └── OpenFoodFacts.types.ts   # API-Response-Typen
 │   └── db/
-│       ├── DatabaseService.ts       # SQLite-Setup & Migrations
-│       ├── ProductRepository.ts     # CRUD für Katalog
-│       └── FavoritesRepository.ts   # CRUD für Favoriten
+│       ├── DatabaseService.ts       # SQLite-Setup & Migrations (v2/Soll)
+│       ├── ProductRepository.ts     # CRUD für Katalog (v2/Soll)
+│       └── FavoritesRepository.ts   # CRUD für Favoriten (v2/Soll)
 │
 ├── navigation/           # Expo Router / React Navigation Config
 │   └── AppNavigator.tsx
@@ -97,19 +97,17 @@ Nutzer drückt "Scan"
              aggregiert Gesamt-Rating
                        │
                        ▼
-           [ProductRepository]
-             speichert in SQLite
-                       │
-                       ▼
               [ResultScreen]
              zeigt Ergebnis an
 ```
+
+Persistenz in SQLite, Katalog und Favoriten sind erst ab Phase 2/Soll vorgesehen.
 
 ---
 
 ## 4. Datenbankschema (SQLite)
 
-### Tabelle: `products`
+### Tabelle: `products` *(v2/Soll)*
 ```sql
 CREATE TABLE products (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,7 +123,7 @@ CREATE TABLE products (
 );
 ```
 
-### Tabelle: `favorites`
+### Tabelle: `favorites` *(v2/Soll)*
 ```sql
 CREATE TABLE favorites (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,

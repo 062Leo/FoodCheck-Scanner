@@ -9,7 +9,7 @@
 
 ## 1. Projektziel
 
-Eine native Mobile-App (iOS & Android), die Lebensmittel per Barcode-Scan sofort auf ungesunde Inhaltsstoffe und Verarbeitungsgrad prüft. Der Nutzer soll innerhalb einer Sekunde verstehen, ob ein Produkt unbedenklich ist – ohne lange Texte lesen zu müssen.
+Eine native Mobile-App für iOS & Android, mit klarem Fokus auf Android, die Lebensmittel per Barcode-Scan sofort auf ungesunde Inhaltsstoffe und Verarbeitungsgrad prüft. Der Nutzer soll innerhalb einer Sekunde verstehen, ob ein Produkt unbedenklich ist – ohne lange Texte lesen zu müssen.
 
 **Abgrenzung:** Die App ist ausschließlich für den privaten Gebrauch des Entwicklers konzipiert. Kein kommerzieller Betrieb, keine Monetarisierung, kein Multi-User-Betrieb.
 
@@ -20,7 +20,7 @@ Eine native Mobile-App (iOS & Android), die Lebensmittel per Barcode-Scan sofort
 | Merkmal | Beschreibung |
 |---|---|
 | Nutzer | Ausschließlich der Entwickler selbst |
-| Geräte | Eigenes iPhone und/oder Android-Gerät |
+| Geräte | Eigenes Android-Gerät, iOS optional |
 | Markt | Deutsche Supermarktprodukte (Rewe, Edeka, Aldi, Lidl, Penny, …) |
 
 ---
@@ -35,15 +35,15 @@ Eine native Mobile-App (iOS & Android), die Lebensmittel per Barcode-Scan sofort
 | F-02 | Produktdaten von Open Food Facts API abrufen (Name, Zutaten, Nährwerte, Nova-Score) |
 | F-03 | Zutatenliste gegen eine hardcodierte Red-Flag-Liste matchen |
 | F-04 | Ergebnis-Screen anzeigen: Status (OK / Warnung / Kritisch), gefundene Red Flags, Nova-Score |
-| F-05 | Jedes gescannte Produkt automatisch im lokalen Katalog speichern (EAN, Name, Scan-Datum, Bewertung) |
-| F-06 | Katalog-Screen: Liste aller gescannten Produkte, sortiert nach Datum |
-| F-07 | Favoriten-Liste: Produkte als „safe" markieren und separat einsehen |
-| F-08 | Offline-Ansicht: bereits gescannte Produkte auch ohne Internet anzeigen |
 
 ### 3.2 Soll-Kriterien (v2)
 
 | ID | Anforderung |
 |---|---|
+| F-05 | Jedes gescannte Produkt automatisch im lokalen Katalog speichern (EAN, Name, Scan-Datum, Bewertung) |
+| F-06 | Katalog-Screen: Liste aller gescannten Produkte, sortiert nach Datum |
+| F-07 | Favoriten-Liste: Produkte als „safe" markieren und separat einsehen |
+| F-08 | Offline-Ansicht: bereits gescannte Produkte auch ohne Internet anzeigen |
 | F-09 | Benutzerdefinierte Filter-Regeln: Nutzer kann einzelne Zutaten als Red Flag / OK markieren |
 | F-10 | Numerische Grenzwerte: z. B. „Zucker nur Red Flag wenn > 3 g / 100 ml" |
 | F-11 | Filter-Profile: mehrere Regelsets speichern und umschalten |
@@ -62,7 +62,7 @@ Eine native Mobile-App (iOS & Android), die Lebensmittel per Barcode-Scan sofort
 
 | ID | Anforderung |
 |---|---|
-| NF-01 | Scan-to-Result in < 2 Sekunden (bei guter Verbindung) |
+| NF-01 | Scan-to-Result in < 10 Sekunden (bei guter Verbindung) |
 | NF-02 | App läuft vollständig lokal auf dem Gerät – kein eigener Backend-Server |
 | NF-03 | Alle Daten bleiben auf dem Gerät (kein Cloud-Sync) |
 | NF-04 | Betriebskosten: 0 € (Open Food Facts ist kostenlos, kein API-Key nötig) |
@@ -88,10 +88,8 @@ Eine native Mobile-App (iOS & Android), die Lebensmittel per Barcode-Scan sofort
 - [ ] API-Response wird korrekt geparst und dargestellt
 - [ ] Red Flags aus der hardcodierten Liste werden korrekt gefunden
 - [ ] Nova-Score wird angezeigt
-- [ ] Jeder Scan landet im Katalog
-- [ ] Favoriten können gesetzt und entfernt werden
 - [ ] App stürzt bei unbekanntem EAN (kein OFF-Eintrag) nicht ab, zeigt stattdessen Hinweis
-- [ ] App stürzt ohne Internetverbindung nicht ab
+- [ ] App stürzt ohne Internetverbindung nicht ab sondern warnt user das funktion nicht möglich
 
 ---
 
@@ -100,5 +98,5 @@ Eine native Mobile-App (iOS & Android), die Lebensmittel per Barcode-Scan sofort
 - **Framework:** Expo (React Native) – managed workflow
 - **Sprache:** TypeScript
 - **Lokale DB:** expo-sqlite
-- **Plattform:** iOS primär, Android sekundär
-- **Mindest-OS:** iOS 16+ / Android 10+
+- **Plattform:** Android primär, iOS sekundär
+- **Mindest-OS:** Android 10+ / iOS 16+

@@ -10,13 +10,13 @@
 
 ```
 Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
-  Setup │   MVP   │  Katalog │  Filter  │  OCR
- 1 Tag  │ 4 Tage  │  3 Tage  │  5 Tage  │ ?
+  Setup │ MVP F01-F04 │ Soll/v2 │  Filter  │  OCR
+  Setup │   MVP    │  Katalog │  Filter  │  OCR
 ```
 
 ---
 
-## Phase 0 – Projekt-Setup (~ 1 Tag)
+## Phase 0 – Projekt-Setup
 
 **Ziel:** Lauffähiges Grundgerüst auf dem eigenen Gerät.
 
@@ -36,29 +36,29 @@ Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
 
 ---
 
-## Phase 1 – MVP: Scan & Bewertung (~ 4 Tage)
+## Phase 1 – MVP: Scan & Bewertung
 
-**Ziel:** Barcode scannen → Bewertung sehen. Kernfunktion vollständig.
+**Ziel:** Barcode scannen → Bewertung sehen. Kernfunktion vollständig. Speicherung, Katalog und Favoriten sind noch nicht Teil des MVP.
 
 ### Aufgaben
 
-**Tag 1 – Infrastruktur**
+**Schritt 1 – Infrastruktur**
 - [ ] `OpenFoodFactsClient.ts` implementieren (fetch + Typen)
 - [ ] Unit-Test: API-Response-Parsing mit gemocktem JSON
 - [ ] Kamera-Permission-Flow in `ScannerScreen` implementieren
 
-**Tag 2 – Domain-Logik**
+**Schritt 2 – Domain-Logik**
 - [ ] `defaultRules.ts` mit hardcodierten Red-Flag-Listen befüllen
 - [ ] `RedFlagAnalyzer.ts` implementieren (pure function, kein Framework)
 - [ ] Unit-Tests für RedFlagAnalyzer (min. 10 Testfälle)
 - [ ] `NovaScoreEvaluator.ts` implementieren
 - [ ] `ProductRating.ts` – Gesamtbewertung aggregieren
 
-**Tag 3 – Scanner Screen**
+**Schritt 3 – Scanner Screen**
 - [ ] `ScannerScreen` mit `expo-camera` und Barcode-Erkennung
 - [ ] Navigation zu `ResultScreen` nach erfolgreichem Scan
 
-**Tag 4 – Result Screen**
+**Schritt 4 – Result Screen**
 - [ ] `ResultScreen` mit Ampel-Banner, Red-Flag-Liste, Nova-Badge
 - [ ] Fehlerbehandlung: Produkt nicht gefunden, API-Timeout
 
@@ -69,24 +69,24 @@ Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
 
 ---
 
-## Phase 2 – Katalog & Favoriten (~ 3 Tage)
+## Phase 2 – Soll/v2: Katalog & Favoriten
 
-**Ziel:** Jeder Scan wird gespeichert, Favoriten-Liste funktioniert.
+**Ziel:** Jeder Scan wird gespeichert, Favoriten-Liste funktioniert. Entspricht den Soll-Kriterien F05-F08.
 
 ### Aufgaben
 
-**Tag 1 – Datenbank**
+**Schritt 1 – Datenbank**
 - [ ] `DatabaseService.ts` – SQLite initialisieren, Schema erstellen, Migrations-Logik vorbereiten
 - [ ] `ProductRepository.ts` – insert, findByEan, findAll, delete
 - [ ] `FavoritesRepository.ts` – add, remove, findAll, isFavorite
 - [ ] Unit-Tests für Repositories (mit In-Memory-SQLite oder Mocks)
 
-**Tag 2 – State & Integration**
+**Schritt 2 – State & Integration**
 - [ ] `catalogStore.ts` mit Zustand anlegen
 - [ ] Scan-Flow erweitern: nach Analyse → in DB speichern
 - [ ] Result Screen: Favoriten-Toggle implementieren und persistieren
 
-**Tag 3 – Katalog & Favoriten Screens**
+**Schritt 3 – Katalog & Favoriten Screens**
 - [ ] `CatalogScreen` mit Liste, Filter-Chips, Tap-to-Detail
 - [ ] `FavoritesScreen` mit Liste
 - [ ] Tab-Navigation mit allen 3 Tabs
@@ -100,7 +100,7 @@ Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
 
 ---
 
-## Phase 3 – Custom Filter-Regeln (~ 5 Tage)
+## Phase 3 – Custom Filter-Regeln
 
 **Ziel:** Nutzer definiert eigene Red-Flag-Regeln und Grenzwerte.
 
