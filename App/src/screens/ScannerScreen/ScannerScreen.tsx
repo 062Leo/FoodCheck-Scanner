@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 export default function ScannerScreen() {
   const router = useRouter();
@@ -32,6 +32,12 @@ export default function ScannerScreen() {
       ]),
     ).start();
   }, [frameAnimation]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setScanned(false);
+    }, []),
+  );
 
   useEffect(() => {
     if (!permission?.granted && permission?.canAskAgain) {

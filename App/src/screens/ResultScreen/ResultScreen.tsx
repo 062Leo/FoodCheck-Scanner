@@ -10,6 +10,7 @@ import { NovaScoreEvaluator } from '../../domain/analysis/NovaScoreEvaluator';
 import { ProductRating } from '../../domain/analysis/ProductRating';
 import { defaultRules } from '../../domain/rules/defaultRules';
 import { SkeletonLoadingScreen } from '../../components/SkeletonLoading';
+import { Accordion } from '../../components/Accordion';
 
 type ErrorType = 'offline' | 'not-found' | 'generic';
 
@@ -124,6 +125,7 @@ export default function ResultScreen() {
 
   const statusColor = getStatusColor(result.status);
   const statusLabel = getStatusLabel(result.status);
+  const novaColor = result.nova.score === 4 ? '#F44336' : statusColor;
 
   return (
     <View style={styles.container}>
@@ -138,6 +140,28 @@ export default function ResultScreen() {
           <Text style={styles.statusText}>{statusLabel}</Text>
         </View>
 
+        <View style={styles.redFlagsSection}>
+          <Text style={styles.sectionTitle}>Red Flags</Text>
+          {result.redFlags.length > 0 ? (
+            result.redFlags.map((flag, index) => (
+              <View key={`${flag.ingredient}-${index}`} style={styles.redFlagItem}>
+                <View
+                  style={[
+                    styles.severityDot,
+                    { backgroundColor: flag.severity === 'critical' ? '#F44336' : '#FFC107' },
+                  ]}
+                />
+                <View style={styles.flagContent}>
+                  <Text style={styles.flagIngredient}>{flag.ingredient}</Text>
+                  <Text style={styles.flagCategory}>{flag.category}</Text>
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyStateText}>Keine Red Flags gefunden</Text>
+          )}
+        </View>
+
         <View style={styles.productInfo}>
           <Text style={styles.productName}>{product.name}</Text>
           {product.brand && <Text style={styles.productBrand}>{product.brand}</Text>}
@@ -147,27 +171,27 @@ export default function ResultScreen() {
         <View style={styles.novaSection}>
           <Text style={styles.sectionTitle}>Verarbeitungsgrad</Text>
           <View style={styles.novaDisplay}>
-            <View style={[styles.novaScore, { backgroundColor: statusColor }]}>
+            <View style={[styles.novaScore, { backgroundColor: novaColor }]}>
               <Text style={styles.novaScoreText}>{result.nova.score}</Text>
             </View>
             <Text style={styles.novaLabel}>{result.nova.label || 'Unbekannt'}</Text>
           </View>
         </View>
 
-        {result.redFlags.length > 0 && (
-          <View style={styles.redFlagsSection}>
-            <Text style={styles.sectionTitle}>Gefundene Red Flags ({result.redFlags.length})</Text>
-            {result.redFlags.map((flag, index) => (
-              <View key={index} style={styles.redFlagItem}>
-                <View style={[styles.severityDot, { backgroundColor: flag.severity === 'critical' ? '#F44336' : '#FFC107' }]} />
-                <View style={styles.flagContent}>
-                  <Text style={styles.flagIngredient}>{flag.ingredient}</Text>
-                  <Text style={styles.flagCategory}>{flag.category}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
+        <View style={styles.accordionSection}>
+          <Accordion
+            items={[
+              {
+                title: 'Zutatenliste',
+                content: (
+                  <Text style={styles.ingredientsText}>
+                    {product.ingredientsText || 'Keine Zutatenliste verfügbar'}
+                  </Text>
+                ),
+              },
+            ]}
+          />
+        </View>
 
         <View style={styles.spacer} />
       </ScrollView>
@@ -186,20 +210,23 @@ const styles = StyleSheet.create({
   productInfo: { paddingHorizontal: 16, paddingVertical: 16 },
   productName: { color: '#FFFFFF', fontSize: 18, fontWeight: '600', marginBottom: 4 },
   productBrand: { color: '#BDBDBD', fontSize: 14, marginBottom: 8 },
-  productEAN: { color: '#757575', fontSize: 12 },
+  productEAN: { color: '#9E9E9E', fontSize: 12 },
   novaSection: { paddingHorizontal: 16, paddingVertical: 12 },
   sectionTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', marginBottom: 12, textTransform: 'uppercase' },
   novaDisplay: { flexDirection: 'row', alignItems: 'center' },
-  novaScore: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  novaScoreText: { color: '#FFFFFF', fontSize: 28, fontWeight: '700' },
-  novaLabel: { color: '#BDBDBD', fontSize: 16, flex: 1 },
+  novaScore: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginRight: 16, borderWidth: 1, borderColor: '#2E2E2E' },
+  novaScoreText: { color: '#FFFFFF', fontSize: 30, fontWeight: '800' },
+  novaLabel: { color: '#9E9E9E', fontSize: 16, flex: 1 },
   redFlagsSection: { paddingHorizontal: 16, paddingVertical: 12 },
+  accordionSection: { paddingHorizontal: 16, paddingBottom: 24 },
   redFlagItem: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 12, paddingHorizontal: 12, marginBottom: 8, backgroundColor: '#1E1E1E', borderRadius: 8, borderLeftWidth: 4, borderLeftColor: '#F44336' },
   severityDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12, marginTop: 4 },
   flagContent: { flex: 1 },
   flagIngredient: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', marginBottom: 2 },
-  flagCategory: { color: '#BDBDBD', fontSize: 12 },
-  spacer: { height: 32 },
+  flagCategory: { color: '#9E9E9E', fontSize: 12 },
+  emptyStateText: { color: '#9E9E9E', fontSize: 14 },
+  ingredientsText: { color: '#FFFFFF', fontSize: 14, lineHeight: 20 },
+  spacer: { height: 24 },
   errorText: { color: '#F44336', fontSize: 18, fontWeight: '600', textAlign: 'center' },
   backButton: { marginTop: 12, paddingVertical: 12, paddingHorizontal: 30, backgroundColor: '#4CAF50', borderRadius: 8, alignSelf: 'center' },
   backButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
