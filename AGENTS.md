@@ -9,12 +9,17 @@
 - Keep `App/src/domain/` framework-agnostic. Do not import React, React Native, Expo, Zustand, or persistence libraries there.
 - Treat `App/src/infrastructure/api/OpenFoodFactsClient.ts` as the external data boundary; validate missing or partial API data defensively.
 - Keep app state in Zustand stores only when needed; avoid adding Redux or Context-based app state.
+- Apply SOLID principles strictly in every change.
+- Prefer modular, loosely coupled design over large shared modules or convenience abstractions.
+- Use dependency injection and interfaces to isolate dependencies, enable mocking, and keep business logic testable.
 
 ## Project Conventions
 - Use TypeScript strictly. Avoid `any` and prefer explicit domain types from `App/src/types/`.
 - Prefer small, testable functions and pure domain logic.
 - Add tests alongside the touched domain code, following the existing `App/src/domain/analysis/__tests__/` pattern.
 - Do not add SQLite-backed persistence, catalog features, favorites, or OCR unless the task explicitly targets Phase 2+.
+- Write clean, self-documenting code with clear names and straightforward control flow.
+- Do not add unnecessary comments; only use them when the code cannot reasonably explain itself.
 
 ## Commands
 - Start the app: `cd App && npm start`
