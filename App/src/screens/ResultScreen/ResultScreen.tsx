@@ -101,6 +101,17 @@ export default function ResultScreen() {
     }
   };
 
+  const getBestIngredientsText = (prod: Product): string => {
+    if (prod.ingredientsTextDe) return prod.ingredientsTextDe;
+    if (prod.ingredientsTextEn) return prod.ingredientsTextEn;
+    if (prod.ingredientsTextByLang && Object.keys(prod.ingredientsTextByLang).length > 0) {
+      const firstAvailable = Object.values(prod.ingredientsTextByLang)[0];
+      if (firstAvailable) return firstAvailable;
+    }
+    if (prod.ingredientsText) return prod.ingredientsText;
+    return 'Keine Zutatenliste verfügbar';
+  };
+
   if (loading) {
     return <SkeletonLoadingScreen />;
   }
@@ -185,7 +196,7 @@ export default function ResultScreen() {
                 title: 'Zutatenliste',
                 content: (
                   <Text style={styles.ingredientsText}>
-                    {product.ingredientsText || 'Keine Zutatenliste verfügbar'}
+                    {getBestIngredientsText(product)}
                   </Text>
                 ),
               },

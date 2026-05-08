@@ -5,6 +5,9 @@ export interface Product {
   name: string;
   brand?: string;
   ingredientsText?: string;
+  ingredientsTextDe?: string;
+  ingredientsTextEn?: string;
+  ingredientsTextByLang?: Record<string, string>;
   novaScore?: NovaScore;
   imageUrl?: string;
 }

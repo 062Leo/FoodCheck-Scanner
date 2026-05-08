@@ -20,11 +20,22 @@ export class OpenFoodFactsClient {
 
       const { product } = data;
 
+      const ingredientsTextByLang: Record<string, string> = {};
+      Object.entries(product).forEach(([key, value]) => {
+        if (key.startsWith('ingredients_text_') && typeof value === 'string') {
+          const lang = key.replace('ingredients_text_', '');
+          ingredientsTextByLang[lang] = value;
+        }
+      });
+
       return {
         ean,
         name: product.product_name || 'Unbekanntes Produkt',
         brand: product.brands,
         ingredientsText: product.ingredients_text_de || product.ingredients_text,
+        ingredientsTextDe: product.ingredients_text_de,
+        ingredientsTextEn: product.ingredients_text_en,
+        ingredientsTextByLang,
         novaScore: product.nova_group as NovaScore,
         imageUrl: product.image_url,
       };
