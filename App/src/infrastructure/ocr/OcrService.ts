@@ -15,8 +15,8 @@ export type OcrScriptSelection = 'auto' | TextRecognitionScript;
 
 const DEFAULT_SCRIPT = TextRecognitionScript.LATIN;
 
-function containsGreek(text: string): boolean {
-  return /[\u0370-\u03FF\u1F00-\u1FFF]/.test(text);
+function resolveScript(selection: OcrScriptSelection): TextRecognitionScript {
+  return selection === 'auto' ? DEFAULT_SCRIPT : selection;
 }
 
 function isLetterLike(ch: string): boolean {
@@ -98,10 +98,6 @@ function cleanupNutrimentOcrText(text: string): string {
   return cleanedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-function resolveScript(selection: OcrScriptSelection): TextRecognitionScript {
-  return selection === 'auto' ? DEFAULT_SCRIPT : selection;
-}
-
 /**
  * Service for optical character recognition (OCR) and nutrient data parsing.
  * recognizeText() is the only function with side effects (ML Kit call).
@@ -112,6 +108,8 @@ export class OcrService {
    * Uses ML Kit to recognize text from an image.
     * Resolves the requested OCR script and falls back to Latin for auto mode.
    *
+    * Resolves the requested OCR script and falls back to Latin for auto mode.
+   *
    * @param imageUri - URI of the image to recognize text from
    * @returns Promise resolving to the full recognized text as a single string
     * @throws OcrError if recognition fails or produces no text
@@ -120,37 +118,26 @@ export class OcrService {
     imageUri: string,
     selection: OcrScriptSelection = 'auto',
   ): Promise<string> {
+    const script = resolveScript(selection);
+
     try {
-      if (selection !== 'auto') {
-        const result = await TextRecognition.recognize(imageUri, selection);
-        const text = result.text?.trim() ?? '';
-        if (!text) {
-          throw new OcrError(`No text recognized in image using ${selection} OCR`);
-        }
-        return text;
+      const result = await TextRecognition.recognize(imageUri, script);
+      const text = result.text?.trim() ?? '';
+
+      if (!text) {
+        throw new OcrError(`No text recognized in image using ${script} OCR`);
       }
 
-      const latinResult = await TextRecognition.recognize(imageUri, DEFAULT_SCRIPT);
-      const latinText = cleanupOcrText(latinResult.text?.trim() ?? '');
-
-      if (latinText && containsGreek(latinText)) {
-        return latinText;
-      }
-
-      if (!latinText) {
-        throw new OcrError(`No text recognized in image using ${DEFAULT_SCRIPT} OCR`);
-      }
-
-      return latinText;
-
+      return text;
     } catch (error) {
       if (error instanceof OcrError) throw error;
       throw new OcrError(
-        `Failed to recognize text using OCR: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to recognize text using ${script} OCR: ${error instanceof Error ? error.message : String(error)}`,
         error,
       );
     }
   }
+
 
 
   /**

@@ -47,31 +47,46 @@ export default function ResultScreen() {
       }
 
       try {
-        // Check if this is a cached load
+        let cachedOverrides: Partial<Product> | null = null;
         if (params.fromCache === 'true' && params.cachedData) {
           try {
-            const cachedJson = JSON.parse(params.cachedData);
-            const cachedProduct = cachedJson.product || cachedJson;
-            setProduct(cachedProduct);
-            setIsCached(true);
+            const cachedJson = JSON.parse(params.cachedData) as unknown;
+            const cachedProduct =
+              cachedJson && typeof cachedJson === 'object' && 'product' in (cachedJson as Record<string, unknown>)
+                ? (cachedJson as { product: unknown }).product
+                : cachedJson;
+
+            if (cachedProduct && typeof cachedProduct === 'object') {
+              cachedOverrides = cachedProduct as Partial<Product>;
+              setIsCached(true);
+            }
+          } catch (parseErr) {
+            console.error('Failed to parse cached data:', parseErr);
+          }
+        }
+
+        const netState = await NetInfo.fetch();
+        if (!netState.isConnected) {
+          if (cachedOverrides) {
+            const offlinePlaceholder: Product = {
+              ean: params.ean,
+              name: 'Unbekanntes Produkt',
+              ingredientsText: cachedOverrides.ingredientsText,
+              brand: cachedOverrides.brand,
+            };
+
+            setProduct(offlinePlaceholder);
 
             const currentRules = useFilterStore.getState().rules;
             const analyzer = new RedFlagAnalyzer(defaultRules);
             const evaluator = new NovaScoreEvaluator();
             const rater = new ProductRating(analyzer, evaluator);
-            const scanResult = rater.rate(cachedProduct, currentRules);
+            const scanResult = rater.rate(offlinePlaceholder, currentRules);
             setResult(scanResult);
+
             setLoading(false);
             return;
-          } catch (parseErr) {
-            console.error('Failed to parse cached data:', parseErr);
-            // Fall through to normal flow
           }
-        }
-
-        // Normal flow: fetch from API
-        const netState = await NetInfo.fetch();
-        if (!netState.isConnected) {
           setError({
             type: 'offline',
             message: 'Kein Internet – Produkt kann nicht abgerufen werden',
@@ -92,13 +107,28 @@ export default function ResultScreen() {
           return;
         }
 
-        setProduct(fetchedProduct);
+        const overrideName = cachedOverrides?.name?.trim();
+        const overrideBrand = cachedOverrides?.brand?.trim();
+
+        const mergedProduct: Product = {
+          ...fetchedProduct,
+          ...(cachedOverrides ?? {}),
+          ean: fetchedProduct.ean,
+          name: overrideName ? overrideName : fetchedProduct.name,
+          brand: overrideBrand ? overrideBrand : fetchedProduct.brand,
+          ingredientsText:
+            (cachedOverrides?.ingredientsText && cachedOverrides.ingredientsText.trim())
+              ? cachedOverrides.ingredientsText
+              : fetchedProduct.ingredientsText,
+        };
+
+        setProduct(mergedProduct);
 
         const currentRules = useFilterStore.getState().rules;
         const analyzer = new RedFlagAnalyzer(defaultRules);
         const evaluator = new NovaScoreEvaluator();
         const rater = new ProductRating(analyzer, evaluator);
-        const scanResult = rater.rate(fetchedProduct, currentRules);
+        const scanResult = rater.rate(mergedProduct, currentRules);
         setResult(scanResult);
 
         // Save product to database in the background (fire-and-forget)
@@ -106,13 +136,13 @@ export default function ResultScreen() {
           try {
             setSavingProduct(true);
             const record: ProductRecord = {
-              ean: fetchedProduct.ean,
-              name: fetchedProduct.name || null,
-              brands: fetchedProduct.brand || null,
-              ingredients: fetchedProduct.ingredientsText || null,
-              nova_score: fetchedProduct.novaScore || null,
+              ean: mergedProduct.ean,
+              name: mergedProduct.name || null,
+              brands: mergedProduct.brand || null,
+              ingredients: mergedProduct.ingredientsText || null,
+              nova_score: mergedProduct.novaScore || null,
               nutriscore: null,
-              raw_json: JSON.stringify({ product: fetchedProduct }),
+              raw_json: JSON.stringify({ product: mergedProduct }),
               scanned_at: new Date().toISOString(),
               rating: scanResult.status,
             };

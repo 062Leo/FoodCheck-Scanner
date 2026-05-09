@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { OcrService } from '../../infrastructure/ocr/OcrService';
 import { OpenFoodFactsWriteClient } from '../../infrastructure/api/OpenFoodFactsWriteClient';
 import { RedFlagAnalyzer } from '../../domain/analysis/RedFlagAnalyzer';
 import { NovaScoreEvaluator } from '../../domain/analysis/NovaScoreEvaluator';
@@ -14,8 +13,10 @@ import { ContributeForm } from '../../components/ContributeForm/ContributeForm';
 import { OcrCameraSheet } from '../../components/OcrCameraSheet/OcrCameraSheet';
 import { Toast } from '../../components/Toast';
 import { ContributeFormData } from '../../types/ContributeFormData';
+import { OpenFoodFactsClient } from '../../infrastructure/api/OpenFoodFactsClient';
+import type { Product } from '../../types/Product';
 
-type CameraTarget = 'ingredients' | 'nutriments' | null;
+type CameraTarget = 'ingredients' | null;
 
 export default function ContributeScreen() {
   const { ean } = useLocalSearchParams<{ ean: string }>();
@@ -24,23 +25,39 @@ export default function ContributeScreen() {
   const catalogStore = useCatalogStore();
   const filterStore = useFilterStore();
 
-  // The two OCR text states – set when the user confirms from OcrCameraSheet
+  // OFF product data – loaded on mount to pre-fill form
+  const [offProduct, setOffProduct] = useState<Product | null>(null);
+
+  // OCR text state – set when the user confirms from OcrCameraSheet
   const [ingredientsText, setIngredientsText] = useState('');
-  const [nutrimentRawText, setNutrimentRawText] = useState('');
 
   // Which camera sheet is open (null = none)
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(null);
 
-  // step 1 = ingredients camera, step 2 = nutriments camera, step 3 = form
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  // step 1 = ingredients camera, step 2 = form
+  const [step, setStep] = useState<1 | 2>(1);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const parsedNutriments = useMemo(
-    () => OcrService.parseNutriments(nutrimentRawText),
-    [nutrimentRawText],
-  );
+  // Load OFF product data on mount
+  useEffect(() => {
+    if (!ean) return;
+
+    const loadOffProduct = async () => {
+      try {
+        const client = new OpenFoodFactsClient();
+        const product = await client.getProductByEan(ean);
+        if (product) {
+          setOffProduct(product);
+        }
+      } catch (err) {
+        console.error('Failed to load OFF product:', err);
+      }
+    };
+
+    loadOffProduct();
+  }, [ean]);
 
   /* ── Camera sheet callbacks ── */
 
@@ -56,15 +73,8 @@ export default function ContributeScreen() {
       }
 
       setCameraTarget(null);
-      // Automatically advance to step 2 after ingredients are done
       setStep(2);
       return;
-    }
-
-    if (cameraTarget === 'nutriments') {
-      setNutrimentRawText(text);
-      setCameraTarget(null);
-      setStep(3);
     }
   };
 
@@ -76,7 +86,6 @@ export default function ContributeScreen() {
 
   const handleSkip = () => {
     if (step === 1) setStep(2);
-    else if (step === 2) setStep(3);
   };
 
   /* ── Upload ── */
@@ -118,12 +127,15 @@ export default function ContributeScreen() {
       });
 
       setIsProcessing(false);
+
+      const cachedData = JSON.stringify({ product: { ingredientsText: product.ingredientsText } });
+
       router.replace({
         pathname: '/result',
         params: {
           ean: product.ean,
           fromCache: 'true',
-          cachedData: JSON.stringify({ product }),
+          cachedData,
         },
       });
     } catch (e) {
@@ -131,22 +143,23 @@ export default function ContributeScreen() {
     }
   };
 
-  /* ── Step 3: Review form ── */
-  if (step === 3) {
+  /* ── Step 2: Review form ── */
+  if (step === 2) {
     return (
       <View style={styles.container}>
         {toastMessage && (
           <Toast message={toastMessage} type="error" onDismiss={() => setToastMessage(null)} />
         )}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => setStep(2)}>
+          <TouchableOpacity onPress={() => setStep(1)}>
             <Text style={styles.backText}>← Back</Text>
           </TouchableOpacity>
         </View>
         <ContributeForm
           ean={ean}
           initialIngredients={ingredientsText}
-          initialNutriments={parsedNutriments}
+          initialProductName={offProduct?.name || ''}
+          initialBrand={offProduct?.brand || ''}
           onSubmit={handleUpload}
           isSubmitting={isProcessing}
         />
@@ -156,12 +169,10 @@ export default function ContributeScreen() {
 
   /* ── Step 1 & 2: Camera prompt screens ── */
   const isStep1 = step === 1;
-  const stepLabel = isStep1 ? 'Schritt 1 von 2' : 'Schritt 2 von 2';
-  const stepTitle = isStep1 ? 'Zutatenliste fotografieren' : 'Nährwerttabelle fotografieren';
-  const stepDesc = isStep1
-    ? 'Mach ein Foto der Zutatenliste. Du kannst danach den relevanten Bereich auswählen.'
-    : 'Mach ein Foto der Nährwerttabelle. Du kannst danach den relevanten Bereich auswählen.';
-  const doneIndicator = isStep1 ? ingredientsText : nutrimentRawText;
+  const stepLabel = 'Schritt 1 von 1';
+  const stepTitle = 'Zutatenliste fotografieren';
+  const stepDesc = 'Mach ein Foto der Zutatenliste. Du kannst danach den relevanten Bereich auswählen.';
+  const doneIndicator = ingredientsText;
 
   return (
     <View style={styles.container}>
@@ -174,13 +185,7 @@ export default function ContributeScreen() {
       />
 
       <View style={styles.header}>
-        {step === 2 ? (
-          <TouchableOpacity onPress={() => setStep(1)}>
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 60 }} />
-        )}
+        <View style={{ width: 60 }} />
         <Text style={styles.stepIndicator}>{stepLabel}</Text>
         <View style={{ width: 60 }} />
       </View>
@@ -198,7 +203,7 @@ export default function ContributeScreen() {
 
         <TouchableOpacity
           style={styles.primaryBtn}
-          onPress={() => setCameraTarget(isStep1 ? 'ingredients' : 'nutriments')}
+          onPress={() => setCameraTarget('ingredients')}
         >
           <Text style={styles.primaryBtnText}>📷  Foto aufnehmen</Text>
         </TouchableOpacity>

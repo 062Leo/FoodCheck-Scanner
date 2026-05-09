@@ -6,14 +6,16 @@ import { Accordion } from '../Accordion';
 interface ContributeFormProps {
   ean: string;
   initialIngredients: string;
-  initialNutriments: Partial<NutrimentData>;
+  initialProductName?: string;
+  initialBrand?: string;
+  initialNutriments?: Partial<NutrimentData>;
   onSubmit: (data: ContributeFormData) => Promise<void>;
   isSubmitting: boolean;
 }
 
-export function ContributeForm({ ean, initialIngredients, initialNutriments, onSubmit, isSubmitting }: ContributeFormProps) {
-  const [productName, setProductName] = useState('');
-  const [brands, setBrands] = useState('');
+export function ContributeForm({ ean, initialIngredients, initialProductName, initialBrand, initialNutriments, onSubmit, isSubmitting }: ContributeFormProps) {
+  const [productName, setProductName] = useState(initialProductName || '');
+  const [brands, setBrands] = useState(initialBrand || '');
   const [categories, setCategories] = useState('');
   const [ingredientsText, setIngredientsText] = useState(initialIngredients || '');
   
@@ -30,6 +32,15 @@ export function ContributeForm({ ean, initialIngredients, initialNutriments, onS
   useEffect(() => {
     if (initialIngredients) setIngredientsText(initialIngredients);
   }, [initialIngredients]);
+
+  // Synchronize OFF product name and brand when they become available
+  useEffect(() => {
+    if (initialProductName !== undefined) setProductName(initialProductName);
+  }, [initialProductName]);
+
+  useEffect(() => {
+    if (initialBrand !== undefined) setBrands(initialBrand);
+  }, [initialBrand]);
 
   useEffect(() => {
     if (initialNutriments) {

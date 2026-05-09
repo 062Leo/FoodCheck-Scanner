@@ -49,6 +49,8 @@ const DEFAULT_FAVORITE_LANGUAGE_IDS = ['auto', 'latin', 'japanese'];
 const OCR_DEFAULT_LANGUAGE_KEY = 'ocr_default_language';
 const OCR_FAVORITE_LANGUAGES_KEY = 'ocr_favorite_languages';
 
+const validIds = new Set(OCR_LANGUAGE_OPTIONS.map((opt) => opt.id));
+
 type Phase = 'camera' | 'crop' | 'review';
 
 interface Rect { x: number; y: number; w: number; h: number }
@@ -109,17 +111,10 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
 
     const loadPreferences = async () => {
       try {
-        const [storedDefault, storedFavorites] = await Promise.all([
-          SecureStore.getItemAsync(OCR_DEFAULT_LANGUAGE_KEY),
-          SecureStore.getItemAsync(OCR_FAVORITE_LANGUAGES_KEY),
-        ]);
+        const storedDefault = await SecureStore.getItemAsync('ocr_default_language');
+        const resolvedDefault = storedDefault && validIds.has(storedDefault) ? storedDefault : DEFAULT_LANGUAGE_ID;
 
-        const validIds = new Set(OCR_LANGUAGE_OPTIONS.map((option) => option.id));
-        const resolvedDefault =
-          storedDefault && validIds.has(storedDefault)
-            ? storedDefault
-            : DEFAULT_LANGUAGE_ID;
-
+        const storedFavorites = await SecureStore.getItemAsync('ocr_favorite_languages');
         let resolvedFavorites = DEFAULT_FAVORITE_LANGUAGE_IDS;
         if (storedFavorites) {
           const parsed = JSON.parse(storedFavorites) as unknown;
@@ -139,12 +134,8 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
           setSelectedLanguageId(resolvedDefault);
           setFavoriteLanguageIds(resolvedFavorites);
         }
-      } catch {
-        if (isActive) {
-          setDefaultLanguageId(DEFAULT_LANGUAGE_ID);
-          setSelectedLanguageId(DEFAULT_LANGUAGE_ID);
-          setFavoriteLanguageIds(DEFAULT_FAVORITE_LANGUAGE_IDS);
-        }
+      } catch (err) {
+        console.error('Failed to load OCR preferences:', err);
       }
     };
 
@@ -155,9 +146,19 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
     };
   }, [visible]);
 
+  /* ── Remount camera when modal becomes visible ─────────────── */
+  useEffect(() => {
+    if (visible && !wasVisibleRef.current) {
+      setCameraSessionKey((prev) => prev + 1);
+      wasVisibleRef.current = true;
+    }
+    if (!visible) {
+      wasVisibleRef.current = false;
+    }
+  }, [visible]);
+
   /* ── reset ──────────────────────────────────────────────── */
   const reset = useCallback(() => {
-    setCameraSessionKey((current) => current + 1);
     setPhase('camera');
     setPhotoUri(null);
     setFocusPoint(null);
