@@ -21,13 +21,13 @@ Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
 **Ziel:** Lauffähiges Grundgerüst auf dem eigenen Gerät.
 
 ### Aufgaben
-- [ ] `npx create-expo-app FoodScanner --template blank-typescript`
-- [ ] Expo Go auf dem Gerät installieren und testen
-- [ ] Abhängigkeiten installieren: `expo-camera`, `expo-sqlite`, `zustand`, `expo-router`
-- [ ] Verzeichnisstruktur gemäß Systemarchitektur anlegen (leere Dateien)
+- [x] `npx create-expo-app FoodScanner --template blank-typescript`
+- [x] Expo Go auf dem Gerät installieren und testen
+- [x] Abhängigkeiten installieren: `expo-camera`, `expo-sqlite`, `zustand`, `expo-router`
+- [x] Verzeichnisstruktur gemäß Systemarchitektur anlegen (leere Dateien)
 - [ ] ESLint + Prettier konfigurieren
-- [ ] Jest Setup: `jest.config.js`, erster Dummy-Test läuft durch
-- [ ] GitHub-Repository anlegen, `.gitignore` korrekt setzen
+- [x] Jest Setup: `jest.config.js`, erster Dummy-Test läuft durch
+- [x] GitHub-Repository anlegen, `.gitignore` korrekt setzen
 
 ### Abnahme
 - App startet auf dem Gerät (weißer Screen reicht)
@@ -43,29 +43,29 @@ Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
 ### Aufgaben
 
 **Schritt 1 – Infrastruktur**
-- [ ] `OpenFoodFactsClient.ts` implementieren (fetch + Typen)
-- [ ] Unit-Test: API-Response-Parsing mit gemocktem JSON
-- [ ] Kamera-Permission-Flow in `ScannerScreen` implementieren
+- [x] `OpenFoodFactsClient.ts` implementieren (fetch + Typen)
+- [x] Unit-Test: API-Response-Parsing mit gemocktem JSON
+- [x] Kamera-Permission-Flow in `ScannerScreen` implementieren
 
 **Schritt 2 – Domain-Logik**
-- [ ] `defaultRules.ts` mit hardcodierten Red-Flag-Listen befüllen
-- [ ] `RedFlagAnalyzer.ts` implementieren (pure function, kein Framework)
-- [ ] Unit-Tests für RedFlagAnalyzer (min. 10 Testfälle)
-- [ ] `NovaScoreEvaluator.ts` implementieren
-- [ ] `ProductRating.ts` – Gesamtbewertung aggregieren
+- [x] `defaultRules.ts` mit hardcodierten Red-Flag-Listen befüllen
+- [x] `RedFlagAnalyzer.ts` implementieren (pure function, kein Framework)
+- [x] Unit-Tests für RedFlagAnalyzer (min. 10 Testfälle)
+- [x] `NovaScoreEvaluator.ts` implementieren
+- [x] `ProductRating.ts` – Gesamtbewertung aggregieren
 
 **Schritt 3 – Scanner Screen**
-- [ ] `ScannerScreen` mit `expo-camera` und Barcode-Erkennung
-- [ ] Navigation zu `ResultScreen` nach erfolgreichem Scan
+- [x] `ScannerScreen` mit `expo-camera` und Barcode-Erkennung
+- [x] Navigation zu `ResultScreen` nach erfolgreichem Scan
 
 **Schritt 4 – Result Screen**
-- [ ] `ResultScreen` mit Ampel-Banner, Red-Flag-Liste, Nova-Badge
-- [ ] Fehlerbehandlung: Produkt nicht gefunden, API-Timeout
+- [x] `ResultScreen` mit Ampel-Banner, Red-Flag-Liste, Nova-Badge
+- [x] Fehlerbehandlung: Produkt nicht gefunden, API-Timeout
 
 ### Abnahme
-- [ ] 5 verschiedene Produkte scannen und korrekte Bewertung erhalten
-- [ ] Fehlerfall (unbekanntes Produkt) zeigt Toast ohne Crash
-- [ ] Alle Unit-Tests grün
+- [x] 5 verschiedene Produkte scannen und korrekte Bewertung erhalten
+- [x] Fehlerfall (unbekanntes Produkt) zeigt Toast ohne Crash
+- [x] Alle Unit-Tests grün
 
 ---
 
@@ -161,3 +161,47 @@ Für jede Coding-Session folgende Dateien als Kontext mitgeben:
 3. Die konkrete Aufgabe aus dieser Roadmap als Prompt, z. B.:
 
 > "Implementiere `RedFlagAnalyzer.ts` gemäß der Architektur in 02_Systemarchitektur.md. Die Datei liegt in `src/domain/analysis/`. Schreibe auch die zugehörigen Jest-Tests in `src/domain/analysis/__tests__/RedFlagAnalyzer.test.ts`. Verwende ausschließlich die Typen aus `src/types/`. Keine Framework-Abhängigkeiten."
+
+---
+
+## Status: Phasen & Aufgaben
+
+| Phase | Titel | Completion | Status |
+|---|---|---|---|
+| **0** | Projekt-Setup | 86% | 🟡 In Progress |
+| **1** | MVP: Scan & Bewertung | 100% | ✅ Done |
+| **2** | Katalog & Favoriten | 0% | ⏳ Planned |
+| **3** | Custom Filter-Regeln | 0% | ⏳ Planned |
+| **4** | OCR & Manuelle Erfassung | 0% | ⏳ Future |
+
+## Status: Phase 0 Details
+
+| Task | Status |
+|---|---|
+| Expo-Projekt mit TypeScript erstellen | ✅ Done |
+| Expo Go Installation & Test | ✅ Done |
+| Abhängigkeiten installieren | ✅ Done |
+| Verzeichnisstruktur anlegen | ✅ Done |
+| ESLint + Prettier konfigurieren | ⏳ Pending |
+| Jest Setup | ✅ Done |
+| GitHub-Repository | ✅ Done |
+
+## Status: Phase 1 Details
+
+| Schritt | Task | Status |
+|---|---|---|
+| **1** | OpenFoodFactsClient.ts | ✅ Done |
+| | API-Test | ✅ Done |
+| | Kamera-Permission-Flow | ✅ Done |
+| **2** | defaultRules.ts | ✅ Done |
+| | RedFlagAnalyzer.ts | ✅ Done |
+| | RedFlagAnalyzer Tests | ✅ Done |
+| | NovaScoreEvaluator.ts | ✅ Done |
+| | ProductRating.ts | ✅ Done |
+| **3** | ScannerScreen | ✅ Done |
+| | Navigation zu ResultScreen | ✅ Done |
+| **4** | ResultScreen | ✅ Done |
+| | Fehlerbehandlung | ✅ Done |
+| **Acceptance** | 5 Produkte testen | ✅ Done |
+| | Fehlerfall-Handling | ✅ Done |
+| | Unit-Tests grün | ✅ Done |

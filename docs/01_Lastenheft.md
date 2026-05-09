@@ -84,12 +84,12 @@ Eine native Mobile-App für iOS & Android, mit klarem Fokus auf Android, die Leb
 
 ## 6. Abnahmekriterien MVP
 
-- [ ] EAN-13 Barcode wird zuverlässig erkannt
-- [ ] API-Response wird korrekt geparst und dargestellt
-- [ ] Red Flags aus der hardcodierten Liste werden korrekt gefunden
-- [ ] Nova-Score wird angezeigt
-- [ ] App stürzt bei unbekanntem EAN (kein OFF-Eintrag) nicht ab, zeigt stattdessen Hinweis
-- [ ] App stürzt ohne Internetverbindung nicht ab sondern warnt user das funktion nicht möglich
+- [x] EAN-13 Barcode wird zuverlässig erkannt
+- [x] API-Response wird korrekt geparst und dargestellt
+- [x] Red Flags aus der hardcodierten Liste werden korrekt gefunden
+- [x] Nova-Score wird angezeigt
+- [x] App stürzt bei unbekanntem EAN (kein OFF-Eintrag) nicht ab, zeigt stattdessen Hinweis
+- [x] App stürzt ohne Internetverbindung nicht ab sondern warnt user das funktion nicht möglich
 
 ---
 
@@ -100,3 +100,36 @@ Eine native Mobile-App für iOS & Android, mit klarem Fokus auf Android, die Leb
 - **Lokale DB:** expo-sqlite
 - **Plattform:** Android primär, iOS sekundär
 - **Mindest-OS:** Android 10+ / iOS 16+
+
+---
+
+## Status: Anforderungen & Abnahmekriterien
+
+| ID | Anforderung | Status | Phase |
+|---|---|---|---|
+| F-01 | Barcode (EAN-8 / EAN-13) per Kamera scannen | ✅ Done | MVP |
+| F-02 | Produktdaten von Open Food Facts API abrufen | ✅ Done | MVP |
+| F-03 | Zutatenliste gegen hardcodierte Red-Flag-Liste matchen | ✅ Done | MVP |
+| F-04 | Ergebnis-Screen anzeigen: Status, Red Flags, Nova-Score | ✅ Done | MVP |
+| F-05 | Produkte im lokalen Katalog speichern | ⏳ Planned | v2 |
+| F-06 | Katalog-Screen mit Sortierung | ⏳ Planned | v2 |
+| F-07 | Favoriten-Liste | ⏳ Planned | v2 |
+| F-08 | Offline-Ansicht gescannter Produkte | ⏳ Planned | v2 |
+| F-09 | Benutzerdefinierte Filter-Regeln | ⏳ Planned | v2 |
+| F-10 | Numerische Grenzwerte für Nährstoffe | ⏳ Planned | v2 |
+| F-11 | Filter-Profile speichern | ⏳ Planned | v2 |
+| F-12 | OCR für manuelle Zutateneingabe | ⏳ Planned | v3 |
+| F-13 | Offline OFF-Datenbank Dump | ⏳ Planned | v3 |
+| F-14 | Katalog als CSV exportieren | ⏳ Planned | v3 |
+| NF-01 | Scan-to-Result < 10 Sekunden | ✅ Done | MVP |
+| NF-02 | Vollständig lokal auf Gerät | ✅ Done | MVP |
+| NF-03 | Keine Cloud-Sync | ✅ Done | MVP |
+| NF-04 | Betriebskosten 0€ | ✅ Done | MVP |
+| NF-05 | Modular & testbar (SOLID) | ✅ Done | MVP |
+| NF-06 | Keine Werbung, kein Tracking | ✅ Done | MVP |
+| AC-01 | EAN-13 wird zuverlässig erkannt | ✅ Done | MVP |
+| AC-02 | API-Response korrekt geparst | ✅ Done | MVP |
+| AC-03 | Red Flags korrekt gefunden | ✅ Done | MVP |
+| AC-04 | Nova-Score angezeigt | ✅ Done | MVP |
+| AC-05 | Keine Crashes bei unbekanntem EAN | ✅ Done | MVP |
+| AC-06 | Warnung bei offline, kein Crash | ✅ Done | MVP |

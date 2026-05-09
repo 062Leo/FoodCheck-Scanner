@@ -208,3 +208,31 @@ interface IRedFlagAnalyzer {
 | Datenbank | expo-sqlite | Nativ, persistent, offline-fähig, relationale Struktur |
 | Navigation | Expo Router | Dateibasiertes Routing, einfacher als React Navigation |
 | Testing | Jest + React Native Testing Library | Standard im React-Native-Ökosystem |
+
+---
+
+## Status: Module & Komponenten
+
+| Modul | Komponente | Beschreibung | Status |
+|---|---|---|---|
+| **Domain** | RedFlagAnalyzer | Zutatenliste → Red Flags (pure) | ✅ Done |
+| | NovaScoreEvaluator | Nova 1-4 → Label & Farbe | ✅ Done |
+| | ProductRating | Red Flags + Nova → Status | ✅ Done |
+| | defaultRules | Hardcodierte Red-Flag Liste | ✅ Done |
+| **Infrastructure** | OpenFoodFactsClient | OFF API fetch + parsing | ✅ Done |
+| | OpenFoodFacts.types | API-Response Typen | ✅ Done |
+| | DatabaseService | SQLite Setup & Migrations | ⏳ Planned (v2) |
+| | ProductRepository | CRUD Katalog | ⏳ Planned (v2) |
+| | FavoritesRepository | CRUD Favoriten | ⏳ Planned (v2) |
+| **Screens** | ScannerScreen | Kamera + EAN-Erkennung | ✅ Done |
+| | ResultScreen | Ampel-Banner + Details | ✅ Done |
+| | CatalogScreen | Produktliste | ⏳ Planned (v2) |
+| | FavoritesScreen | Favoriten-Liste | ⏳ Planned (v2) |
+| **Components** | SkeletonLoading | Loading-Skeleton | ✅ Done |
+| | Toast | Fehler-Meldungen | ✅ Done |
+| | Accordion | Zutatenliste expandierbar | ✅ Done |
+| **Types** | Product | Produkt-Modell | ✅ Done |
+| | ScanResult | Analyse-Ergebnis | ✅ Done |
+| **State** | catalogStore | Zustand (v2) | ⏳ Planned |
+| | filterStore | Zustand (v2) | ⏳ Planned |
+| **Navigation** | Routing (Expo Router) | Tab + Stack Layout | ✅ Done |
