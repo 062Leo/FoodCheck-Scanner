@@ -6,7 +6,7 @@ import { NovaScoreEvaluator } from './NovaScoreEvaluator';
 export class ProductRating {
   constructor(
     private readonly redFlagAnalyzer: RedFlagAnalyzer,
-    private readonly novaEvaluator: NovaScoreEvaluator,
+    private readonly novaEvaluator: NovaScoreEvaluator
   ) {}
 
   rate(product: Product): ScanResult {

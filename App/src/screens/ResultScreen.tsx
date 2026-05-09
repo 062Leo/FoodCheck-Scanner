@@ -1,11 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { Product } from '../types/Product';
 import type { ScanResult } from '../types/ScanResult';
@@ -112,10 +106,7 @@ export default function ResultScreen() {
         )}
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error || 'Fehler'}</Text>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>Zurück zum Scanner</Text>
           </TouchableOpacity>
         </View>
@@ -164,20 +155,13 @@ export default function ResultScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View
-          style={[
-            styles.statusBanner,
-            { backgroundColor: statusColor },
-          ]}
-        >
+        <View style={[styles.statusBanner, { backgroundColor: statusColor }]}>
           <Text style={styles.statusText}>{statusLabel}</Text>
         </View>
 
         <View style={styles.productInfo}>
           <Text style={styles.productName}>{product.name}</Text>
-          {product.brand && (
-            <Text style={styles.productBrand}>{product.brand}</Text>
-          )}
+          {product.brand && <Text style={styles.productBrand}>{product.brand}</Text>}
           <Text style={styles.productEAN}>EAN: {product.ean}</Text>
         </View>
 
@@ -194,25 +178,20 @@ export default function ResultScreen() {
             >
               <Text style={styles.novaScoreText}>{result.nova.score}</Text>
             </View>
-            <Text style={styles.novaLabel}>
-              {result.nova.label || 'Unbekannt'}
-            </Text>
+            <Text style={styles.novaLabel}>{result.nova.label || 'Unbekannt'}</Text>
           </View>
         </View>
 
         {result.redFlags.length > 0 && (
           <View style={styles.redFlagsSection}>
-            <Text style={styles.sectionTitle}>
-              Gefundene Red Flags ({result.redFlags.length})
-            </Text>
+            <Text style={styles.sectionTitle}>Gefundene Red Flags ({result.redFlags.length})</Text>
             {result.redFlags.map((flag, index) => (
               <View key={index} style={styles.redFlagItem}>
                 <View
                   style={[
                     styles.severityDot,
                     {
-                      backgroundColor:
-                        flag.severity === 'critical' ? '#F44336' : '#FFC107',
+                      backgroundColor: flag.severity === 'critical' ? '#F44336' : '#FFC107',
                     },
                   ]}
                 />

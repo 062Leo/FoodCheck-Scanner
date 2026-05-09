@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  Animated,
-} from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -29,14 +23,14 @@ export default function ScannerScreen() {
           duration: 1500,
           useNativeDriver: false,
         }),
-      ]),
+      ])
     ).start();
   }, [frameAnimation]);
 
   useFocusEffect(
     useCallback(() => {
       setScanned(false);
-    }, []),
+    }, [])
   );
 
   useEffect(() => {
@@ -76,10 +70,7 @@ export default function ScannerScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Kamerazugriff erforderlich</Text>
-        <TouchableOpacity
-          style={styles.permissionButton}
-          onPress={requestPermission}
-        >
+        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
           <Text style={styles.permissionButtonText}>Erlauben</Text>
         </TouchableOpacity>
       </View>

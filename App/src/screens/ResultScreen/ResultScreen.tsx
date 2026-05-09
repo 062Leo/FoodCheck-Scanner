@@ -195,9 +195,7 @@ export default function ResultScreen() {
               {
                 title: 'Zutatenliste',
                 content: (
-                  <Text style={styles.ingredientsText}>
-                    {getBestIngredientsText(product)}
-                  </Text>
+                  <Text style={styles.ingredientsText}>{getBestIngredientsText(product)}</Text>
                 ),
               },
             ]}
@@ -212,25 +210,68 @@ export default function ResultScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212' },
-  header: { paddingTop: 48, paddingHorizontal: 16, paddingBottom: 12, borderBottomColor: '#1E1E1E', borderBottomWidth: 1 },
+  header: {
+    paddingTop: 48,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomColor: '#1E1E1E',
+    borderBottomWidth: 1,
+  },
   backText: { color: '#4CAF50', fontSize: 16, fontWeight: '600' },
   content: { flex: 1 },
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 32 },
-  statusBanner: { margin: 16, paddingVertical: 32, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 32,
+  },
+  statusBanner: {
+    margin: 16,
+    paddingVertical: 32,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   statusText: { color: '#FFFFFF', fontSize: 28, fontWeight: '700', letterSpacing: 2 },
   productInfo: { paddingHorizontal: 16, paddingVertical: 16 },
   productName: { color: '#FFFFFF', fontSize: 18, fontWeight: '600', marginBottom: 4 },
   productBrand: { color: '#BDBDBD', fontSize: 14, marginBottom: 8 },
   productEAN: { color: '#9E9E9E', fontSize: 12 },
   novaSection: { paddingHorizontal: 16, paddingVertical: 12 },
-  sectionTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', marginBottom: 12, textTransform: 'uppercase' },
+  sectionTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+  },
   novaDisplay: { flexDirection: 'row', alignItems: 'center' },
-  novaScore: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginRight: 16, borderWidth: 1, borderColor: '#2E2E2E' },
+  novaScore: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: '#2E2E2E',
+  },
   novaScoreText: { color: '#FFFFFF', fontSize: 30, fontWeight: '800' },
   novaLabel: { color: '#9E9E9E', fontSize: 16, flex: 1 },
   redFlagsSection: { paddingHorizontal: 16, paddingVertical: 12 },
   accordionSection: { paddingHorizontal: 16, paddingBottom: 24 },
-  redFlagItem: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 12, paddingHorizontal: 12, marginBottom: 8, backgroundColor: '#1E1E1E', borderRadius: 8, borderLeftWidth: 4, borderLeftColor: '#F44336' },
+  redFlagItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F44336',
+  },
   severityDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12, marginTop: 4 },
   flagContent: { flex: 1 },
   flagIngredient: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', marginBottom: 2 },
@@ -239,6 +280,13 @@ const styles = StyleSheet.create({
   ingredientsText: { color: '#FFFFFF', fontSize: 14, lineHeight: 20 },
   spacer: { height: 24 },
   errorText: { color: '#F44336', fontSize: 18, fontWeight: '600', textAlign: 'center' },
-  backButton: { marginTop: 12, paddingVertical: 12, paddingHorizontal: 30, backgroundColor: '#4CAF50', borderRadius: 8, alignSelf: 'center' },
+  backButton: {
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    alignSelf: 'center',
+  },
   backButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });

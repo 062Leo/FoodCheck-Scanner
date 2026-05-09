@@ -29,7 +29,7 @@ export function SkeletonLine({
           duration: 1000,
           useNativeDriver: true,
         }),
-      ]),
+      ])
     ).start();
   }, [shimmerAnim]);
 

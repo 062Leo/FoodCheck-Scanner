@@ -27,6 +27,7 @@ Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
 - [x] Verzeichnisstruktur gemäß Systemarchitektur anlegen (leere Dateien)
 - [ ] ESLint + Prettier konfigurieren
 - [x] Jest Setup: `jest.config.js`, erster Dummy-Test läuft durch
+@@- [x] ESLint + Prettier konfigurieren
 - [x] GitHub-Repository anlegen, `.gitignore` korrekt setzen
 
 ### Abnahme
@@ -169,6 +170,7 @@ Für jede Coding-Session folgende Dateien als Kontext mitgeben:
 | Phase | Titel | Completion | Status |
 |---|---|---|---|
 | **0** | Projekt-Setup | 86% | 🟡 In Progress |
+@@| **0** | Projekt-Setup | 100% | ✅ Done |
 | **1** | MVP: Scan & Bewertung | 100% | ✅ Done |
 | **2** | Katalog & Favoriten | 0% | ⏳ Planned |
 | **3** | Custom Filter-Regeln | 0% | ⏳ Planned |
@@ -183,6 +185,7 @@ Für jede Coding-Session folgende Dateien als Kontext mitgeben:
 | Abhängigkeiten installieren | ✅ Done |
 | Verzeichnisstruktur anlegen | ✅ Done |
 | ESLint + Prettier konfigurieren | ⏳ Pending |
+@@| ESLint + Prettier konfigurieren | ✅ Done |
 | Jest Setup | ✅ Done |
 | GitHub-Repository | ✅ Done |
 

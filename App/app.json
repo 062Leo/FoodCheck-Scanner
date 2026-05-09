@@ -26,10 +26,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-barcode-scanner",
-      "expo-sqlite",
-      "expo-router"
-    ]
+    "plugins": ["expo-barcode-scanner", "expo-sqlite", "expo-router"]
   }
 }

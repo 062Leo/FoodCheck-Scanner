@@ -1,11 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableWithoutFeedback } from 'react-native';
 
 interface ToastProps {
   message: string;
@@ -14,12 +8,7 @@ interface ToastProps {
   onDismiss?: () => void;
 }
 
-export function Toast({
-  message,
-  type,
-  duration = 3000,
-  onDismiss,
-}: ToastProps) {
+export function Toast({ message, type, duration = 3000, onDismiss }: ToastProps) {
   const [visible, setVisible] = useState(true);
   const slideAnim = new Animated.Value(0);
 
@@ -53,8 +42,7 @@ export function Toast({
     outputRange: [-100, 0],
   });
 
-  const backgroundColor =
-    type === 'error' ? '#F44336' : type === 'success' ? '#4CAF50' : '#2196F3';
+  const backgroundColor = type === 'error' ? '#F44336' : type === 'success' ? '#4CAF50' : '#2196F3';
 
   return (
     <Animated.View

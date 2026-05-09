@@ -1,11 +1,5 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 
 interface AccordionItem {
   title: string;
@@ -53,22 +47,12 @@ function AccordionItemComponent({
 }: AccordionItemComponentProps) {
   return (
     <View style={styles.item}>
-      <TouchableOpacity
-        style={styles.header}
-        onPress={onToggle}
-        activeOpacity={0.7}
-      >
+      <TouchableOpacity style={styles.header} onPress={onToggle} activeOpacity={0.7}>
         <Text style={styles.headerText}>{title}</Text>
-        <Text style={[styles.arrow, isExpanded && styles.arrowExpanded]}>
-          ▼
-        </Text>
+        <Text style={[styles.arrow, isExpanded && styles.arrowExpanded]}>▼</Text>
       </TouchableOpacity>
 
-      {isExpanded && (
-        <View style={styles.content}>
-          {content}
-        </View>
-      )}
+      {isExpanded && <View style={styles.content}>{content}</View>}
     </View>
   );
 }
