@@ -3,12 +3,14 @@ import { StyleSheet, View, Text, TouchableOpacity, Animated } from 'react-native
 import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { ProductRepository } from '../../infrastructure/db/ProductRepository';
 
 export default function ScannerScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const frameAnimation = useRef(new Animated.Value(0)).current;
+  const productRepository = new ProductRepository();
 
   useEffect(() => {
     Animated.loop(
@@ -52,6 +54,27 @@ export default function ScannerScreen() {
     setScanned(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    // Cache-first approach: check local DB before API call
+    try {
+      const cachedProduct = await productRepository.findByEan(ean);
+      if (cachedProduct) {
+        // Product found in cache → navigate directly with cached data
+        router.push({
+          pathname: '/result',
+          params: {
+            ean,
+            fromCache: 'true',
+            cachedData: cachedProduct.raw_json || '',
+          },
+        });
+        return;
+      }
+    } catch (err) {
+      console.error('Error checking local cache:', err);
+      // Fall through to normal flow if cache check fails
+    }
+
+    // Product not in cache → proceed with normal flow (API or offline)
     router.push({
       pathname: '/result',
       params: { ean },

@@ -1,3 +1,4 @@
+import type { FilterRule } from '../../types/FilterRule';
 import type { NovaScore, Product } from '../../types/Product';
 import type { ScanResult, ScanStatus } from '../../types/ScanResult';
 import { RedFlagAnalyzer } from './RedFlagAnalyzer';
@@ -9,9 +10,9 @@ export class ProductRating {
     private readonly novaEvaluator: NovaScoreEvaluator
   ) {}
 
-  rate(product: Product): ScanResult {
+  rate(product: Product, rules?: FilterRule[]): ScanResult {
     const redFlags = product.ingredientsText
-      ? this.redFlagAnalyzer.analyze(product.ingredientsText)
+      ? this.redFlagAnalyzer.analyze(product.ingredientsText, rules && rules.length > 0 ? rules : undefined)
       : [];
 
     const novaScore = product.novaScore || 1;

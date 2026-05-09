@@ -27,6 +27,10 @@
 - iOS: `cd App && npm run ios`
 - Web: `cd App && npm run web`
 - Tests: `cd App && npm test`
+- Lint: `cd App && npm run lint`
+- Lint fix: `cd App && npm run lint:fix`
+- Format: `cd App && npm run format`
+- Format check: `cd App && npm run format:check`
 
 ## Reference Docs
 - [Systemarchitektur](docs/02_Systemarchitektur.md) for layer boundaries and data flow.

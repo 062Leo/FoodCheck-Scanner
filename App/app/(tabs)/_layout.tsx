@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
@@ -20,6 +21,9 @@ export default function TabLayout() {
         options={{
           title: 'Scanner',
           tabBarLabel: 'Scanner',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="camera" size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -27,7 +31,9 @@ export default function TabLayout() {
         options={{
           title: 'Katalog',
           tabBarLabel: 'Katalog',
-          href: null,
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="list" size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -35,7 +41,19 @@ export default function TabLayout() {
         options={{
           title: 'Favoriten',
           tabBarLabel: 'Favoriten',
-          href: null,
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="star" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="filters"
+        options={{
+          title: 'Filter',
+          tabBarLabel: 'Filter',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="options" size={24} color={color} />
+          ),
         }}
       />
     </Tabs>

@@ -486,6 +486,9 @@ When done, update TODO.md: mark setup tasks and `ContributeFormData.ts` as done.
 
 ---
 
+
+### Erledigt bis hier
+
 ### Prompt M4-2 · OcrService
 
 **Attach:** `02_Systemarchitektur.md`, `src/types/ContributeFormData.ts`

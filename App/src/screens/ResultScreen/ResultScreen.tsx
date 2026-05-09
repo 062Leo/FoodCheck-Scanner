@@ -2,25 +2,37 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
-import type { Product } from '../../types/Product';
+import * as Haptics from 'expo-haptics';
+import type { Product, ProductRecord } from '../../types/Product';
 import type { ScanResult } from '../../types/ScanResult';
 import { OpenFoodFactsClient } from '../../infrastructure/api/OpenFoodFactsClient';
+import { ProductRepository } from '../../infrastructure/db/ProductRepository';
+import { useCatalogStore } from '../../store/catalogStore';
+import { useFilterStore } from '../../store/filterStore';
 import { RedFlagAnalyzer } from '../../domain/analysis/RedFlagAnalyzer';
 import { NovaScoreEvaluator } from '../../domain/analysis/NovaScoreEvaluator';
 import { ProductRating } from '../../domain/analysis/ProductRating';
 import { defaultRules } from '../../domain/rules/defaultRules';
 import { SkeletonLoadingScreen } from '../../components/SkeletonLoading';
+import { Toast } from '../../components/Toast';
 import { Accordion } from '../../components/Accordion';
 
 type ErrorType = 'offline' | 'not-found' | 'generic';
 
 export default function ResultScreen() {
-  const params = useLocalSearchParams<{ ean: string }>();
+  const params = useLocalSearchParams<{ ean: string; fromCache?: string; cachedData?: string }>();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<{ type: ErrorType; message: string } | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [isCached, setIsCached] = useState(false);
+  const [productId, setProductId] = useState<number | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
+
+  const catalogStore = useCatalogStore();
+  const productRepository = new ProductRepository();
 
   useEffect(() => {
     const fetchAndRate = async () => {
@@ -31,7 +43,29 @@ export default function ResultScreen() {
       }
 
       try {
-        // Check network connectivity before fetching
+        // Check if this is a cached load
+        if (params.fromCache === 'true' && params.cachedData) {
+          try {
+            const cachedJson = JSON.parse(params.cachedData);
+            const cachedProduct = cachedJson.product || cachedJson;
+            setProduct(cachedProduct);
+            setIsCached(true);
+
+            const currentRules = useFilterStore.getState().rules;
+            const analyzer = new RedFlagAnalyzer(defaultRules);
+            const evaluator = new NovaScoreEvaluator();
+            const rater = new ProductRating(analyzer, evaluator);
+            const scanResult = rater.rate(cachedProduct, currentRules);
+            setResult(scanResult);
+            setLoading(false);
+            return;
+          } catch (parseErr) {
+            console.error('Failed to parse cached data:', parseErr);
+            // Fall through to normal flow
+          }
+        }
+
+        // Normal flow: fetch from API
         const netState = await NetInfo.fetch();
         if (!netState.isConnected) {
           setError({
@@ -56,12 +90,36 @@ export default function ResultScreen() {
 
         setProduct(fetchedProduct);
 
+        const currentRules = useFilterStore.getState().rules;
         const analyzer = new RedFlagAnalyzer(defaultRules);
         const evaluator = new NovaScoreEvaluator();
         const rater = new ProductRating(analyzer, evaluator);
-        const scanResult = rater.rate(fetchedProduct);
-
+        const scanResult = rater.rate(fetchedProduct, currentRules);
         setResult(scanResult);
+
+        // Save product to database in the background (fire-and-forget)
+        (async () => {
+          try {
+            setSavingProduct(true);
+            const record: ProductRecord = {
+              ean: fetchedProduct.ean,
+              name: fetchedProduct.name || null,
+              brands: fetchedProduct.brand || null,
+              ingredients: fetchedProduct.ingredientsText || null,
+              nova_score: fetchedProduct.novaScore || null,
+              nutriscore: null,
+              raw_json: JSON.stringify({ product: fetchedProduct }),
+              scanned_at: new Date().toISOString(),
+              rating: scanResult.status,
+            };
+            await catalogStore.addProduct(record);
+          } catch (err) {
+            console.error('Failed to save product to database:', err);
+          } finally {
+            setSavingProduct(false);
+          }
+        })();
+
         setLoading(false);
       } catch (err) {
         setError({
@@ -73,7 +131,69 @@ export default function ResultScreen() {
     };
 
     fetchAndRate();
-  }, [params.ean]);
+  }, [params.ean, params.fromCache, params.cachedData]);
+
+  // Load productId and check favorite status
+  useEffect(() => {
+    if (!product?.ean) {
+      return;
+    }
+
+    (async () => {
+      try {
+        const foundProduct = await productRepository.findByEan(product.ean);
+        if (foundProduct?.id) {
+          setProductId(foundProduct.id);
+          const favoriteStatus = catalogStore.favorites.some(
+            (fav) => fav.id === foundProduct.id
+          );
+          setIsFavorite(favoriteStatus);
+        }
+      } catch (err) {
+        console.error('Failed to load product details:', err);
+      }
+    })();
+  }, [product?.ean]);
+
+  const handleToggleFavorite = async () => {
+    if (!product?.ean) {
+      return;
+    }
+
+    try {
+      // Ensure product is saved first
+      let currentProductId = productId;
+      if (!currentProductId && !isCached) {
+        setSavingProduct(true);
+        const record: ProductRecord = {
+          ean: product.ean,
+          name: product.name || null,
+          brands: product.brand || null,
+          ingredients: product.ingredientsText || null,
+          nova_score: product.novaScore || null,
+          nutriscore: null,
+          raw_json: JSON.stringify({ product }),
+          scanned_at: new Date().toISOString(),
+          rating: result?.status || 'OK',
+        };
+        await catalogStore.addProduct(record);
+        const savedProduct = await productRepository.findByEan(product.ean);
+        if (savedProduct?.id) {
+          currentProductId = savedProduct.id;
+          setProductId(currentProductId);
+        }
+        setSavingProduct(false);
+      }
+
+      if (currentProductId) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        await catalogStore.toggleFavorite(currentProductId);
+        setIsFavorite(!isFavorite);
+      }
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    }
+  };
 
   const getStatusColor = (status: string): string => {
     switch (status) {
@@ -144,6 +264,21 @@ export default function ResultScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backText}>← Zurück</Text>
         </TouchableOpacity>
+        <View style={styles.headerRightSection}>
+          {isCached && (
+            <View style={styles.cachedBadge}>
+              <Text style={styles.cachedBadgeText}>Cache</Text>
+            </View>
+          )}
+          <TouchableOpacity
+            onPress={handleToggleFavorite}
+            disabled={!product || savingProduct}
+          >
+            <Text style={[styles.favoriteIcon, isFavorite && styles.favoriteFilled]}>
+              {isFavorite ? '★' : '☆'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
@@ -216,8 +351,33 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomColor: '#1E1E1E',
     borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  backText: { color: '#4CAF50', fontSize: 16, fontWeight: '600' },
+  headerRightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cachedBadge: {
+    backgroundColor: '#757575',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  cachedBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  favoriteIcon: {
+    color: '#BDBDBD',
+    fontSize: 28,
+  },
+  favoriteFilled: {
+    color: '#FFD700',
+  },
   content: { flex: 1 },
   errorContainer: {
     flex: 1,
@@ -288,5 +448,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignSelf: 'center',
   },
-  backButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  backText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });

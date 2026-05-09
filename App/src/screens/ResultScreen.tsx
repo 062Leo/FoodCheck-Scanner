@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import type { Product } from '../types/Product';
+import type { Product, ProductRecord } from '../types/Product';
 import type { ScanResult } from '../types/ScanResult';
 import { OpenFoodFactsClient } from '../infrastructure/api/OpenFoodFactsClient';
 import { RedFlagAnalyzer } from '../domain/analysis/RedFlagAnalyzer';
@@ -11,6 +12,9 @@ import { defaultRules } from '../domain/rules/defaultRules';
 import { SkeletonLoadingScreen } from '../components/SkeletonLoading';
 import { Toast } from '../components/Toast';
 import { Accordion } from '../components/Accordion';
+import { useCatalogStore } from '../store/catalogStore';
+import { useFilterStore } from '../store/filterStore';
+import { ProductRepository } from '../infrastructure/db/ProductRepository';
 
 export default function ResultScreen() {
   const params = useLocalSearchParams<{ ean: string }>();
@@ -20,6 +24,12 @@ export default function ResultScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
+  const [productId, setProductId] = useState<number | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
+
+  const catalogStore = useCatalogStore();
+  const productRepository = new ProductRepository();
 
   useEffect(() => {
     const fetchAndRate = async () => {
@@ -43,12 +53,37 @@ export default function ResultScreen() {
 
         setProduct(fetchedProduct);
 
+        const currentRules = useFilterStore.getState().rules;
         const analyzer = new RedFlagAnalyzer(defaultRules);
         const evaluator = new NovaScoreEvaluator();
         const rater = new ProductRating(analyzer, evaluator);
-        const scanResult = rater.rate(fetchedProduct);
+        const scanResult = rater.rate(fetchedProduct, currentRules);
 
         setResult(scanResult);
+
+        // Save product to database in the background (fire-and-forget)
+        (async () => {
+          try {
+            setSavingProduct(true);
+            const record: ProductRecord = {
+              ean: fetchedProduct.ean,
+              name: fetchedProduct.name || null,
+              brands: fetchedProduct.brand || null,
+              ingredients: fetchedProduct.ingredientsText || null,
+              nova_score: fetchedProduct.novaScore || null,
+              nutriscore: null,
+              raw_json: JSON.stringify({ product: fetchedProduct }),
+              scanned_at: new Date().toISOString(),
+              rating: scanResult.status,
+            };
+            await catalogStore.addProduct(record);
+          } catch (err) {
+            console.error('Failed to save product to database:', err);
+          } finally {
+            setSavingProduct(false);
+          }
+        })();
+
         setLoading(false);
       } catch (err) {
         setError('Fehler beim Abrufen der Produktdaten');
@@ -59,6 +94,68 @@ export default function ResultScreen() {
 
     fetchAndRate();
   }, [params.ean]);
+
+  // Load productId and check favorite status
+  useEffect(() => {
+    if (!product?.ean) {
+      return;
+    }
+
+    (async () => {
+      try {
+        const foundProduct = await productRepository.findByEan(product.ean);
+        if (foundProduct?.id) {
+          setProductId(foundProduct.id);
+          const favoriteStatus = catalogStore.favorites.some(
+            (fav) => fav.id === foundProduct.id
+          );
+          setIsFavorite(favoriteStatus);
+        }
+      } catch (err) {
+        console.error('Failed to load product details:', err);
+      }
+    })();
+  }, [product?.ean, catalogStore.favorites]);
+
+  const handleToggleFavorite = async () => {
+    if (!product?.ean) {
+      return;
+    }
+
+    try {
+      // Ensure product is saved first
+      let currentProductId = productId;
+      if (!currentProductId) {
+        setSavingProduct(true);
+        const record: ProductRecord = {
+          ean: product.ean,
+          name: product.name || null,
+          brands: product.brand || null,
+          ingredients: product.ingredientsText || null,
+          nova_score: product.novaScore || null,
+          nutriscore: null,
+          raw_json: JSON.stringify({ product }),
+          scanned_at: new Date().toISOString(),
+          rating: result?.status || 'OK',
+        };
+        await catalogStore.addProduct(record);
+        const savedProduct = await productRepository.findByEan(product.ean);
+        if (savedProduct?.id) {
+          currentProductId = savedProduct.id;
+          setProductId(currentProductId);
+        }
+        setSavingProduct(false);
+      }
+
+      if (currentProductId) {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        await catalogStore.toggleFavorite(currentProductId);
+        setIsFavorite(!isFavorite);
+      }
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    }
+  };
 
   const getStatusColor = (status: string): string => {
     switch (status) {
@@ -149,8 +246,13 @@ export default function ResultScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backText}>← Zurück</Text>
         </TouchableOpacity>
-        <TouchableOpacity>
-          <Text style={styles.favoriteIcon}>★</Text>
+        <TouchableOpacity
+          onPress={handleToggleFavorite}
+          disabled={!product || savingProduct}
+        >
+          <Text style={[styles.favoriteIcon, isFavorite && styles.favoriteFilled]}>
+            {isFavorite ? '★' : '☆'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -259,6 +361,9 @@ const styles = StyleSheet.create({
   favoriteIcon: {
     color: '#BDBDBD',
     fontSize: 28,
+  },
+  favoriteFilled: {
+    color: '#FFD700',
   },
   content: {
     flex: 1,
