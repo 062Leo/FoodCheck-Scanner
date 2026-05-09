@@ -65,7 +65,7 @@
  - [x] `filter_rules`-Tabelle in SQLite aktivieren
  - [x] Migrations-Logik: hardcodierte Regeln als Seed in DB importieren
  - [x] `infrastructure/db/FilterRuleRepository.ts` – CRUD für Regeln (insert, findAll, update, deleteById + 3/3 tests passing)
- - [ ] `RedFlagAnalyzer` auf dynamische Regeln umstellen (statt hardcoded)
+ - [x] `RedFlagAnalyzer` auf dynamische Regeln umstellen (statt hardcoded)
  
  ### State & UI
  - [x] `store/filterStore.ts` mit Zustand anlegen
@@ -74,10 +74,10 @@
 - [x] UI: Nutrient-Regel anlegen (Nährwert auswählen, Operator `>` / `<`, Grenzwert eingeben)
 
 ### ContributeScreen – 3-Schritt-Flow
- - [ ] `@react-native-ml-kit/text-recognition` installieren
- - [ ] `expo-secure-store` installieren
- - [ ] OFF-Account anlegen (einmalig auf openfoodfacts.org)
- - [ ] `types/ContributeFormData.ts` anlegen
+ - [x] `@react-native-ml-kit/text-recognition` installieren
+ - [x] `expo-secure-store` installieren
+ - [x] OFF-Account anlegen (einmalig auf openfoodfacts.org)
+ - [x] `types/ContributeFormData.ts` anlegen
 
 ### OFF-Account Setup
 
@@ -95,29 +95,29 @@
  
  ---
  
- ## ⏳ Milestone 3 – Custom Filter-Regeln
+ ## ✅ Milestone 3 – Custom Filter-Regeln
  
  ### Domain & Datenbank
  - [x] `types/FilterRule.ts` – Typen finalisieren (Ingredient-Rule + Nutrient-Rule mit Threshold)
  - [x] `filter_rules`-Tabelle in SQLite aktivieren
  - [x] Migrations-Logik: hardcodierte Regeln als Seed in DB importieren
  - [x] `infrastructure/db/FilterRuleRepository.ts` – CRUD für Regeln (insert, findAll, update, deleteById + 3/3 tests passing)
- - [ ] `RedFlagAnalyzer` auf dynamische Regeln umstellen (statt hardcoded)
+ - [x] `RedFlagAnalyzer` auf dynamische Regeln umstellen (statt hardcoded)
  
  ### State & UI
  - [x] `store/filterStore.ts` mit Zustand anlegen
- - [ ] Filter-Verwaltungs-Screen – Liste aller Regeln, hinzufügen, bearbeiten, löschen
- - [ ] UI: Ingredient-Regel anlegen (Suchfeld + Severity-Toggle: Red Flag / OK)
- - [ ] UI: Nutrient-Regel anlegen (Nährwert auswählen, Operator `>` / `<`, Grenzwert eingeben)
+ - [x] Filter-Verwaltungs-Screen – Liste aller Regeln, hinzufügen, bearbeiten, löschen
+ - [x] UI: Ingredient-Regel anlegen (Suchfeld + Severity-Toggle: Red Flag / OK)
+ - [x] UI: Nutrient-Regel anlegen (Nährwert auswählen, Operator `>` / `<`, Grenzwert eingeben)
  
  ### Abnahme
- - [ ] Regel „Palmöl = OK" → taucht nicht mehr als Red Flag auf
- - [ ] Regel „Zucker > 3 g/100 ml = Warnung" → greift korrekt
- - [ ] Regeln überleben App-Neustart
+ - [x] Regel „Palmöl = OK" → taucht nicht mehr als Red Flag auf
+ - [x] Regel „Zucker > 3 g/100 ml = Warnung" → greift korrekt
+ - [x] Regeln überleben App-Neustart
  
  ---
  
- ## ⏳ Milestone 4 – OCR & OFF-Contribution-Flow *(v3)*
+ ## ✅ Milestone 4 – OCR & OFF-Contribution-Flow *(v3)*
  
  ### Setup
  - [x] `@react-native-ml-kit/text-recognition` installieren
@@ -130,29 +130,37 @@
  - [x] Unit-Test für OcrService (recognizeText + parseNutriments mit 8 tests passing)
  
  ### OFF Write Client
- - [ ] `infrastructure/api/OpenFoodFactsWriteClient.ts` – POST zu OFF API
- - [ ] Fehlerbehandlung: offline, Auth-Fehler, Server-Error
- - [ ] Unit-Test mit gemocktem fetch
+ - [x] `infrastructure/api/OpenFoodFactsWriteClient.ts` – POST zu OFF API
+ - [x] Fehlerbehandlung: offline, Auth-Fehler, Server-Error
+ - [x] Unit-Test mit gemocktem fetch
  
  ### ContributeScreen – 3-Schritt-Flow
- - [ ] Screen-Grundstruktur mit Schritt-Indikator
- - [ ] **Schritt 1:** Kamera für Zutatenliste, "Foto aufnehmen" + "Überspringen"
- - [ ] **Schritt 2:** Kamera für Nährwerte, "Foto aufnehmen" + "Überspringen"
- - [ ] **Schritt 3:** Editierbares Formular (Name, Marke, Kategorie, Zutaten, Nährwerte) – OCR-vorausgefüllt
- - [ ] Pflichtfeld-Validierung (Produktname)
- - [ ] Bestätigungs-Dialog vor Upload
- - [ ] Upload → `OpenFoodFactsWriteClient` + sofortige lokale Analyse → ResultScreen
- - [ ] Upload-Fehler → Toast, lokale Analyse trotzdem anzeigen
+ - [x] Screen-Grundstruktur mit Schritt-Indikator
+ - [x] **Schritt 1:** Kamera für Zutatenliste, "Foto aufnehmen" + "Überspringen"
+ - [x] **Schritt 2:** Kamera für Nährwerte, "Foto aufnehmen" + "Überspringen"
+ - [x] **Schritt 3:** Editierbares Formular (Name, Marke, Kategorie, Zutaten, Nährwerte) – OCR-vorausgefüllt
+ - [x] Pflichtfeld-Validierung (Produktname)
+ - [x] Bestätigungs-Dialog vor Upload
+ - [x] Upload → `OpenFoodFactsWriteClient` + sofortige lokale Analyse → ResultScreen
+ - [x] Upload-Fehler → Toast, lokale Analyse trotzdem anzeigen
  
  ### OFF-Account Setup
- - [ ] Einmaliger Setup-Flow beim ersten Contribute-Versuch
- - [ ] Credentials speichern mit `expo-secure-store`
- - [ ] "Beitragen"-Button im ResultScreen bei `status === 0` einbauen
+ - [x] Einmaliger Setup-Flow beim ersten Contribute-Versuch
+ - [x] Credentials speichern mit `expo-secure-store`
+ - [x] "Beitragen"-Button im ResultScreen bei `status === 0` einbauen
  
  ### Abnahme
- - [ ] Foto Zutatenliste → Text korrekt ins Formular übernommen
- - [ ] Foto Nährwerte → Felder vorausgefüllt
- - [ ] Beide Schritte überspringen → Formular manuell ausfüllbar
- - [ ] Upload ohne Produktname → Button deaktiviert
- - [ ] Upload erfolgreich → ResultScreen mit sofortiger Analyse
- - [ ] Upload offline → Toast, Analyse trotzdem sichtbar
+ - [x] Foto Zutatenliste → Text korrekt ins Formular übernommen
+ - [x] Foto Nährwerte → Felder vorausgefüllt
+ - [x] Beide Schritte überspringen → Formular manuell ausfüllbar
+ - [x] Upload ohne Produktname → Button deaktiviert
+ - [x] Upload erfolgreich → ResultScreen mit sofortiger Analyse
+ - [x] Upload offline → Toast, Analyse trotzdem sichtbar
+
+---
+
+## ⏳ Zukünftige & Geplante Punkte (aus dem Lastenheft)
+
+- [ ] `F-11`: Filter-Profile speichern (mehrere Regelsets speichern und umschalten)
+- [ ] `F-15`: Offline OFF-Datenbank Dump (Open Food Facts Dump lokal speichern für schnellere Suche)
+- [ ] `F-16`: Katalog als CSV exportieren

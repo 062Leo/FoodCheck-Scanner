@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import * as Haptics from 'expo-haptics';
@@ -16,6 +16,8 @@ import { defaultRules } from '../../domain/rules/defaultRules';
 import { SkeletonLoadingScreen } from '../../components/SkeletonLoading';
 import { Toast } from '../../components/Toast';
 import { Accordion } from '../../components/Accordion';
+import { OffAccountSetup } from '../../components/OffAccountSetup/OffAccountSetup';
+import { OpenFoodFactsWriteClient } from '../../infrastructure/api/OpenFoodFactsWriteClient';
 
 type ErrorType = 'offline' | 'not-found' | 'generic';
 
@@ -30,6 +32,8 @@ export default function ResultScreen() {
   const [productId, setProductId] = useState<number | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [showSetupModal, setShowSetupModal] = useState(false);
+  const [showMissingDataModal, setShowMissingDataModal] = useState(false);
 
   const catalogStore = useCatalogStore();
   const productRepository = new ProductRepository();
@@ -155,6 +159,16 @@ export default function ResultScreen() {
     })();
   }, [product?.ean]);
 
+  useEffect(() => {
+    if (product && !loading && !error) {
+      const missingIngredients = getBestIngredientsText(product) === 'Keine Zutatenliste verfügbar';
+      const missingNutrition = !product.novaScore;
+      if (missingIngredients || missingNutrition) {
+        setShowMissingDataModal(true);
+      }
+    }
+  }, [product, loading, error]);
+
   const handleToggleFavorite = async () => {
     if (!product?.ean) {
       return;
@@ -232,6 +246,20 @@ export default function ResultScreen() {
     return 'Keine Zutatenliste verfügbar';
   };
 
+  const handleContributePress = async () => {
+    try {
+      const client = new OpenFoodFactsWriteClient();
+      const credentials = await client.loadCredentials();
+      if (credentials) {
+        router.push({ pathname: '/contribute', params: { ean: params.ean } });
+      } else {
+        setShowSetupModal(true);
+      }
+    } catch {
+      setShowSetupModal(true);
+    }
+  };
+
   if (loading) {
     return <SkeletonLoadingScreen />;
   }
@@ -239,6 +267,16 @@ export default function ResultScreen() {
   if (error || !result || !product) {
     return (
       <View style={styles.container}>
+        <OffAccountSetup
+          visible={showSetupModal}
+          onSuccess={() => {
+            setShowSetupModal(false);
+            if (params.ean) {
+              router.push({ pathname: '/contribute', params: { ean: params.ean } });
+            }
+          }}
+          onCancel={() => setShowSetupModal(false)}
+        />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.backText}>← Zurück</Text>
@@ -248,6 +286,19 @@ export default function ResultScreen() {
         <ScrollView style={styles.content}>
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error?.message || 'Fehler'}</Text>
+            {error?.type === 'not-found' && (
+              <View style={styles.notFoundCard}>
+                <Text style={styles.notFoundSubtitle}>
+                  Hilf mit, den Katalog zu erweitern und füge das Produkt hinzu!
+                </Text>
+                <TouchableOpacity 
+                  style={styles.primaryContributeButton} 
+                  onPress={handleContributePress}
+                >
+                  <Text style={styles.primaryContributeButtonText}>Jetzt beitragen</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </ScrollView>
       </View>
@@ -260,6 +311,45 @@ export default function ResultScreen() {
 
   return (
     <View style={styles.container}>
+      <Modal visible={showMissingDataModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Daten fehlen</Text>
+            <Text style={styles.modalBody}>
+              This product has no ingredients/nutrition data. Would you like to add them now via photo?
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelLink}
+                onPress={() => setShowMissingDataModal(false)}
+              >
+                <Text style={styles.cancelLinkText}>Später</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.primaryContributeButton}
+                onPress={() => {
+                  setShowMissingDataModal(false);
+                  handleContributePress();
+                }}
+              >
+                <Text style={styles.primaryContributeButtonText}>Start OCR Contribution</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <OffAccountSetup
+        visible={showSetupModal}
+        onSuccess={() => {
+          setShowSetupModal(false);
+          if (params.ean) {
+            router.push({ pathname: '/contribute', params: { ean: params.ean } });
+          }
+        }}
+        onCancel={() => setShowSetupModal(false)}
+      />
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backText}>← Zurück</Text>
@@ -449,4 +539,41 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   backText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  contributeButton: {
+    marginTop: 24,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 8,
+  },
+  contributeButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 12,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: { color: '#FFF', fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
+  modalBody: { color: '#BDBDBD', fontSize: 16, marginBottom: 24, lineHeight: 22 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 16 },
+  cancelLink: { paddingVertical: 12, paddingHorizontal: 16 },
+  cancelLinkText: { color: '#9E9E9E', fontSize: 16, fontWeight: '600' },
+  notFoundCard: { marginTop: 32, alignItems: 'center' },
+  notFoundSubtitle: { color: '#BDBDBD', fontSize: 16, textAlign: 'center', marginBottom: 20, paddingHorizontal: 16, lineHeight: 22 },
+  primaryContributeButton: { backgroundColor: '#4CAF50', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8 },
+  primaryContributeButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
 });

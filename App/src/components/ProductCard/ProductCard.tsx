@@ -9,6 +9,8 @@ import {
   Alert,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import type { ProductRecord } from '../../types/Product';
 import type { ScanStatus } from '../../types/ScanResult';
 
@@ -33,6 +35,7 @@ export function ProductCard({
   onToggleFavorite,
   isFavorite,
 }: ProductCardProps) {
+  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteArea, setShowDeleteArea] = useState(false);
   const panResponder = useRef(
@@ -125,18 +128,31 @@ export function ProductCard({
             </View>
           </View>
 
-          {/* Favorite star */}
-          <TouchableOpacity
-            onPress={handleToggleFavorite}
-            disabled={isDeleting}
-            style={styles.favoriteButton}
-          >
-            <Text style={styles.favoriteIcon}>
-              {isFavorite ? '★' : '☆'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            {/* Edit icon */}
+            <TouchableOpacity onPress={() => router.push({ pathname: '/edit/[ean]', params: { ean: product.ean } })} disabled={isDeleting} style={styles.iconButton}>
+              <Ionicons name="pencil" size={20} color="#bbb" />
+            </TouchableOpacity>
+
+            {/* Favorite star */}
+            <TouchableOpacity
+              onPress={handleToggleFavorite}
+              disabled={isDeleting}
+              style={styles.iconButton}
+            >
+              <Text style={styles.favoriteIcon}>
+                {isFavorite ? '★' : '☆'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Delete icon */}
+            <TouchableOpacity onPress={handleDelete} disabled={isDeleting} style={styles.iconButton}>
+              <Ionicons name="trash" size={20} color="#F44336" />
+            </TouchableOpacity>
+          </View>
         </View>
       </TouchableOpacity>
+
 
       {/* Hidden delete area (swipe left) */}
       {showDeleteArea && (
@@ -253,5 +269,13 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconButton: {
+    padding: 8,
   },
 });

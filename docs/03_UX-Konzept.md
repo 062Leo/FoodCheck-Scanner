@@ -257,62 +257,23 @@ Identische Listenstruktur wie Katalog, aber nur Favoriten. Kein Filter nötig. H
 | | Zurück-Button | ✅ Done |
 | | Fehler-States (offline, not-found) | ✅ Done |
 | | Skeleton Loading | ✅ Done |
-| **Catalog** | Produktliste | ⏳ Planned (v2) |
-| | Filter-Chips | ⏳ Planned (v2) |
-| | Tap-to-Detail | ⏳ Planned (v2) |
-| | Swipe-to-Delete | ⏳ Planned (v2) |
-| **Favorites** | Favoriten-Liste | ⏳ Planned (v2) |
-| | Leerzustand | ⏳ Planned (v2) |
-| | Toggle Favorit | ⏳ Planned (v2) |
+| **Catalog** | Produktliste | ✅ Done |
+| | Filter-Chips | ✅ Done |
+| | Tap-to-Detail | ✅ Done |
+| | Swipe-to-Delete | ✅ Done |
+| **Favorites** | Favoriten-Liste | ✅ Done |
+| | Leerzustand | ✅ Done |
+| | Toggle Favorit | ✅ Done |
 
 ## Status: Micro-Interactions
 
 | Aktion | Feedback | Status |
 |---|---|---|
 | Barcode erkannt | Haptisch (Vibration/Haptics) | ✅ Done |
-| Produkt zu Favoriten | Stern-Animation (v2) | ⏳ Planned |
+| Produkt zu Favoriten | Stern-Animation (v2) | ✅ Done |
 | API lädt | Skeleton-Screen | ✅ Done |
 | Produkt nicht gefunden | Toast-Meldung | ✅ Done |
-| Offline + bekanntes Produkt | Offline-Icon (v2) | ⏳ Planned |
-| Offline + unbekanntes Produkt | Toast-Warnung | ✅ Done |
-
----
-
-## Status: Screens & Features
-
-| Screen | Feature | Status |
-|---|---|---|
-| **Scanner** | Kamera-Viewfinder | ✅ Done |
-| | Animierter Scan-Rahmen | ✅ Done |
-| | Permission-Flow | ✅ Done |
-| | Automatische EAN-Erkennung | ✅ Done |
-| | Haptisches Feedback | ✅ Done |
-| | Hinweistext | ✅ Done |
-| **Result** | Ampel-Banner (Rot/Gelb/Grün) | ✅ Done |
-| | Produktname & Marke | ✅ Done |
-| | Red Flags Liste | ✅ Done |
-| | Nova-Score Badge | ✅ Done |
-| | Zutatenliste-Accordion | ✅ Done |
-| | Zurück-Button | ✅ Done |
-| | Fehler-States (offline, not-found) | ✅ Done |
-| | Skeleton Loading | ✅ Done |
-| **Catalog** | Produktliste | ⏳ Planned (v2) |
-| | Filter-Chips | ⏳ Planned (v2) |
-| | Tap-to-Detail | ⏳ Planned (v2) |
-| | Swipe-to-Delete | ⏳ Planned (v2) |
-| **Favorites** | Favoriten-Liste | ⏳ Planned (v2) |
-| | Leerzustand | ⏳ Planned (v2) |
-| | Toggle Favorit | ⏳ Planned (v2) |
-
-## Status: Micro-Interactions
-
-| Aktion | Feedback | Status |
-|---|---|---|
-| Barcode erkannt | Haptisch (Vibration/Haptics) | ✅ Done |
-| Produkt zu Favoriten | Stern-Animation (v2) | ⏳ Planned |
-| API lädt | Skeleton-Screen | ✅ Done |
-| Produkt nicht gefunden | Toast-Meldung | ✅ Done |
-| Offline + bekanntes Produkt | Offline-Icon (v2) | ⏳ Planned |
+| Offline + bekanntes Produkt | Offline-Icon (v2) | ✅ Done |
 | Offline + unbekanntes Produkt | Toast-Warnung | ✅ Done |
 
 ---

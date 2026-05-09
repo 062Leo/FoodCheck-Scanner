@@ -77,27 +77,27 @@ Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
 ### Aufgaben
 
 **Schritt 1 – Datenbank**
-- [ ] `DatabaseService.ts` – SQLite initialisieren, Schema erstellen, Migrations-Logik vorbereiten
-- [ ] `ProductRepository.ts` – insert, findByEan, findAll, delete
-- [ ] `FavoritesRepository.ts` – add, remove, findAll, isFavorite
-- [ ] Unit-Tests für Repositories (mit In-Memory-SQLite oder Mocks)
+- [x] `DatabaseService.ts` – SQLite initialisieren, Schema erstellen, Migrations-Logik vorbereiten
+- [x] `ProductRepository.ts` – insert, findByEan, findAll, delete
+- [x] `FavoritesRepository.ts` – add, remove, findAll, isFavorite
+- [x] Unit-Tests für Repositories (mit In-Memory-SQLite oder Mocks)
 
 **Schritt 2 – State & Integration**
-- [ ] `catalogStore.ts` mit Zustand anlegen
-- [ ] Scan-Flow erweitern: nach Analyse → in DB speichern
-- [ ] Result Screen: Favoriten-Toggle implementieren und persistieren
+- [x] `catalogStore.ts` mit Zustand anlegen
+- [x] Scan-Flow erweitern: nach Analyse → in DB speichern
+- [x] Result Screen: Favoriten-Toggle implementieren und persistieren
 
 **Schritt 3 – Katalog & Favoriten Screens**
-- [ ] `CatalogScreen` mit Liste, Filter-Chips, Tap-to-Detail
-- [ ] `FavoritesScreen` mit Liste
-- [ ] Tab-Navigation mit allen 3 Tabs
-- [ ] Leerzustände (Empty States) für beide Listen
+- [x] `CatalogScreen` mit Liste, Filter-Chips, Tap-to-Detail
+- [x] `FavoritesScreen` mit Liste
+- [x] Tab-Navigation mit allen 3 Tabs
+- [x] Leerzustände (Empty States) für beide Listen
 
 ### Abnahme
-- [ ] 10 Produkte scannen → alle im Katalog sichtbar
-- [ ] Favorit setzen → erscheint in Favoriten-Tab
-- [ ] App schließen und neu öffnen → Daten bleiben erhalten
-- [ ] Produkt aus Katalog löschen → verschwindet aus beiden Listen
+- [x] 10 Produkte scannen → alle im Katalog sichtbar
+- [x] Favorit setzen → erscheint in Favoriten-Tab
+- [x] App schließen und neu öffnen → Daten bleiben erhalten
+- [x] Produkt aus Katalog löschen → verschwindet aus beiden Listen
 
 ---
 
@@ -106,20 +106,20 @@ Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
 **Ziel:** Nutzer definiert eigene Red-Flag-Regeln und Grenzwerte.
 
 ### Aufgaben
-- [ ] `FilterRule.types.ts` finalisieren (Ingredient-Rules + Nutrient-Rules mit Threshold)
-- [ ] `filter_rules`-Tabelle in SQLite aktivieren und befüllen
-- [ ] `FilterRuleRepository.ts` implementieren
-- [ ] `RedFlagAnalyzer` auf dynamische Regeln umstellen (statt hardcoded)
-- [ ] `filterStore.ts` mit Zustand
-- [ ] UI: Filter-Verwaltungs-Screen (Liste, hinzufügen, bearbeiten, löschen)
-- [ ] UI: Ingredient-Regel anlegen (Suchfeld + Severity-Toggle)
-- [ ] UI: Nutrient-Regel anlegen (Nährwert auswählen, Operator, Grenzwert)
-- [ ] Migrations-Logik: bestehende hardcodierte Regeln in DB importieren
+- [x] `FilterRule.types.ts` finalisieren (Ingredient-Rules + Nutrient-Rules mit Threshold)
+- [x] `filter_rules`-Tabelle in SQLite aktivieren und befüllen
+- [x] `FilterRuleRepository.ts` implementieren
+- [x] `RedFlagAnalyzer` auf dynamische Regeln umstellen (statt hardcoded)
+- [x] `filterStore.ts` mit Zustand
+- [x] UI: Filter-Verwaltungs-Screen (Liste, hinzufügen, bearbeiten, löschen)
+- [x] UI: Ingredient-Regel anlegen (Suchfeld + Severity-Toggle)
+- [x] UI: Nutrient-Regel anlegen (Nährwert auswählen, Operator, Grenzwert)
+- [x] Migrations-Logik: bestehende hardcodierte Regeln in DB importieren
 
 ### Abnahme
-- [ ] Eigene Regel "Palmöl = OK" anlegen → erscheint nicht mehr als Red Flag
-- [ ] Regel "Zucker > 3g/100ml = Warnung" → greift korrekt
-- [ ] Regeln überleben App-Neustart
+- [x] Eigene Regel "Palmöl = OK" anlegen → erscheint nicht mehr als Red Flag
+- [x] Regel "Zucker > 3g/100ml = Warnung" → greift korrekt
+- [x] Regeln überleben App-Neustart
 
 ---
 
@@ -128,56 +128,56 @@ Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
 **Ziel:** Produkte die nicht in Open Food Facts sind selbst erfassen – per Foto, OCR, editierbarem Formular und Upload zurück zu OFF. Sofortige lokale Analyse danach.
 
 ### Schritt 1 – Abhängigkeiten & Setup
-- [ ] `@react-native-ml-kit/text-recognition` installieren (on-device OCR, kein API-Key)
-- [ ] `expo-secure-store` installieren (sicheres Speichern des OFF-Accounts)
-- [ ] OFF-Account anlegen (einmalig, kostenlos auf openfoodfacts.org)
-- [ ] `types/ContributeFormData.ts` anlegen (alle Formularfelder typisiert)
+- [x] `@react-native-ml-kit/text-recognition` installieren (on-device OCR, kein API-Key)
+- [x] `expo-secure-store` installieren (sicheres Speichern des OFF-Accounts)
+- [x] OFF-Account anlegen (einmalig, kostenlos auf openfoodfacts.org)
+- [x] `types/ContributeFormData.ts` anlegen (alle Formularfelder typisiert)
 
 ### Schritt 2 – OcrService
-- [ ] `infrastructure/ocr/OcrService.ts` implementieren
+- [x] `infrastructure/ocr/OcrService.ts` implementieren
   - Nimmt `ImageUri` entgegen, gibt `string` (Rohtext) zurück
   - Wrapper um ML Kit – keine Business-Logik drin
-- [ ] Unit-Test: Mock-Image → erwarteter Rohtext
+- [x] Unit-Test: Mock-Image → erwarteter Rohtext
 
 ### Schritt 3 – OFF Write Client
-- [ ] `infrastructure/api/OpenFoodFactsWriteClient.ts` implementieren
+- [x] `infrastructure/api/OpenFoodFactsWriteClient.ts` implementieren
   - POST zu `https://world.openfoodfacts.org/cgi/product_jqm2.pl`
   - Felder: `code` (EAN), `product_name`, `brands`, `categories`, `ingredients_text`, Nährwerte
   - Auth via gespeichertem OFF-Account (`expo-secure-store`)
-- [ ] Fehlerbehandlung: offline, falsche Credentials, Server-Error
-- [ ] Unit-Test mit gemocktem fetch
+- [x] Fehlerbehandlung: offline, falsche Credentials, Server-Error
+- [x] Unit-Test mit gemocktem fetch
 
 ### Schritt 4 – ContributeScreen (3-Schritt-Flow)
-- [ ] Screen-Struktur mit 3 Schritten anlegen (Schritt-Indikator oben)
-- [ ] **Schritt 1 – Zutatenliste Foto:**
+- [x] Screen-Struktur mit 3 Schritten anlegen (Schritt-Indikator oben)
+- [x] **Schritt 1 – Zutatenliste Foto:**
   - Kamera-Preview, "Foto aufnehmen"-Button
   - "Überspringen"-Button (springt zu Schritt 2)
   - Nach Foto: `OcrService` aufrufen, Rohtext als Zutatenliste vormerken
-- [ ] **Schritt 2 – Nährwerte Foto:**
+- [x] **Schritt 2 – Nährwerte Foto:**
   - Gleicher Aufbau wie Schritt 1
   - "Überspringen"-Button (springt zu Schritt 3)
   - Nach Foto: `OcrService` aufrufen, Rohtext für Nährwert-Parsing vormerken
-- [ ] **Schritt 3 – Formular:**
+- [x] **Schritt 3 – Formular:**
   - Alle Felder editierbar vorausfüllen (OCR-Ergebnisse oder leer)
   - Pflichtfeld-Validierung: Produktname darf nicht leer sein
   - Bestätigungs-Dialog vor Upload ("Wird öffentlich auf Open Food Facts gespeichert")
   - "Bestätigen & hochladen"-Button → `OpenFoodFactsWriteClient` + sofortige lokale Analyse
   - Bei Upload-Fehler: Toast, lokale Analyse trotzdem durchführen
-- [ ] "Beitragen"-Button im ResultScreen bei `status === 0` (Produkt nicht gefunden) einbauen
+- [x] "Beitragen"-Button im ResultScreen bei `status === 0` (Produkt nicht gefunden) einbauen
 
 ### Schritt 5 – OFF-Account-Einrichtung
-- [ ] Einmaliger Setup-Flow beim ersten Contribute-Versuch: Nutzername + Passwort eingeben
-- [ ] Credentials sicher speichern mit `expo-secure-store`
-- [ ] Link zu OFF-Registrierung falls noch kein Konto vorhanden
+- [x] Einmaliger Setup-Flow beim ersten Contribute-Versuch: Nutzername + Passwort eingeben
+- [x] Credentials sicher speichern mit `expo-secure-store`
+- [x] Link zu OFF-Registrierung falls noch kein Konto vorhanden
 
 ### Abnahme
-- [ ] Zutatenliste fotografieren → Text wird erkannt und ins Formular übernommen
-- [ ] Nährwerte fotografieren → Felder werden vorausgefüllt
-- [ ] Beide Foto-Schritte überspringen → Formular bleibt leer, manuell ausfüllbar
-- [ ] Formular ohne Produktname → Upload-Button deaktiviert
-- [ ] Upload erfolgreich → Weiterleitung zu ResultScreen mit sofortiger Analyse
-- [ ] Upload offline → Toast, lokale Analyse trotzdem sichtbar
-- [ ] Bereits hochgeladenes Produkt: nach kurzer Zeit in OFF per EAN abrufbar
+- [x] Zutatenliste fotografieren → Text wird erkannt und ins Formular übernommen
+- [x] Nährwerte fotografieren → Felder werden vorausgefüllt
+- [x] Beide Foto-Schritte überspringen → Formular bleibt leer, manuell ausfüllbar
+- [x] Formular ohne Produktname → Upload-Button deaktiviert
+- [x] Upload erfolgreich → Weiterleitung zu ResultScreen mit sofortiger Analyse
+- [x] Upload offline → Toast, lokale Analyse trotzdem sichtbar
+- [x] Bereits hochgeladenes Produkt: nach kurzer Zeit in OFF per EAN abrufbar
 
 
 ## Technische Qualitätsziele (gilt für alle Phasen)
@@ -212,9 +212,9 @@ Für jede Coding-Session folgende Dateien als Kontext mitgeben:
 | **0** | Projekt-Setup | 86% | 🟡 In Progress |
 @@| **0** | Projekt-Setup | 100% | ✅ Done |
 | **1** | MVP: Scan & Bewertung | 100% | ✅ Done |
-| **2** | Katalog & Favoriten | 0% | ⏳ Planned |
-| **3** | Custom Filter-Regeln | 0% | ⏳ Planned |
-| **4** | OCR & Manuelle Erfassung | 0% | ⏳ Future |
+| **2** | Katalog & Favoriten | 100% | ✅ Done |
+| **3** | Custom Filter-Regeln | 100% | ✅ Done |
+| **4** | OCR & Manuelle Erfassung | 100% | ✅ Done |
 
 ## Status: Phase 0 Details
 

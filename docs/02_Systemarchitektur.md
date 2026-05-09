@@ -281,23 +281,23 @@ interface IRedFlagAnalyzer {
 | | defaultRules | Hardcodierte Red-Flag Liste | ✅ Done |
 | **Infrastructure** | OpenFoodFactsClient | OFF API fetch + parsing | ✅ Done |
 | | OpenFoodFacts.types | API-Response Typen | ✅ Done |
-| | DatabaseService | SQLite Setup & Migrations | ⏳ Planned (v2) |
-| | ProductRepository | CRUD Katalog | ⏳ Planned (v2) |
-| | FavoritesRepository | CRUD Favoriten | ⏳ Planned (v2) |
+| | DatabaseService | SQLite Setup & Migrations | ✅ Done |
+| | ProductRepository | CRUD Katalog | ✅ Done |
+| | FavoritesRepository | CRUD Favoriten | ✅ Done |
 | **Screens** | ScannerScreen | Kamera + EAN-Erkennung | ✅ Done |
 | | ResultScreen | Ampel-Banner + Details | ✅ Done |
-| | CatalogScreen | Produktliste | ⏳ Planned (v2) |
-| | FavoritesScreen | Favoriten-Liste | ⏳ Planned (v2) |
-| | ContributeScreen | OCR-Flow + Formular + OFF-Upload | ⏳ Planned (v3) |
+| | CatalogScreen | Produktliste | ✅ Done |
+| | FavoritesScreen | Favoriten-Liste | ✅ Done |
+| | ContributeScreen | OCR-Flow + Formular + OFF-Upload | ✅ Done |
 | **Components** | SkeletonLoading | Loading-Skeleton | ✅ Done |
 | | Toast | Fehler-Meldungen | ✅ Done |
 | | Accordion | Zutatenliste expandierbar | ✅ Done |
-| | ContributeForm | Editierbares Produktformular | ⏳ Planned (v3) |
+| | ContributeForm | Editierbares Produktformular | ✅ Done |
 | **Types** | Product | Produkt-Modell | ✅ Done |
 | | ScanResult | Analyse-Ergebnis | ✅ Done |
-| | ContributeFormData | Felder für OFF-Upload | ⏳ Planned (v3) |
-| **Infrastructure** | OcrService | ML Kit Text Recognition Wrapper | ⏳ Planned (v3) |
-| | OpenFoodFactsWriteClient | OFF API Upload (POST) | ⏳ Planned (v3) |
-| **State** | catalogStore | Zustand (v2) | ⏳ Planned |
-| | filterStore | Zustand (v2) | ⏳ Planned |
+| | ContributeFormData | Felder für OFF-Upload | ✅ Done |
+| **Infrastructure** | OcrService | ML Kit Text Recognition Wrapper | ✅ Done |
+| | OpenFoodFactsWriteClient | OFF API Upload (POST) | ✅ Done |
+| **State** | catalogStore | Zustand (v2) | ✅ Done |
+| | filterStore | Zustand (v2) | ✅ Done |
 | **Navigation** | Routing (Expo Router) | Tab + Stack Layout | ✅ Done |

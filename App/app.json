@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "App",
-    "slug": "App",
+    "name": "TrueFood Scanner",
+    "slug": "truefood-scanner",
+    "scheme": "truefoodscanner",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

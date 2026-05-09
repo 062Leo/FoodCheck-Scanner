@@ -22,6 +22,8 @@ export default function RootLayout() {
     >
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="result" />
+      <Stack.Screen name="contribute" />
+      <Stack.Screen name="edit/[ean]" />
     </Stack>
   );
 }

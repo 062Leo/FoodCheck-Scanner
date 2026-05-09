@@ -116,16 +116,16 @@ Eine native Mobile-App für iOS & Android, mit klarem Fokus auf Android, die Leb
 | F-02 | Produktdaten von Open Food Facts API abrufen | ✅ Done | MVP |
 | F-03 | Zutatenliste gegen hardcodierte Red-Flag-Liste matchen | ✅ Done | MVP |
 | F-04 | Ergebnis-Screen anzeigen: Status, Red Flags, Nova-Score | ✅ Done | MVP |
-| F-05 | Produkte im lokalen Katalog speichern | ⏳ Planned | v2 |
-| F-06 | Katalog-Screen mit Sortierung | ⏳ Planned | v2 |
-| F-07 | Favoriten-Liste | ⏳ Planned | v2 |
-| F-08 | Offline-Ansicht gescannter Produkte | ⏳ Planned | v2 |
-| F-09 | Benutzerdefinierte Filter-Regeln | ⏳ Planned | v2 |
-| F-10 | Numerische Grenzwerte für Nährstoffe | ⏳ Planned | v2 |
+| F-05 | Produkte im lokalen Katalog speichern | ✅ Done | v2 |
+| F-06 | Katalog-Screen mit Sortierung | ✅ Done | v2 |
+| F-07 | Favoriten-Liste | ✅ Done | v2 |
+| F-08 | Offline-Ansicht gescannter Produkte | ✅ Done | v2 |
+| F-09 | Benutzerdefinierte Filter-Regeln | ✅ Done | v2 |
+| F-10 | Numerische Grenzwerte für Nährstoffe | ✅ Done | v2 |
 | F-11 | Filter-Profile speichern | ⏳ Planned | v2 |
-| F-12 | OCR Zutatenliste → editierbares Formular → OFF-Upload | ⏳ Planned | v3 |
-| F-13 | OCR Nährwerttabelle (optional, zweites Foto) | ⏳ Planned | v3 |
-| F-14 | OFF-Contribution-Flow (Name, Marke, Kategorie, Zutaten, Nährwerte) | ⏳ Planned | v3 |
+| F-12 | OCR Zutatenliste → editierbares Formular → OFF-Upload | ✅ Done | v3 |
+| F-13 | OCR Nährwerttabelle (optional, zweites Foto) | ✅ Done | v3 |
+| F-14 | OFF-Contribution-Flow (Name, Marke, Kategorie, Zutaten, Nährwerte) | ✅ Done | v3 |
 | F-15 | Offline OFF-Datenbank Dump | ⏳ Planned | v3 |
 | F-16 | Katalog als CSV exportieren | ⏳ Planned | v3 |
 | NF-01 | Scan-to-Result < 10 Sekunden | ✅ Done | MVP |
