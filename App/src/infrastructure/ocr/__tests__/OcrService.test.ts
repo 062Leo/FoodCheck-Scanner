@@ -2,12 +2,20 @@ import { OcrService, OcrError } from '../OcrService';
 
 // Mock @react-native-ml-kit/text-recognition
 jest.mock('@react-native-ml-kit/text-recognition', () => ({
-  TextRecognition: {
+  __esModule: true,
+  default: {
     recognize: jest.fn(),
+  },
+  TextRecognitionScript: {
+    LATIN: 'LATIN',
+    CHINESE: 'CHINESE',
+    DEVANAGARI: 'DEVANAGARI',
+    JAPANESE: 'JAPANESE',
+    KOREAN: 'KOREAN',
   },
 }));
 
-import { TextRecognition } from '@react-native-ml-kit/text-recognition';
+import TextRecognition, { TextRecognitionScript } from '@react-native-ml-kit/text-recognition';
 
 describe('OcrService', () => {
   beforeEach(() => {
@@ -17,15 +25,33 @@ describe('OcrService', () => {
   describe('recognizeText', () => {
     it('should return non-empty string for valid image', async () => {
       const mockText = 'Sample recognized text from image';
-      (TextRecognition.recognize as jest.Mock).mockResolvedValue([
-        { text: 'Sample recognized' },
-        { text: 'text from image' },
-      ]);
+      (TextRecognition.recognize as jest.Mock).mockResolvedValue({ text: mockText });
 
       const result = await OcrService.recognizeText('file:///path/to/image.jpg');
 
-      expect(result).toBe('Sample recognized\ntext from image');
+      expect(result).toBe(mockText);
       expect(result.length).toBeGreaterThan(0);
+      expect(TextRecognition.recognize).toHaveBeenCalledTimes(1);
+      expect(TextRecognition.recognize).toHaveBeenCalledWith(
+        'file:///path/to/image.jpg',
+        TextRecognitionScript.LATIN,
+      );
+    });
+
+    it('should run only selected script when provided', async () => {
+      (TextRecognition.recognize as jest.Mock).mockResolvedValue({ text: 'Greek-like text' });
+
+      const result = await OcrService.recognizeText(
+        'file:///path/to/image.jpg',
+        TextRecognitionScript.JAPANESE,
+      );
+
+      expect(result).toBe('Greek-like text');
+      expect(TextRecognition.recognize).toHaveBeenCalledTimes(1);
+      expect(TextRecognition.recognize).toHaveBeenCalledWith(
+        'file:///path/to/image.jpg',
+        TextRecognitionScript.JAPANESE,
+      );
     });
 
     it('should throw OcrError if recognition fails', async () => {
@@ -41,7 +67,7 @@ describe('OcrService', () => {
     });
 
     it('should throw OcrError if no text recognized', async () => {
-      (TextRecognition.recognize as jest.Mock).mockResolvedValue([]);
+      (TextRecognition.recognize as jest.Mock).mockResolvedValue({ text: '' });
 
       await expect(
         OcrService.recognizeText('file:///path/to/image.jpg'),

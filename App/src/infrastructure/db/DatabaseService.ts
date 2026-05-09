@@ -81,7 +81,7 @@ async function migrateSchema(database: SQLite.SQLiteDatabase): Promise<void> {
       return;
     }
 
-    await database.withExclusiveTransactionAsync(async (transaction) => {
+    const migrate = async (transaction: SQLite.SQLiteDatabase) => {
       let version = currentVersion;
 
       while (version < DATABASE_VERSION) {
@@ -96,7 +96,24 @@ async function migrateSchema(database: SQLite.SQLiteDatabase): Promise<void> {
         await setSchemaVersion(transaction, nextVersion);
         version = nextVersion;
       }
-    });
+    };
+
+    const dbAny = database as unknown as {
+      withExclusiveTransactionAsync?: (fn: (tx: SQLite.SQLiteDatabase) => Promise<void>) => Promise<void>;
+      withTransactionAsync?: (fn: (tx: SQLite.SQLiteDatabase) => Promise<void>) => Promise<void>;
+    };
+
+    if (typeof dbAny.withExclusiveTransactionAsync === 'function') {
+      await dbAny.withExclusiveTransactionAsync(migrate);
+      return;
+    }
+
+    if (typeof dbAny.withTransactionAsync === 'function') {
+      await dbAny.withTransactionAsync(migrate);
+      return;
+    }
+
+    await migrate(database);
   } catch (error) {
     throw new Error(`Failed to migrate database schema: ${getErrorMessage(error)}`);
   }

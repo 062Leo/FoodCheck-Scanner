@@ -7,7 +7,7 @@
  *   Phase 3 – OCR text shown in a review panel (edit / re-crop / confirm)
  */
 
-import React, { useRef, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,9 +23,31 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { OcrService } from '../../infrastructure/ocr/OcrService';
+import * as SecureStore from 'expo-secure-store';
+import { TextRecognitionScript } from '@react-native-ml-kit/text-recognition';
+import { OcrService, OcrScriptSelection } from '../../infrastructure/ocr/OcrService';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+type OcrLanguageOption = {
+  id: string;
+  label: string;
+  selection: OcrScriptSelection;
+};
+
+const OCR_LANGUAGE_OPTIONS: OcrLanguageOption[] = [
+  { id: 'auto', label: 'Auto (Latein)', selection: 'auto' },
+  { id: 'latin', label: 'Latein', selection: TextRecognitionScript.LATIN },
+  { id: 'japanese', label: 'Japanisch', selection: TextRecognitionScript.JAPANESE },
+  { id: 'korean', label: 'Koreanisch', selection: TextRecognitionScript.KOREAN },
+  { id: 'chinese', label: 'Chinesisch', selection: TextRecognitionScript.CHINESE },
+  { id: 'devanagari', label: 'Devanagari', selection: TextRecognitionScript.DEVANAGARI },
+];
+
+const DEFAULT_LANGUAGE_ID = 'auto';
+const DEFAULT_FAVORITE_LANGUAGE_IDS = ['auto', 'latin', 'japanese'];
+const OCR_DEFAULT_LANGUAGE_KEY = 'ocr_default_language';
+const OCR_FAVORITE_LANGUAGES_KEY = 'ocr_favorite_languages';
 
 type Phase = 'camera' | 'crop' | 'review';
 
@@ -41,8 +63,10 @@ interface Props {
 export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
+  const wasVisibleRef = useRef(false);
 
   const [phase, setPhase] = useState<Phase>('camera');
+  const [cameraSessionKey, setCameraSessionKey] = useState(0);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   // FIX 1: focusPoint stays in state (only UI cosmetic), but we render it as
   // a sibling overlay – not inside CameraView – to prevent re-mounting the camera.
@@ -55,21 +79,129 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
 
   const [isBusy, setIsBusy] = useState(false);
   const [extractedText, setExtractedText] = useState('');
+  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [previewSize, setPreviewSize] = useState<{ w: number; h: number } | null>(null);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [defaultLanguageId, setDefaultLanguageId] = useState(DEFAULT_LANGUAGE_ID);
+  const [selectedLanguageId, setSelectedLanguageId] = useState(DEFAULT_LANGUAGE_ID);
+  const [favoriteLanguageIds, setFavoriteLanguageIds] = useState<string[]>(
+    DEFAULT_FAVORITE_LANGUAGE_IDS,
+  );
 
   const modeLabel = mode === 'ingredients' ? 'Zutatenliste scannen' : 'Nährwerttabelle scannen';
+  const selectedLanguage = useMemo(
+    () =>
+      OCR_LANGUAGE_OPTIONS.find((option) => option.id === selectedLanguageId)
+      ?? OCR_LANGUAGE_OPTIONS[0],
+    [selectedLanguageId],
+  );
+  const favoriteLanguages = useMemo(() => {
+    const favoriteSet = new Set(favoriteLanguageIds);
+    return OCR_LANGUAGE_OPTIONS.filter((option) => favoriteSet.has(option.id));
+  }, [favoriteLanguageIds]);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    let isActive = true;
+
+    const loadPreferences = async () => {
+      try {
+        const [storedDefault, storedFavorites] = await Promise.all([
+          SecureStore.getItemAsync(OCR_DEFAULT_LANGUAGE_KEY),
+          SecureStore.getItemAsync(OCR_FAVORITE_LANGUAGES_KEY),
+        ]);
+
+        const validIds = new Set(OCR_LANGUAGE_OPTIONS.map((option) => option.id));
+        const resolvedDefault =
+          storedDefault && validIds.has(storedDefault)
+            ? storedDefault
+            : DEFAULT_LANGUAGE_ID;
+
+        let resolvedFavorites = DEFAULT_FAVORITE_LANGUAGE_IDS;
+        if (storedFavorites) {
+          const parsed = JSON.parse(storedFavorites) as unknown;
+          if (Array.isArray(parsed)) {
+            const filtered = parsed.filter(
+              (entry): entry is string =>
+                typeof entry === 'string' && validIds.has(entry),
+            );
+            if (filtered.length > 0) {
+              resolvedFavorites = Array.from(new Set(filtered));
+            }
+          }
+        }
+
+        if (isActive) {
+          setDefaultLanguageId(resolvedDefault);
+          setSelectedLanguageId(resolvedDefault);
+          setFavoriteLanguageIds(resolvedFavorites);
+        }
+      } catch {
+        if (isActive) {
+          setDefaultLanguageId(DEFAULT_LANGUAGE_ID);
+          setSelectedLanguageId(DEFAULT_LANGUAGE_ID);
+          setFavoriteLanguageIds(DEFAULT_FAVORITE_LANGUAGE_IDS);
+        }
+      }
+    };
+
+    void loadPreferences();
+
+    return () => {
+      isActive = false;
+    };
+  }, [visible]);
 
   /* ── reset ──────────────────────────────────────────────── */
   const reset = useCallback(() => {
+    setCameraSessionKey((current) => current + 1);
     setPhase('camera');
     setPhotoUri(null);
     setFocusPoint(null);
     setCropRect(null);
+    setSettingsVisible(false);
+    setSelectedLanguageId(defaultLanguageId);
     dragStartRef.current = null;
     setIsBusy(false);
     setExtractedText('');
+    setOcrError(null);
+  }, [defaultLanguageId]);
+
+  const toggleFavoriteLanguage = useCallback(async (id: string) => {
+    const nextFavorites = favoriteLanguageIds.includes(id)
+      ? favoriteLanguageIds.filter((item) => item !== id)
+      : [...favoriteLanguageIds, id];
+
+    const deduped = Array.from(new Set(nextFavorites));
+    setFavoriteLanguageIds(deduped);
+    await SecureStore.setItemAsync(OCR_FAVORITE_LANGUAGES_KEY, JSON.stringify(deduped));
+  }, [favoriteLanguageIds]);
+
+  const updateDefaultLanguage = useCallback(async (id: string) => {
+    setDefaultLanguageId(id);
+    setSelectedLanguageId(id);
+    await SecureStore.setItemAsync(OCR_DEFAULT_LANGUAGE_KEY, id);
   }, []);
 
   const handleCancel = useCallback(() => { reset(); onCancel(); }, [reset, onCancel]);
+
+  useEffect(() => {
+    if (visible && !wasVisibleRef.current) {
+      reset();
+    }
+
+    if (!visible) {
+      if (focusTimer.current) {
+        clearTimeout(focusTimer.current);
+        focusTimer.current = null;
+      }
+    }
+
+    wasVisibleRef.current = visible;
+  }, [visible, reset]);
 
   /* ── Phase 1: tap-to-focus (overlay touch, camera never re-renders) ── */
   const handleTapToFocus = useCallback(
@@ -136,20 +268,58 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
       let uriToOcr = photoUri;
 
       if (cropRect && cropRect.w > 10 && cropRect.h > 10) {
-        // The image is rendered full SCREEN_W × SCREEN_H with resizeMode="cover".
-        // We get the image's actual pixel dimensions via ImageManipulator to compute the crop.
-        const imgInfo = await ImageManipulator.manipulateAsync(photoUri, [], { format: ImageManipulator.SaveFormat.JPEG });
-        // imgInfo gives us width/height after a no-op transform = original pixel size
-        // We can get it by reading the result dimensions
-        const imgResult = await ImageManipulator.manipulateAsync(photoUri, [{ resize: { width: SCREEN_W } }], { format: ImageManipulator.SaveFormat.JPEG });
-        // Actually we need original pixel dims. Use crop from screen ratio:
-        const scaleX = imgInfo.width / SCREEN_W;
-        const scaleY = imgInfo.height / SCREEN_H;
+        const viewW = previewSize?.w ?? SCREEN_W;
+        const viewH = previewSize?.h ?? SCREEN_H;
 
-        const cropX = Math.max(0, Math.round(cropRect.x * scaleX));
-        const cropY = Math.max(0, Math.round(cropRect.y * scaleY));
-        const cropW = Math.min(Math.round(cropRect.w * scaleX), imgInfo.width - cropX);
-        const cropH = Math.min(Math.round(cropRect.h * scaleY), imgInfo.height - cropY);
+        const imgInfo = await ImageManipulator.manipulateAsync(photoUri, [], {
+          format: ImageManipulator.SaveFormat.JPEG,
+        });
+
+        const imgAspect = imgInfo.width / imgInfo.height;
+        const screenAspect = viewW / viewH;
+
+        let displayedW = viewW;
+        let displayedH = viewH;
+        let displayedX = 0;
+        let displayedY = 0;
+
+        if (imgAspect > screenAspect) {
+          displayedH = viewH;
+          displayedW = displayedH * imgAspect;
+          displayedX = (viewW - displayedW) / 2;
+        } else {
+          displayedW = viewW;
+          displayedH = displayedW / imgAspect;
+          displayedY = (viewH - displayedH) / 2;
+        }
+
+        const scale = imgInfo.width / displayedW;
+
+        const rectLeft = cropRect.x;
+        const rectTop = cropRect.y;
+        const rectRight = cropRect.x + cropRect.w;
+        const rectBottom = cropRect.y + cropRect.h;
+
+        const imgLeft = displayedX;
+        const imgTop = displayedY;
+        const imgRight = displayedX + displayedW;
+        const imgBottom = displayedY + displayedH;
+
+        const clampedLeft = Math.max(imgLeft, Math.min(rectLeft, imgRight));
+        const clampedTop = Math.max(imgTop, Math.min(rectTop, imgBottom));
+        const clampedRight = Math.max(imgLeft, Math.min(rectRight, imgRight));
+        const clampedBottom = Math.max(imgTop, Math.min(rectBottom, imgBottom));
+
+        const clampedW = Math.max(0, clampedRight - clampedLeft);
+        const clampedH = Math.max(0, clampedBottom - clampedTop);
+
+        const rectInDisplayedX = clampedLeft - displayedX;
+        const rectInDisplayedY = clampedTop - displayedY;
+
+        const cropX = Math.max(0, Math.round(rectInDisplayedX * scale));
+        const cropY = Math.max(0, Math.round(rectInDisplayedY * scale));
+        const cropW = Math.min(Math.round(clampedW * scale), imgInfo.width - cropX);
+        const cropH = Math.min(Math.round(clampedH * scale), imgInfo.height - cropY);
 
         if (cropW > 10 && cropH > 10) {
           const cropped = await ImageManipulator.manipulateAsync(
@@ -161,15 +331,23 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
         }
       }
 
-      const text = await OcrService.recognizeText(uriToOcr);
+      const text = await OcrService.recognizeText(uriToOcr, selectedLanguage.selection);
       setExtractedText(text);
-    } catch {
+      setOcrError(null);
+    } catch (e) {
+      // Surface the real error – do NOT silently swallow it
+      const rawMsg = e instanceof Error ? e.message : String(e);
+      const msg =
+        /NoSuchMethodError|expoimagemanipulator\.manipulate/i.test(rawMsg)
+          ? 'Bildverarbeitung fehlgeschlagen: inkompatible Version von expo-image-manipulator. Bitte `npm install` ausfuehren und den Development Build neu installieren.'
+          : rawMsg;
+      setOcrError(msg);
       setExtractedText('');
     } finally {
       setIsBusy(false);
       setPhase('review');
     }
-  }, [photoUri, cropRect, isBusy]);
+  }, [photoUri, cropRect, isBusy, selectedLanguage.selection]);
 
   /* ── Phase 3: review ────────────────────────────────────── */
   const handleConfirm = useCallback(() => {
@@ -180,7 +358,7 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
   /* ── Permission guard ───────────────────────────────────── */
   if (!permission?.granted) {
     return (
-      <Modal visible={visible} animationType="slide">
+      <Modal visible={visible} animationType="slide" onRequestClose={handleCancel}>
         <View style={styles.permContainer}>
           <Text style={styles.permText}>Kamerazugriff erforderlich</Text>
           <TouchableOpacity style={styles.btn} onPress={requestPermission}>
@@ -196,13 +374,13 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
 
   /* ── Render ─────────────────────────────────────────────── */
   return (
-    <Modal visible={visible} animationType="slide" statusBarTranslucent>
+    <Modal visible={visible} animationType="slide" statusBarTranslucent onRequestClose={handleCancel}>
 
       {/* ═══ Phase 1: Live Camera ═══════════════════════════════════════ */}
       {phase === 'camera' && (
         <View style={styles.root}>
           {/* Camera sits alone – nothing stateful inside that would remount it */}
-          <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} />
+          <CameraView key={cameraSessionKey} ref={cameraRef} style={StyleSheet.absoluteFill} />
 
           {/* FIX 1: Transparent overlay handles all touch; camera never re-renders */}
           <View
@@ -225,12 +403,19 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
               <Text style={styles.topBtnLabel}>✕</Text>
             </TouchableOpacity>
             <Text style={styles.phaseLabel}>{modeLabel}</Text>
-            <View style={{ width: 44 }} />
+            <TouchableOpacity
+              onPress={() => setSettingsVisible(true)}
+              style={styles.topBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.topBtnLabel}>Lang</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Hint */}
           <View style={styles.hintWrap} pointerEvents="none">
             <Text style={styles.hint}>Zum Fokussieren tippen</Text>
+            <Text style={styles.langHint}>OCR: {selectedLanguage.label}</Text>
           </View>
 
           {/* Capture button */}
@@ -246,7 +431,15 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
 
       {/* ═══ Phase 2: Crop Selection ════════════════════════════════════ */}
       {phase === 'crop' && photoUri && (
-        <View style={styles.root}>
+        <View
+          style={styles.root}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            if (width > 0 && height > 0) {
+              setPreviewSize({ w: width, h: height });
+            }
+          }}
+        >
           {/* FIX 2: resizeMode="cover" matches camera preview appearance */}
           <Image
             source={{ uri: photoUri }}
@@ -313,14 +506,43 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
       {/* ═══ Phase 3: Review ════════════════════════════════════════════ */}
       {phase === 'review' && (
         <View style={styles.root}>
+          <View style={styles.reviewBackdrop} />
+
           {photoUri && (
-            <Image source={{ uri: photoUri }} style={[StyleSheet.absoluteFill, { opacity: 0.15 }]} resizeMode="cover" />
+            <View style={styles.reviewPreviewWrap}>
+              <Image source={{ uri: photoUri }} style={styles.reviewPreview} resizeMode="cover" />
+            </View>
           )}
 
           <View style={styles.reviewPanel}>
             <Text style={styles.reviewTitle}>Extrahierter Text</Text>
+            <Text style={styles.reviewSubtitle}>OCR: {selectedLanguage.label}</Text>
 
             <ScrollView style={styles.reviewScroll} keyboardShouldPersistTaps="handled">
+              {ocrError && (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorTitle}>⚠ Texterkennung fehlgeschlagen</Text>
+                  <Text style={styles.errorMsg}>{ocrError}</Text>
+                  {ocrError.includes("linked") || ocrError.includes("native") ? (
+                    <Text style={styles.errorHint}>
+                      Hinweis: Die Texterkennung benötigt einen Development Build.{"\n"}
+                      Starte die App mit:{"\n"}
+                      <Text style={styles.errorCode}>expo run:android</Text>
+                      {" oder "}
+                      <Text style={styles.errorCode}>expo run:ios</Text>
+                    </Text>
+                  ) : null}
+                  <Text style={styles.errorHint}>Du kannst den Text auch manuell unten eingeben.</Text>
+                </View>
+              )}
+              {!ocrError && !extractedText.trim() && (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateTitle}>Kein Text erkannt</Text>
+                  <Text style={styles.emptyStateText}>
+                    Probiere einen engeren Zuschnitt, bessere Beleuchtung oder ein anderes OCR-Script.
+                  </Text>
+                </View>
+              )}
               <TextInput
                 style={styles.reviewInput}
                 multiline
@@ -356,31 +578,138 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
           </View>
         </View>
       )}
+
+      {settingsVisible && (
+        <View style={styles.settingsBackdrop} pointerEvents="box-none">
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setSettingsVisible(false)}
+          />
+
+          <View style={styles.settingsSheet}>
+            <View style={styles.sheetHandle} />
+
+            <View style={styles.sheetHeaderRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingsTitle}>OCR Sprache</Text>
+                <Text style={styles.settingsSubTitle}>
+                  ML Kit lädt die passenden Modelle bei Bedarf. Auto nutzt Latein als sicheren Standard.
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setSettingsVisible(false)} style={styles.closeChip}>
+                <Text style={styles.closeChipText}>Schliessen</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.selectedSummary}>
+              <Text style={styles.selectedSummaryLabel}>Aktuell</Text>
+              <Text style={styles.selectedSummaryValue}>{selectedLanguage.label}</Text>
+              <Text style={styles.selectedSummaryHint}>
+                Lange druecken = Favorit umschalten. Tippen = Script waehlen.
+              </Text>
+            </View>
+
+            <Text style={styles.settingsSectionTitle}>Favoriten</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.favoriteScroll}>
+              {favoriteLanguages.map((option) => (
+                <TouchableOpacity
+                  key={option.id}
+                  style={[
+                    styles.favoriteChip,
+                    selectedLanguageId === option.id && styles.favoriteChipActive,
+                  ]}
+                  onPress={() => setSelectedLanguageId(option.id)}
+                  onLongPress={() => { void toggleFavoriteLanguage(option.id); }}
+                >
+                  <Text style={styles.favoriteChipText}>{option.label}</Text>
+                  <Text style={styles.favoriteChipSubText}>Tippen</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.settingsSectionTitle}>Alle Sprachen</Text>
+            <View style={styles.languageGrid}>
+              {OCR_LANGUAGE_OPTIONS.map((option) => {
+                const isSelected = selectedLanguageId === option.id;
+                const isFavorite = favoriteLanguageIds.includes(option.id);
+
+                return (
+                  <TouchableOpacity
+                    key={option.id}
+                    style={[
+                      styles.languageChip,
+                      isSelected && styles.languageChipActive,
+                    ]}
+                    onPress={() => setSelectedLanguageId(option.id)}
+                    onLongPress={() => { void toggleFavoriteLanguage(option.id); }}
+                  >
+                    <Text style={styles.languageChipText}>{option.label}</Text>
+                    <Text style={styles.languageChipMeta}>
+                      {isFavorite ? '★ Favorit' : 'Lange druecken'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={styles.sheetActions}>
+              <TouchableOpacity
+                style={styles.secondaryBtn}
+                onPress={() => {
+                  void updateDefaultLanguage(selectedLanguageId);
+                  setSettingsVisible(false);
+                }}
+              >
+                <Text style={styles.secondaryBtnText}>Als Standard speichern</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </Modal>
   );
 }
 
 /* ── Styles ─────────────────────────────────────────────── */
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1, backgroundColor: '#0E1116' },
 
   // Top bar
   topBar: {
     position: 'absolute', top: 0, left: 0, right: 0,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingTop: 52, paddingHorizontal: 16, paddingBottom: 12,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingTop: 52, paddingHorizontal: 16, paddingBottom: 14,
+    backgroundColor: 'rgba(9, 12, 18, 0.78)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
-  phaseLabel: { color: '#fff', fontSize: 17, fontWeight: '700', flex: 1, textAlign: 'center' },
-  topBtn: { padding: 8, minWidth: 44, alignItems: 'center' },
-  topBtnLabel: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  phaseLabel: { color: '#fff', fontSize: 16, fontWeight: '700', flex: 1, textAlign: 'center' },
+  topBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    minWidth: 54,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 14,
+  },
+  topBtnLabel: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
   // Hint
   hintWrap: { position: 'absolute', bottom: 140, left: 0, right: 0, alignItems: 'center' },
   hint: {
     color: '#fff', fontSize: 14,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(15,18,26,0.82)',
     paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
+  },
+  langHint: {
+    marginTop: 8,
+    color: '#fff',
+    fontSize: 13,
+    backgroundColor: 'rgba(15,18,26,0.75)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
   },
 
   // Capture / action button row
@@ -411,16 +740,36 @@ const styles = StyleSheet.create({
   cornerBR: { borderBottomWidth: 3, borderRightWidth: 3 },
 
   // Review
-  reviewPanel: {
-    flex: 1, marginTop: 90,
-    backgroundColor: '#1A1A1A',
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 20,
+  reviewBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#0E1116',
   },
-  reviewTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
+  reviewPreviewWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 210,
+    overflow: 'hidden',
+  },
+  reviewPreview: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.22,
+  },
+  reviewPanel: {
+    flex: 1, marginTop: 170,
+    backgroundColor: '#171C24',
+    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  reviewTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', marginBottom: 4 },
+  reviewSubtitle: { color: '#AAB2C0', fontSize: 13, marginBottom: 12 },
   reviewScroll: { flex: 1, marginBottom: 12 },
   reviewInput: {
-    backgroundColor: '#2A2A2A', color: '#fff',
+    backgroundColor: '#232A36', color: '#fff',
     padding: 14, borderRadius: 10,
     fontSize: 15, lineHeight: 22,
     minHeight: 160, textAlignVertical: 'top',
@@ -431,12 +780,12 @@ const styles = StyleSheet.create({
   },
   secondaryBtn: {
     flex: 1, paddingVertical: 12, paddingHorizontal: 10,
-    backgroundColor: '#2E2E2E', borderRadius: 8, alignItems: 'center',
+    backgroundColor: '#232A36', borderRadius: 12, alignItems: 'center',
   },
-  secondaryBtnText: { color: '#BDBDBD', fontSize: 14, fontWeight: '600' },
+  secondaryBtnText: { color: '#D3DAE4', fontSize: 14, fontWeight: '600' },
 
   // Shared
-  btn: { backgroundColor: '#4CAF50', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 10, alignItems: 'center' },
+  btn: { backgroundColor: '#4CAF50', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 14, alignItems: 'center' },
   btnDisabled: { opacity: 0.4 },
   btnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   cancelTxt: { paddingVertical: 14, paddingHorizontal: 16 },
@@ -445,4 +794,155 @@ const styles = StyleSheet.create({
   // Permission
   permContainer: { flex: 1, backgroundColor: '#121212', justifyContent: 'center', alignItems: 'center', gap: 20 },
   permText: { color: '#fff', fontSize: 18, textAlign: 'center' },
+
+  // Error panel
+  errorBox: { backgroundColor: '#2C1A1A', borderRadius: 10, padding: 14, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: '#F44336' },
+  errorTitle: { color: '#F44336', fontSize: 15, fontWeight: 'bold', marginBottom: 6 },
+  errorMsg: { color: '#FFCDD2', fontSize: 13, lineHeight: 19, marginBottom: 8, fontFamily: 'monospace' },
+  errorHint: { color: '#BDBDBD', fontSize: 13, lineHeight: 19, marginBottom: 4 },
+  errorCode: { color: '#80CBC4', fontWeight: 'bold' },
+
+  // OCR language settings
+  settingsBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(6, 8, 12, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  settingsSheet: {
+    backgroundColor: '#171C24',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 16,
+    paddingBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    maxHeight: SCREEN_H * 0.82,
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    marginBottom: 14,
+  },
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  closeChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#232A36',
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  closeChipText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  settingsTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  settingsSubTitle: {
+    color: '#B5BFCE',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  selectedSummary: {
+    backgroundColor: '#232A36',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 14,
+  },
+  selectedSummaryLabel: {
+    color: '#9FB0C8',
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
+  selectedSummaryValue: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  selectedSummaryHint: { color: '#B5BFCE', fontSize: 12, marginTop: 4, lineHeight: 16 },
+  settingsSectionTitle: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  favoriteScroll: {
+    marginBottom: 10,
+  },
+  favoriteChip: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#232A36',
+    marginRight: 8,
+  },
+  favoriteChipActive: {
+    backgroundColor: '#4CAF50',
+  },
+  favoriteChipText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  favoriteChipSubText: {
+    color: '#C7D1DF',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  languageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  languageChip: {
+    width: '48%',
+    backgroundColor: '#232A36',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.04)',
+  },
+  languageChipActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76,175,80,0.16)',
+  },
+  languageChipText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  languageChipMeta: {
+    color: '#B5BFCE',
+    fontSize: 11,
+    marginTop: 4,
+  },
+  sheetActions: {
+    marginTop: 4,
+  },
+  emptyState: {
+    backgroundColor: '#232A36',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  emptyStateTitle: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  emptyStateText: {
+    color: '#C8D0DB',
+    fontSize: 13,
+    lineHeight: 18,
+  },
 });

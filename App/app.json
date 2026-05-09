@@ -22,11 +22,19 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.CAMERA"
+      ],
+      "package": "com.anonymous.truefoodscanner"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-barcode-scanner", "expo-sqlite", "expo-router"]
+    "plugins": [
+      "expo-sqlite",
+      "expo-router"
+    ]
   }
 }

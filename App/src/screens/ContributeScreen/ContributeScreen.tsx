@@ -6,6 +6,7 @@ import { OpenFoodFactsWriteClient } from '../../infrastructure/api/OpenFoodFacts
 import { RedFlagAnalyzer } from '../../domain/analysis/RedFlagAnalyzer';
 import { NovaScoreEvaluator } from '../../domain/analysis/NovaScoreEvaluator';
 import { ProductRating } from '../../domain/analysis/ProductRating';
+import { createIngredientsTextProcessor } from '../../infrastructure/textProcessing/createIngredientsTextProcessor';
 import { defaultRules } from '../../domain/rules/defaultRules';
 import { useCatalogStore } from '../../store/catalogStore';
 import { useFilterStore } from '../../store/filterStore';
@@ -43,13 +44,24 @@ export default function ContributeScreen() {
 
   /* ── Camera sheet callbacks ── */
 
-  const handleOcrConfirm = (text: string) => {
+  const handleOcrConfirm = async (text: string) => {
     if (cameraTarget === 'ingredients') {
-      setIngredientsText(text);
+      setIsProcessing(true);
+      try {
+        const processor = await createIngredientsTextProcessor();
+        const processed = processor.process({ rawText: text });
+        setIngredientsText(processed.cleanedText);
+      } finally {
+        setIsProcessing(false);
+      }
+
       setCameraTarget(null);
       // Automatically advance to step 2 after ingredients are done
       setStep(2);
-    } else if (cameraTarget === 'nutriments') {
+      return;
+    }
+
+    if (cameraTarget === 'nutriments') {
       setNutrimentRawText(text);
       setCameraTarget(null);
       setStep(3);

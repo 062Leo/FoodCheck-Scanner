@@ -1,9 +1,7 @@
 jest.mock('expo-secure-store', () => ({
-  SecureStore: {
-    getItemAsync: jest.fn(),
-    setItemAsync: jest.fn(),
-    deleteItemAsync: jest.fn(),
-  },
+  getItemAsync: jest.fn(),
+  setItemAsync: jest.fn(),
+  deleteItemAsync: jest.fn(),
 }));
 
 import { OpenFoodFactsWriteClient, UploadError } from '../OpenFoodFactsWriteClient';
