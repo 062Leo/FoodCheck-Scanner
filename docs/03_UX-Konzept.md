@@ -133,6 +133,99 @@ Identische Listenstruktur wie Katalog, aber nur Favoriten. Kein Filter nötig. H
 
 ---
 
+### 3.5 Contribute Screen *(v3)*
+
+**Ziel:** Produkte die nicht in Open Food Facts sind selbst erfassen, lokal analysieren und zur DB beitragen.
+
+**Einstieg:** Button "Zu Open Food Facts beitragen" auf dem Result Screen bei "Produkt nicht gefunden".
+
+#### Schritt 1 – Zutatenliste fotografieren
+
+```
+┌─────────────────────────────┐
+│  ← Abbrechen                │
+│                             │
+│  Schritt 1 von 2            │
+│  Zutatenliste fotografieren │
+│                             │
+│  ┌─────────────────────┐   │
+│  │                     │   │
+│  │   [Kamera-Preview]  │   │
+│  │                     │   │
+│  └─────────────────────┘   │
+│                             │
+│  Halte die Zutatenliste     │
+│  gut lesbar ins Bild        │
+│                             │
+│  [ Foto aufnehmen ]         │
+│  [ Überspringen →  ]        │
+└─────────────────────────────┘
+```
+
+#### Schritt 2 – Nährwerte fotografieren
+
+```
+┌─────────────────────────────┐
+│  ← Zurück                   │
+│                             │
+│  Schritt 2 von 2            │
+│  Nährwerttabelle (optional) │
+│                             │
+│  ┌─────────────────────┐   │
+│  │   [Kamera-Preview]  │   │
+│  └─────────────────────┘   │
+│                             │
+│  [ Foto aufnehmen ]         │
+│  [ Überspringen →  ]        │
+└─────────────────────────────┘
+```
+
+#### Schritt 3 – Formular prüfen & bestätigen
+
+```
+┌─────────────────────────────┐
+│  ← Zurück     Produkt       │
+│               erfassen      │
+├─────────────────────────────┤
+│  Produktname *              │
+│  ┌─────────────────────┐   │
+│  │ [Textfeld]          │   │
+│  └─────────────────────┘   │
+│                             │
+│  Marke / Hersteller         │
+│  ┌─────────────────────┐   │
+│  └─────────────────────┘   │
+│                             │
+│  Kategorie                  │
+│  ┌─────────────────────┐   │
+│  │ [Dropdown]          │   │
+│  └─────────────────────┘   │
+│                             │
+│  Zutatenliste               │
+│  ┌─────────────────────┐   │
+│  │ [Multiline, OCR     │   │
+│  │  vorausgefüllt]     │   │
+│  └─────────────────────┘   │
+│                             │
+│  Nährwerte pro 100g ▼       │  ← Accordion, OCR-vorausgefüllt
+│  (Energie, Fett, KH, …)     │
+│                             │
+│  ℹ️ Wird öffentlich auf     │
+│  Open Food Facts gespeichert│
+│                             │
+│  [ ✓ Bestätigen & hochladen]│
+└─────────────────────────────┘
+```
+
+**UX-Regeln:**
+- OCR-Ergebnisse immer editierbar – der User hat das letzte Wort
+- Nur Produktname ist Pflichtfeld, alles andere optional
+- Vor dem Upload: kurze Bestätigungsmeldung „Wird öffentlich gespeichert – bist du sicher?"
+- Nach Upload: sofortige lokale Analyse und Navigation zu ResultScreen
+- Bei Upload-Fehler (offline, Auth): Toast + lokale Analyse trotzdem durchführen
+
+---
+
 ## 4. Micro-Interactions & Feedback
 
 | Aktion | Feedback |

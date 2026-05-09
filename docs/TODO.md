@@ -94,10 +94,42 @@
 
 ---
 
-## 🔮 Milestone 4 – OCR & Manuelle Erfassung *(Zukunft)*
+## ⏳ Milestone 4 – OCR & OFF-Contribution-Flow *(v3)*
 
-- [ ] Abhängigkeit klären: `@react-native-ml-kit/text-recognition` (on-device OCR)
-- [ ] Foto der Zutatenliste aufnehmen (`expo-camera` oder `expo-image-picker`)
-- [ ] OCR-Text durch `RedFlagAnalyzer` laufen lassen
-- [ ] Manuelle Korrektur des erkannten Textes ermöglichen
-- [ ] Produkt ohne EAN als „lokales Produkt" in SQLite speichern
+### Setup
+- [ ] `@react-native-ml-kit/text-recognition` installieren
+- [ ] `expo-secure-store` installieren
+- [ ] OFF-Account anlegen (einmalig auf openfoodfacts.org)
+- [ ] `types/ContributeFormData.ts` anlegen
+
+### OcrService
+- [ ] `infrastructure/ocr/OcrService.ts` – ML Kit Wrapper (ImageUri → Rohtext)
+- [ ] Unit-Test für OcrService
+
+### OFF Write Client
+- [ ] `infrastructure/api/OpenFoodFactsWriteClient.ts` – POST zu OFF API
+- [ ] Fehlerbehandlung: offline, Auth-Fehler, Server-Error
+- [ ] Unit-Test mit gemocktem fetch
+
+### ContributeScreen – 3-Schritt-Flow
+- [ ] Screen-Grundstruktur mit Schritt-Indikator
+- [ ] **Schritt 1:** Kamera für Zutatenliste, "Foto aufnehmen" + "Überspringen"
+- [ ] **Schritt 2:** Kamera für Nährwerte, "Foto aufnehmen" + "Überspringen"
+- [ ] **Schritt 3:** Editierbares Formular (Name, Marke, Kategorie, Zutaten, Nährwerte) – OCR-vorausgefüllt
+- [ ] Pflichtfeld-Validierung (Produktname)
+- [ ] Bestätigungs-Dialog vor Upload
+- [ ] Upload → `OpenFoodFactsWriteClient` + sofortige lokale Analyse → ResultScreen
+- [ ] Upload-Fehler → Toast, lokale Analyse trotzdem anzeigen
+
+### OFF-Account Setup
+- [ ] Einmaliger Setup-Flow beim ersten Contribute-Versuch
+- [ ] Credentials speichern mit `expo-secure-store`
+- [ ] "Beitragen"-Button im ResultScreen bei `status === 0` einbauen
+
+### Abnahme
+- [ ] Foto Zutatenliste → Text korrekt ins Formular übernommen
+- [ ] Foto Nährwerte → Felder vorausgefüllt
+- [ ] Beide Schritte überspringen → Formular manuell ausfüllbar
+- [ ] Upload ohne Produktname → Button deaktiviert
+- [ ] Upload erfolgreich → ResultScreen mit sofortiger Analyse
+- [ ] Upload offline → Toast, Analyse trotzdem sichtbar

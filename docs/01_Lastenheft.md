@@ -52,9 +52,11 @@ Eine native Mobile-App für iOS & Android, mit klarem Fokus auf Android, die Leb
 
 | ID | Anforderung |
 |---|---|
-| F-12 | Unbekannte Produkte manuell erfassen: Foto der Zutatenliste → OCR → Analyse |
-| F-13 | Offline-Datenbank: Open Food Facts Dump lokal speichern für schnellere Suche |
-| F-14 | Export: Katalog als CSV exportieren |
+| F-12 | Unbekannte Produkte per OCR erfassen: Foto von Zutatenliste → Text-Erkennung → editierbares Formular → Bestätigung → Upload zu Open Food Facts |
+| F-13 | Nährwerte per OCR ergänzen: optionales zweites Foto der Nährwerttabelle → Text-Erkennung → Formularfelder vorausfüllen |
+| F-14 | OFF-Contribution-Flow: ausgefülltes Formular (Name, Marke, Kategorie, Zutaten, Nährwerte) lokal analysieren UND zu Open Food Facts hochladen |
+| F-15 | Offline-Datenbank: Open Food Facts Dump lokal speichern für schnellere Suche |
+| F-16 | Export: Katalog als CSV exportieren |
 
 ---
 
@@ -75,10 +77,13 @@ Eine native Mobile-App für iOS & Android, mit klarem Fokus auf Android, die Leb
 
 | Quelle | Inhalt | Kosten | Lizenz |
 |---|---|---|---|
-| Open Food Facts API | Produktname, Zutaten, Nährwerte, Nova-Score, Additiv-Liste | Kostenlos | Open Database License (ODbL) |
+| Open Food Facts API (Read) | Produktname, Zutaten, Nährwerte, Nova-Score, Additiv-Liste | Kostenlos | Open Database License (ODbL) |
+| Open Food Facts API (Write) | Neue Produkte zur DB beitragen (v3) | Kostenlos | Open Database License (ODbL) |
+| On-Device OCR (ML Kit) | Zutatenliste & Nährwerte aus Foto extrahieren (v3) | Kostenlos, lokal | Apache 2.0 |
 | Lokale SQLite-DB | Scan-Katalog, Favoriten, Filter-Konfiguration (v2) | – | – |
 
-**API-Endpunkt:** `https://world.openfoodfacts.org/api/v0/product/{EAN}.json`
+**API Read:** `https://world.openfoodfacts.org/api/v0/product/{EAN}.json`  
+**API Write:** `https://world.openfoodfacts.org/cgi/product_jqm2.pl` (POST, benötigt OFF-Account)
 
 ---
 
@@ -118,9 +123,11 @@ Eine native Mobile-App für iOS & Android, mit klarem Fokus auf Android, die Leb
 | F-09 | Benutzerdefinierte Filter-Regeln | ⏳ Planned | v2 |
 | F-10 | Numerische Grenzwerte für Nährstoffe | ⏳ Planned | v2 |
 | F-11 | Filter-Profile speichern | ⏳ Planned | v2 |
-| F-12 | OCR für manuelle Zutateneingabe | ⏳ Planned | v3 |
-| F-13 | Offline OFF-Datenbank Dump | ⏳ Planned | v3 |
-| F-14 | Katalog als CSV exportieren | ⏳ Planned | v3 |
+| F-12 | OCR Zutatenliste → editierbares Formular → OFF-Upload | ⏳ Planned | v3 |
+| F-13 | OCR Nährwerttabelle (optional, zweites Foto) | ⏳ Planned | v3 |
+| F-14 | OFF-Contribution-Flow (Name, Marke, Kategorie, Zutaten, Nährwerte) | ⏳ Planned | v3 |
+| F-15 | Offline OFF-Datenbank Dump | ⏳ Planned | v3 |
+| F-16 | Katalog als CSV exportieren | ⏳ Planned | v3 |
 | NF-01 | Scan-to-Result < 10 Sekunden | ✅ Done | MVP |
 | NF-02 | Vollständig lokal auf Gerät | ✅ Done | MVP |
 | NF-03 | Keine Cloud-Sync | ✅ Done | MVP |

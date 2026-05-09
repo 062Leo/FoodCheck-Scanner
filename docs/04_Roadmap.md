@@ -123,22 +123,62 @@ Phase 0 │ Phase 1 │ Phase 2 │ Phase 3 │ Phase 4
 
 ---
 
-## Phase 4 – OCR für unbekannte Produkte (Zeitplan offen)
+## Phase 4 – OCR & OFF-Contribution-Flow *(v3)*
 
-**Ziel:** Produkte ohne OFF-Eintrag manuell erfassen.
+**Ziel:** Produkte die nicht in Open Food Facts sind selbst erfassen – per Foto, OCR, editierbarem Formular und Upload zurück zu OFF. Sofortige lokale Analyse danach.
 
-### Konzept
-- Foto der Zutatenliste aufnehmen
-- Text per OCR extrahieren (z. B. Google ML Kit, lokal auf Gerät)
-- Extrahierter Text durch `RedFlagAnalyzer` laufen lassen
-- Optional: manuell korrigieren
-- Als "lokales Produkt" ohne EAN speichern
+### Schritt 1 – Abhängigkeiten & Setup
+- [ ] `@react-native-ml-kit/text-recognition` installieren (on-device OCR, kein API-Key)
+- [ ] `expo-secure-store` installieren (sicheres Speichern des OFF-Accounts)
+- [ ] OFF-Account anlegen (einmalig, kostenlos auf openfoodfacts.org)
+- [ ] `types/ContributeFormData.ts` anlegen (alle Formularfelder typisiert)
 
-### Abhängigkeiten
-- `expo-image-picker` oder `expo-camera`
-- `@react-native-ml-kit/text-recognition` (Google ML Kit, kostenlos, on-device)
+### Schritt 2 – OcrService
+- [ ] `infrastructure/ocr/OcrService.ts` implementieren
+  - Nimmt `ImageUri` entgegen, gibt `string` (Rohtext) zurück
+  - Wrapper um ML Kit – keine Business-Logik drin
+- [ ] Unit-Test: Mock-Image → erwarteter Rohtext
 
----
+### Schritt 3 – OFF Write Client
+- [ ] `infrastructure/api/OpenFoodFactsWriteClient.ts` implementieren
+  - POST zu `https://world.openfoodfacts.org/cgi/product_jqm2.pl`
+  - Felder: `code` (EAN), `product_name`, `brands`, `categories`, `ingredients_text`, Nährwerte
+  - Auth via gespeichertem OFF-Account (`expo-secure-store`)
+- [ ] Fehlerbehandlung: offline, falsche Credentials, Server-Error
+- [ ] Unit-Test mit gemocktem fetch
+
+### Schritt 4 – ContributeScreen (3-Schritt-Flow)
+- [ ] Screen-Struktur mit 3 Schritten anlegen (Schritt-Indikator oben)
+- [ ] **Schritt 1 – Zutatenliste Foto:**
+  - Kamera-Preview, "Foto aufnehmen"-Button
+  - "Überspringen"-Button (springt zu Schritt 2)
+  - Nach Foto: `OcrService` aufrufen, Rohtext als Zutatenliste vormerken
+- [ ] **Schritt 2 – Nährwerte Foto:**
+  - Gleicher Aufbau wie Schritt 1
+  - "Überspringen"-Button (springt zu Schritt 3)
+  - Nach Foto: `OcrService` aufrufen, Rohtext für Nährwert-Parsing vormerken
+- [ ] **Schritt 3 – Formular:**
+  - Alle Felder editierbar vorausfüllen (OCR-Ergebnisse oder leer)
+  - Pflichtfeld-Validierung: Produktname darf nicht leer sein
+  - Bestätigungs-Dialog vor Upload ("Wird öffentlich auf Open Food Facts gespeichert")
+  - "Bestätigen & hochladen"-Button → `OpenFoodFactsWriteClient` + sofortige lokale Analyse
+  - Bei Upload-Fehler: Toast, lokale Analyse trotzdem durchführen
+- [ ] "Beitragen"-Button im ResultScreen bei `status === 0` (Produkt nicht gefunden) einbauen
+
+### Schritt 5 – OFF-Account-Einrichtung
+- [ ] Einmaliger Setup-Flow beim ersten Contribute-Versuch: Nutzername + Passwort eingeben
+- [ ] Credentials sicher speichern mit `expo-secure-store`
+- [ ] Link zu OFF-Registrierung falls noch kein Konto vorhanden
+
+### Abnahme
+- [ ] Zutatenliste fotografieren → Text wird erkannt und ins Formular übernommen
+- [ ] Nährwerte fotografieren → Felder werden vorausgefüllt
+- [ ] Beide Foto-Schritte überspringen → Formular bleibt leer, manuell ausfüllbar
+- [ ] Formular ohne Produktname → Upload-Button deaktiviert
+- [ ] Upload erfolgreich → Weiterleitung zu ResultScreen mit sofortiger Analyse
+- [ ] Upload offline → Toast, lokale Analyse trotzdem sichtbar
+- [ ] Bereits hochgeladenes Produkt: nach kurzer Zeit in OFF per EAN abrufbar
+
 
 ## Technische Qualitätsziele (gilt für alle Phasen)
 

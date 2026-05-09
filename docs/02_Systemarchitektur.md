@@ -33,13 +33,15 @@ src/
 ├── screens/              # UI Layer – ein Ordner pro Screen
 │   ├── ScannerScreen/
 │   ├── ResultScreen/
-│   ├── CatalogScreen/     # v2/Soll
-│   └── FavoritesScreen/   # v2/Soll
+│   ├── CatalogScreen/           # v2/Soll
+│   ├── FavoritesScreen/         # v2/Soll
+│   └── ContributeScreen/        # v3 – OCR + OFF-Upload-Flow
 │
 ├── components/           # Wiederverwendbare UI-Bausteine
 │   ├── ProductCard/
 │   ├── RedFlagBadge/
-│   └── NovaScoreBadge/
+│   ├── NovaScoreBadge/
+│   └── ContributeForm/          # v3 – editierbares Produktformular
 │
 ├── store/                # State Layer (Zustand)
 │   ├── catalogStore.ts
@@ -56,8 +58,11 @@ src/
 │
 ├── infrastructure/       # Adapter zur Außenwelt
 │   ├── api/
-│   │   ├── OpenFoodFactsClient.ts   # HTTP-Client (fetch)
-│   │   └── OpenFoodFacts.types.ts   # API-Response-Typen
+│   │   ├── OpenFoodFactsClient.ts        # HTTP-Client Read (fetch)
+│   │   ├── OpenFoodFactsWriteClient.ts   # HTTP-Client Write/Upload (v3)
+│   │   └── OpenFoodFacts.types.ts        # API-Response- und Upload-Typen
+│   ├── ocr/
+│   │   └── OcrService.ts                 # ML Kit Text Recognition Wrapper (v3)
 │   └── db/
 │       ├── DatabaseService.ts       # SQLite-Setup & Migrations (v2/Soll)
 │       ├── ProductRepository.ts     # CRUD für Katalog (v2/Soll)
@@ -69,7 +74,8 @@ src/
 └── types/                # Geteilte Domain-Typen
     ├── Product.ts
     ├── ScanResult.ts
-    └── FilterRule.ts
+    ├── FilterRule.ts
+    └── ContributeFormData.ts     # v3 – Felder für OFF-Upload-Formular
 ```
 
 ---
@@ -102,6 +108,58 @@ Nutzer drückt "Scan"
 ```
 
 Persistenz in SQLite, Katalog und Favoriten sind erst ab Phase 2/Soll vorgesehen.
+
+---
+
+## 3b. Datenfluss – OCR & Contribution-Flow *(v3)*
+
+Wird ausgelöst wenn OFF-API `status === 0` zurückgibt (Produkt unbekannt).
+
+```
+ResultScreen zeigt "Produkt nicht gefunden"
+  + Button "Zu Open Food Facts beitragen"
+        │
+        ▼
+[ContributeScreen] – Schritt 1: Zutatenliste fotografieren (optional)
+  expo-camera Foto aufnehmen
+        │
+        ▼
+[OcrService]  ←  @react-native-ml-kit/text-recognition (on-device)
+  Bild → Rohtext
+        │
+        ▼
+[ContributeScreen] – Schritt 2: Nährwerte fotografieren (optional)
+  expo-camera zweites Foto aufnehmen
+        │
+        ▼
+[OcrService]
+  Bild → Rohtext (Nährwerttabelle)
+        │
+        ▼
+[ContributeScreen] – Schritt 3: Formular
+  Felder vorausgefüllt mit OCR-Text, User kann alles editieren:
+  • Produktname (Pflicht)
+  • Marke / Hersteller
+  • Kategorie (Dropdown)
+  • Zutatenliste (Freitext, vorausgefüllt aus Foto 1)
+  • Nährwerte pro 100g (vorausgefüllt aus Foto 2):
+    Energie, Fett, gesättigte Fettsäuren, Kohlenhydrate,
+    Zucker, Ballaststoffe, Eiweiß, Salz
+        │
+        ▼ Nutzer tippt "Bestätigen & hochladen"
+        │
+        ├──► [OpenFoodFactsWriteClient]
+        │      POST zu OFF API (mit OFF-Account-Credentials)
+        │      Produkt wird öffentlich in OFF-DB eingetragen
+        │
+        └──► [RedFlagAnalyzer] + [ProductRating]
+               Sofortige lokale Analyse mit eingegebenen Daten
+               → Navigation zu ResultScreen mit Ergebnis
+```
+
+**Wichtig:** Beide Foto-Schritte sind optional (überspringbar per "Überspringen"-Button). Das Formular kann auch vollständig manuell ausgefüllt werden. Nur Produktname ist Pflichtfeld für den Upload.
+
+**OFF-Account:** Für den Upload wird ein (einmaliges) kostenloses OFF-Konto benötigt. Credentials werden sicher im Gerät gespeichert (`expo-secure-store`).
 
 ---
 
@@ -208,6 +266,8 @@ interface IRedFlagAnalyzer {
 | Datenbank | expo-sqlite | Nativ, persistent, offline-fähig, relationale Struktur |
 | Navigation | Expo Router | Dateibasiertes Routing, einfacher als React Navigation |
 | Testing | Jest + React Native Testing Library | Standard im React-Native-Ökosystem |
+| OCR (v3) | @react-native-ml-kit/text-recognition | On-device, kostenlos, keine Cloud, funktioniert offline |
+| Credentials (v3) | expo-secure-store | Sicheres Speichern des OFF-Accounts auf dem Gerät |
 
 ---
 
@@ -228,11 +288,16 @@ interface IRedFlagAnalyzer {
 | | ResultScreen | Ampel-Banner + Details | ✅ Done |
 | | CatalogScreen | Produktliste | ⏳ Planned (v2) |
 | | FavoritesScreen | Favoriten-Liste | ⏳ Planned (v2) |
+| | ContributeScreen | OCR-Flow + Formular + OFF-Upload | ⏳ Planned (v3) |
 | **Components** | SkeletonLoading | Loading-Skeleton | ✅ Done |
 | | Toast | Fehler-Meldungen | ✅ Done |
 | | Accordion | Zutatenliste expandierbar | ✅ Done |
+| | ContributeForm | Editierbares Produktformular | ⏳ Planned (v3) |
 | **Types** | Product | Produkt-Modell | ✅ Done |
 | | ScanResult | Analyse-Ergebnis | ✅ Done |
+| | ContributeFormData | Felder für OFF-Upload | ⏳ Planned (v3) |
+| **Infrastructure** | OcrService | ML Kit Text Recognition Wrapper | ⏳ Planned (v3) |
+| | OpenFoodFactsWriteClient | OFF API Upload (POST) | ⏳ Planned (v3) |
 | **State** | catalogStore | Zustand (v2) | ⏳ Planned |
 | | filterStore | Zustand (v2) | ⏳ Planned |
 | **Navigation** | Routing (Expo Router) | Tab + Stack Layout | ✅ Done |
