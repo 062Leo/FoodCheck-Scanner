@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Animated, AppState } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -9,7 +9,7 @@ export default function ScannerScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraKey, setCameraKey] = useState(0);
   const frameAnimation = useRef(new Animated.Value(0)).current;
   const productRepository = new ProductRepository();
 
@@ -30,15 +30,21 @@ export default function ScannerScreen() {
     ).start();
   }, [frameAnimation]);
 
-  useFocusEffect(
-    useCallback(() => {
-      setScanned(false);
-      setCameraActive(true);
-      return () => {
-        setCameraActive(false);
-      };
-    }, [])
-  );
+  const activateCamera = useCallback(() => {
+    setScanned(false);
+    setCameraKey((k) => k + 1);
+  }, []);
+
+  useFocusEffect(activateCamera);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        setCameraKey((k) => k + 1);
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (!permission?.granted && permission?.canAskAgain) {
@@ -117,15 +123,14 @@ export default function ScannerScreen() {
 
   return (
     <View style={styles.container}>
-      {cameraActive && (
-        <CameraView
-          style={styles.camera}
-          barcodeScannerSettings={{
-            barcodeTypes: ['ean8', 'ean13'],
-          }}
-          onBarcodeScanned={handleBarCodeScanned}
-        />
-      )}
+      <CameraView
+        key={cameraKey}
+        style={styles.camera}
+        barcodeScannerSettings={{
+          barcodeTypes: ['ean8', 'ean13'],
+        }}
+        onBarcodeScanned={handleBarCodeScanned}
+      />
 
       <View style={styles.overlay}>
         <Animated.View

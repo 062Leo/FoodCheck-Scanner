@@ -102,6 +102,7 @@ export default function FavoritesScreen() {
       {catalogStore.favorites.length > 0 && (
         <FlatList
           data={catalogStore.favorites}
+          extraData={catalogStore.favorites.length}
           keyExtractor={(item) => item.ean}
           renderItem={({ item }) => (
             <ProductCard

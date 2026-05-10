@@ -17,8 +17,9 @@ import { Toast } from '../components/Toast';
 import { Ionicons } from '@expo/vector-icons';
 import { OcrService } from '../infrastructure/ocr/OcrService';
 import { OcrCameraSheet } from '../components/OcrCameraSheet/OcrCameraSheet';
-import type { ContributeFormData, NutrimentData } from '../types/ContributeFormData';
+import type { ContributeFormData } from '../types/ContributeFormData';
 import { Accordion } from '../components/Accordion';
+import type { NovaScore, ProductRecord } from '../types/Product';
 
 const repo = new ProductRepository();
 const writeClient = new OpenFoodFactsWriteClient();
@@ -32,9 +33,16 @@ export default function EditProductScreen() {
 
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
+  const [quantity, setQuantity] = useState('');
   const [category, setCategory] = useState('');
   const [ingredientsText, setIngredientsText] = useState('');
-  const [nutriments, setNutriments] = useState<Partial<NutrimentData>>({});
+  const [novaScore, setNovaScore] = useState('');
+  const [allergensTags, setAllergensTags] = useState('');
+  const [traces, setTraces] = useState('');
+  const [origins, setOrigins] = useState('');
+  const [manufacturingPlaces, setManufacturingPlaces] = useState('');
+  const [stores, setStores] = useState('');
+  const [servingSize, setServingSize] = useState('');
 
   const [energyKcal100g, setEnergy] = useState('');
   const [fat100g, setFat] = useState('');
@@ -56,29 +64,62 @@ export default function EditProductScreen() {
     if (ean) {
       repo
         .findByEan(ean)
-        .then((product) => {
+        .then(async (product) => {
           if (product) {
             setName(product.name || '');
             setBrand(product.brands || '');
             setIngredientsText(product.ingredients || '');
+            setNovaScore(product.nova_score ? String(product.nova_score) : '');
 
             if (product.raw_json) {
               try {
                 const parsed = JSON.parse(product.raw_json);
-                setCategory(parsed.categories || '');
-                const n = parsed.product?.nutriments || parsed.nutriments;
+                const p = parsed.product || parsed;
+                setCategory(p.categories || '');
+                setQuantity(p.quantity || '');
+                setServingSize(p.servingSize || p.serving_size || '');
+                setOrigins(p.origins || '');
+                setManufacturingPlaces(p.manufacturingPlaces || p.manufacturing_places || '');
+                setStores(p.stores || '');
+                setTraces(p.traces || '');
+
+                const allergens = p.allergensTags ?? p.allergens_tags;
+                setAllergensTags(
+                  Array.isArray(allergens)
+                    ? allergens.join(', ')
+                    : typeof allergens === 'string'
+                      ? allergens
+                      : ''
+                );
+
+                const n = p.nutriments;
                 if (n) {
-                  setEnergy(n['energy-kcal_100g']?.toString() || '');
-                  setFat(n.fat_100g?.toString() || '');
-                  setSatFat(n['saturated-fat_100g']?.toString() || '');
-                  setCarbs(n.carbohydrates_100g?.toString() || '');
-                  setSugars(n.sugars_100g?.toString() || '');
-                  setFiber(n.fiber_100g?.toString() || '');
-                  setProteins(n.proteins_100g?.toString() || '');
-                  setSalt(n.salt_100g?.toString() || '');
+                  setEnergy(readN(n, 'energyKcal100g', 'energy-kcal_100g'));
+                  setFat(readN(n, 'fat100g', 'fat_100g'));
+                  setSatFat(readN(n, 'saturatedFat100g', 'saturated-fat_100g'));
+                  setCarbs(readN(n, 'carbohydrates100g', 'carbohydrates_100g'));
+                  setSugars(readN(n, 'sugars100g', 'sugars_100g'));
+                  setFiber(readN(n, 'fiber100g', 'fiber_100g'));
+                  setProteins(readN(n, 'proteins100g', 'proteins_100g'));
+                  setSalt(readN(n, 'salt100g', 'salt_100g'));
                 }
-              } catch (e) {}
+              } catch {
+                // Ignore parse errors
+              }
             }
+          } else {
+            const record: ProductRecord = {
+              ean,
+              name: '',
+              brands: '',
+              ingredients: '',
+              nova_score: null,
+              nutriscore: null,
+              raw_json: JSON.stringify({ product: {} }),
+              scanned_at: new Date().toISOString(),
+              rating: 'OK',
+            };
+            await repo.insert(record);
           }
           setIsLoading(false);
         })
@@ -115,6 +156,16 @@ export default function EditProductScreen() {
       brands: brand,
       category,
       ingredients: ingredientsText,
+      quantity,
+      allergensTags,
+      traces,
+      origins,
+      manufacturingPlaces,
+      stores,
+      servingSize,
+      novaScore: novaScore
+        ? (Math.min(4, Math.max(1, Number(novaScore) || 1)) as NovaScore)
+        : undefined,
       nutriments: {
         energyKcal100g: energyKcal100g ? Number(energyKcal100g) : undefined,
         fat100g: fat100g ? Number(fat100g) : undefined,
@@ -126,8 +177,12 @@ export default function EditProductScreen() {
         salt100g: salt100g ? Number(salt100g) : undefined,
       },
     });
-    await catalogStore.loadAll(); // Force immediate UI refresh in catalog
-    router.back();
+    await catalogStore.loadAll();
+    const updated = await repo.findByEan(ean);
+    router.replace({
+      pathname: '/result',
+      params: { ean, fromCache: 'true', cachedData: updated?.raw_json || '' },
+    });
   };
 
   const handleUploadOFF = async () => {
@@ -182,71 +237,20 @@ export default function EditProductScreen() {
   const isUploadEnabled = name.trim().length > 0 && brand.trim().length > 0;
 
   const nutritionContent = (
-    <View style={styles.nutritionContainer}>
-      <Text style={styles.label}>Energie (kcal/100g)</Text>
-      <TextInput
-        style={styles.input}
-        value={energyKcal100g}
-        onChangeText={setEnergy}
-        keyboardType="numeric"
-        placeholderTextColor="#aaa"
-      />
-      <Text style={styles.label}>Fett (g/100g)</Text>
-      <TextInput
-        style={styles.input}
-        value={fat100g}
-        onChangeText={setFat}
-        keyboardType="numeric"
-        placeholderTextColor="#aaa"
-      />
-      <Text style={styles.label}>Gesättigte Fettsäuren (g/100g)</Text>
-      <TextInput
-        style={styles.input}
+    <View>
+      <FieldRow label="Energie (kcal)" value={energyKcal100g} onChange={setEnergy} numeric />
+      <FieldRow label="Fett (g)" value={fat100g} onChange={setFat} numeric />
+      <FieldRow
+        label="Gesättigte Fettsäuren (g)"
         value={saturatedFat100g}
-        onChangeText={setSatFat}
-        keyboardType="numeric"
-        placeholderTextColor="#aaa"
+        onChange={setSatFat}
+        numeric
       />
-      <Text style={styles.label}>Kohlenhydrate (g/100g)</Text>
-      <TextInput
-        style={styles.input}
-        value={carbohydrates100g}
-        onChangeText={setCarbs}
-        keyboardType="numeric"
-        placeholderTextColor="#aaa"
-      />
-      <Text style={styles.label}>Zucker (g/100g)</Text>
-      <TextInput
-        style={styles.input}
-        value={sugars100g}
-        onChangeText={setSugars}
-        keyboardType="numeric"
-        placeholderTextColor="#aaa"
-      />
-      <Text style={styles.label}>Ballaststoffe (g/100g)</Text>
-      <TextInput
-        style={styles.input}
-        value={fiber100g}
-        onChangeText={setFiber}
-        keyboardType="numeric"
-        placeholderTextColor="#aaa"
-      />
-      <Text style={styles.label}>Protein (g/100g)</Text>
-      <TextInput
-        style={styles.input}
-        value={proteins100g}
-        onChangeText={setProteins}
-        keyboardType="numeric"
-        placeholderTextColor="#aaa"
-      />
-      <Text style={styles.label}>Salz (g/100g)</Text>
-      <TextInput
-        style={styles.input}
-        value={salt100g}
-        onChangeText={setSalt}
-        keyboardType="numeric"
-        placeholderTextColor="#aaa"
-      />
+      <FieldRow label="Kohlenhydrate (g)" value={carbohydrates100g} onChange={setCarbs} numeric />
+      <FieldRow label="Zucker (g)" value={sugars100g} onChange={setSugars} numeric />
+      <FieldRow label="Ballaststoffe (g)" value={fiber100g} onChange={setFiber} numeric />
+      <FieldRow label="Protein (g)" value={proteins100g} onChange={setProteins} numeric />
+      <FieldRow label="Salz (g)" value={salt100g} onChange={setSalt} numeric />
     </View>
   );
 
@@ -259,59 +263,89 @@ export default function EditProductScreen() {
         onCancel={() => setCameraTarget(null)}
       />
 
-      <Text style={styles.title}>Produkt bearbeiten</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backText}>← Zurück</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Produkt bearbeiten</Text>
+        <View style={styles.headerSpacer} />
+      </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <Text style={styles.label}>Name</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="Produktname"
-          placeholderTextColor="#aaa"
-        />
-
-        <Text style={styles.label}>Marke</Text>
-        <TextInput
-          style={styles.input}
-          value={brand}
-          onChangeText={setBrand}
-          placeholder="Marke"
-          placeholderTextColor="#aaa"
-        />
-
-        <Text style={styles.label}>Kategorie (Offline)</Text>
-        <TextInput
-          style={styles.input}
-          value={category}
-          onChangeText={setCategory}
-          placeholder="Kategorie"
-          placeholderTextColor="#aaa"
-        />
-
-        <View style={styles.labelRow}>
-          <Text style={styles.label}>Zutaten</Text>
-          <TouchableOpacity onPress={() => setCameraTarget('ingredients')}>
-            <Ionicons name="camera" size={24} color="#4CAF50" />
-          </TouchableOpacity>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Product identity */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Produktinformationen</Text>
+          <FieldRow label="Name" value={name} onChange={setName} />
+          <FieldRow label="Marke" value={brand} onChange={setBrand} />
+          <FieldRow label="Menge" value={quantity} onChange={setQuantity} />
         </View>
-        <TextInput
-          style={[styles.input, styles.multiline]}
-          value={ingredientsText}
-          onChangeText={setIngredientsText}
-          multiline
-          placeholder="Zutatenliste..."
-          placeholderTextColor="#aaa"
-        />
 
-        <View style={[styles.labelRow, { marginTop: 10, marginBottom: 10 }]}>
-          <Text style={styles.label}>Nährwerte per 100g</Text>
-          <TouchableOpacity onPress={() => setCameraTarget('nutriments')}>
-            <Ionicons name="camera" size={24} color="#4CAF50" />
-          </TouchableOpacity>
+        {/* Category & NOVA */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Bewertung</Text>
+          <FieldRow label="Kategorie" value={category} onChange={setCategory} />
+          <FieldRow label="NOVA (1–4)" value={novaScore} onChange={setNovaScore} numeric />
         </View>
-        <Accordion items={[{ title: 'Nährwerte bearbeiten', content: nutritionContent }]} />
 
+        {/* Ingredients */}
+        <View style={styles.section}>
+          <View style={styles.labelRow}>
+            <Text style={styles.sectionTitle}>Zutaten</Text>
+            <TouchableOpacity onPress={() => setCameraTarget('ingredients')}>
+              <Ionicons name="camera" size={22} color="#4CAF50" />
+            </TouchableOpacity>
+          </View>
+          <TextInput
+            style={[styles.input, styles.multiline]}
+            value={ingredientsText}
+            onChangeText={setIngredientsText}
+            multiline
+            placeholder="Zutatenliste..."
+            placeholderTextColor="#555"
+          />
+        </View>
+
+        {/* Nutrition */}
+        <View style={styles.section}>
+          <View style={styles.labelRow}>
+            <Text style={styles.sectionTitle}>Nährwerte pro 100 g</Text>
+            <TouchableOpacity onPress={() => setCameraTarget('nutriments')}>
+              <Ionicons name="camera" size={22} color="#4CAF50" />
+            </TouchableOpacity>
+          </View>
+          <Accordion items={[{ title: 'Nährwerte bearbeiten', content: nutritionContent }]} />
+        </View>
+
+        {/* Allergens */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Allergene</Text>
+          <FieldRow
+            label="Enthält (durch Komma getrennt)"
+            value={allergensTags}
+            onChange={setAllergensTags}
+          />
+          <FieldRow label="Kann Spuren enthalten von" value={traces} onChange={setTraces} />
+        </View>
+
+        {/* Additional info */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Weitere Informationen</Text>
+          <FieldRow label="Herkunft" value={origins} onChange={setOrigins} />
+          <FieldRow
+            label="Herstellungsort"
+            value={manufacturingPlaces}
+            onChange={setManufacturingPlaces}
+          />
+          <FieldRow label="Geschäfte" value={stores} onChange={setStores} />
+          <FieldRow label="Portionsgröße" value={servingSize} onChange={setServingSize} />
+        </View>
+
+        {/* Buttons */}
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
           <Text style={styles.saveBtnText}>Speichern</Text>
         </TouchableOpacity>
@@ -349,17 +383,77 @@ export default function EditProductScreen() {
   );
 }
 
+function readN(obj: Record<string, unknown>, camelKey: string, snakeKey: string): string {
+  const value = obj[camelKey] ?? obj[snakeKey];
+  return value !== undefined && value !== null ? String(value) : '';
+}
+
+function FieldRow({
+  label,
+  value,
+  onChange,
+  numeric,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  numeric?: boolean;
+  multiline?: boolean;
+}) {
+  return (
+    <View style={fieldStyles.row}>
+      <Text style={fieldStyles.label}>{label}</Text>
+      <TextInput
+        style={[fieldStyles.input, multiline && fieldStyles.inputMultiline]}
+        value={value}
+        onChangeText={onChange}
+        keyboardType={numeric ? 'numeric' : 'default'}
+        placeholderTextColor="#555"
+        multiline={multiline}
+      />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212', padding: 20 },
+  container: { flex: 1, backgroundColor: '#121212' },
   centered: { justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 20, marginTop: 40 },
+
+  header: {
+    paddingTop: 48,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomColor: '#1E1E1E',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#121212',
+  },
+  backText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  headerTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
+  headerSpacer: { width: 60 },
+
+  scrollContainer: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingBottom: 40 },
+
+  section: { paddingTop: 20 },
+  sectionTitle: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 6,
   },
-  label: { color: '#ccc', fontSize: 14, fontWeight: '600' },
+
   input: {
     backgroundColor: '#1E1E1E',
     color: '#fff',
@@ -369,13 +463,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
-  nutritionContainer: { paddingTop: 8 },
+
   saveBtn: {
     backgroundColor: '#4CAF50',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 24,
   },
   saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   uploadBtn: {
@@ -383,7 +477,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 15,
+    marginTop: 12,
   },
   uploadBtnDisabled: { backgroundColor: '#114D45' },
   uploadBtnText: { color: '#000', fontWeight: 'bold', fontSize: 16 },
@@ -392,35 +486,20 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 15,
+    marginTop: 12,
   },
   cancelBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  camera: { flex: 1, margin: -20 },
-  cameraOverlay: { flex: 1, justifyContent: 'space-between', padding: 20 },
-  cameraTopBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 40,
-  },
-  scrollContent: { paddingBottom: 40 },
-  cameraBackButton: { padding: 10, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 8 },
-  cameraBackText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  cameraInstruction: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 10,
+});
+
+const fieldStyles = StyleSheet.create({
+  row: { marginBottom: 14 },
+  label: { color: '#9E9E9E', fontSize: 13, fontWeight: '600', marginBottom: 6 },
+  input: {
+    backgroundColor: '#1E1E1E',
+    color: '#FFFFFF',
+    padding: 12,
     borderRadius: 8,
+    fontSize: 15,
   },
-  cameraPlaceholder: { width: 60 },
-  cameraBottomBar: { alignItems: 'center', marginBottom: 40 },
-  cameraCaptureBtn: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 30,
-  },
-  cameraCaptureText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  inputMultiline: { minHeight: 60, textAlignVertical: 'top' },
 });

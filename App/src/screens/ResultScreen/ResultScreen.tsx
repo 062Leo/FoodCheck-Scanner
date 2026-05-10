@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Modal, Image, ActivityIndicator } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import * as Haptics from 'expo-haptics';
@@ -35,6 +44,107 @@ const NOVA_COLORS: Record<number, string> = {
   3: '#FFC107',
   4: '#F44336',
 };
+
+function buildProductFromRecord(record: ProductRecord): Product {
+  const product: Product = {
+    ean: record.ean,
+    name: record.name || 'Unbekanntes Produkt',
+    brand: record.brands || undefined,
+    ingredientsText: record.ingredients || undefined,
+    novaScore: record.nova_score ?? undefined,
+  };
+
+  if (record.raw_json) {
+    try {
+      const parsed = JSON.parse(record.raw_json);
+      const p = parsed.product || parsed;
+
+      if (p.ingredientsText) product.ingredientsText = p.ingredientsText as string;
+      if (p.ingredients_text)
+        product.ingredientsText = product.ingredientsText || (p.ingredients_text as string);
+      if (p.ingredients_text_de) product.ingredientsTextDe = p.ingredients_text_de as string;
+      if (p.ingredients_text_en) product.ingredientsTextEn = p.ingredients_text_en as string;
+      if (p.ingredientsTextDe) product.ingredientsTextDe = p.ingredientsTextDe as string;
+      if (p.ingredientsTextEn) product.ingredientsTextEn = p.ingredientsTextEn as string;
+
+      const langTexts: Record<string, string> = {};
+      if (p.ingredientsTextByLang && typeof p.ingredientsTextByLang === 'object') {
+        Object.assign(langTexts, p.ingredientsTextByLang);
+      }
+      Object.entries(p).forEach(([key, value]) => {
+        if (key.startsWith('ingredients_text_') && typeof value === 'string') {
+          const lang = key.replace('ingredients_text_', '');
+          if (!langTexts[lang]) langTexts[lang] = value;
+        }
+      });
+      if (Object.keys(langTexts).length > 0) {
+        product.ingredientsTextByLang = langTexts;
+      }
+
+      if (p.imageUrl || p.image_front_url)
+        product.imageUrl = (p.imageUrl || p.image_front_url) as string;
+      if (p.imageIngredientsUrl || p.image_ingredients_url)
+        product.imageIngredientsUrl = (p.imageIngredientsUrl || p.image_ingredients_url) as string;
+      if (p.imageNutritionUrl || p.image_nutrition_url)
+        product.imageNutritionUrl = (p.imageNutritionUrl || p.image_nutrition_url) as string;
+      if (p.imagePackagingUrl || p.image_packaging_url)
+        product.imagePackagingUrl = (p.imagePackagingUrl || p.image_packaging_url) as string;
+      if (p.nutritionGrades || p.nutrition_grades)
+        product.nutritionGrades = (p.nutritionGrades || p.nutrition_grades) as string;
+      if (p.ecoscoreGrade || p.ecoscore_grade)
+        product.ecoscoreGrade = (p.ecoscoreGrade || p.ecoscore_grade) as string;
+      if (p.categories) product.categories = p.categories as string;
+      if (p.quantity) product.quantity = p.quantity as string;
+      if (p.servingSize || p.serving_size)
+        product.servingSize = (p.servingSize || p.serving_size) as string;
+      if (p.origins) product.origins = p.origins as string;
+      if (p.manufacturingPlaces || p.manufacturing_places)
+        product.manufacturingPlaces = (p.manufacturingPlaces || p.manufacturing_places) as string;
+      if (p.stores) product.stores = p.stores as string;
+      if (p.traces) product.traces = p.traces as string;
+      if (p.lastModified || p.last_modified_t)
+        product.lastModified = (p.lastModified || p.last_modified_t) as string;
+
+      const allergens = p.allergensTags ?? p.allergens_tags;
+      if (Array.isArray(allergens)) product.allergensTags = allergens as string[];
+      if (p.additivesTags || p.additives_tags) {
+        const tags = p.additivesTags ?? p.additives_tags;
+        if (Array.isArray(tags)) product.additivesTags = tags as string[];
+      }
+
+      const nutriments = p.nutriments;
+      if (nutriments && typeof nutriments === 'object') {
+        const n = nutriments as Record<string, unknown>;
+        const getNut = (camel: string, snake: string): number | undefined => {
+          const v = n[camel] ?? n[snake];
+          return typeof v === 'number' ? v : undefined;
+        };
+        const nut: Product['nutriments'] = {};
+        const e = getNut('energyKcal100g', 'energy-kcal_100g');
+        if (e !== undefined) nut.energyKcal100g = e;
+        const f = getNut('fat100g', 'fat_100g');
+        if (f !== undefined) nut.fat100g = f;
+        const sf = getNut('saturatedFat100g', 'saturated-fat_100g');
+        if (sf !== undefined) nut.saturatedFat100g = sf;
+        const c = getNut('carbohydrates100g', 'carbohydrates_100g');
+        if (c !== undefined) nut.carbohydrates100g = c;
+        const s = getNut('sugars100g', 'sugars_100g');
+        if (s !== undefined) nut.sugars100g = s;
+        const fb = getNut('fiber100g', 'fiber_100g');
+        if (fb !== undefined) nut.fiber100g = fb;
+        const pr = getNut('proteins100g', 'proteins_100g');
+        if (pr !== undefined) nut.proteins100g = pr;
+        const sl = getNut('salt100g', 'salt_100g');
+        if (sl !== undefined) nut.salt100g = sl;
+        if (Object.keys(nut).length > 0) product.nutriments = nut;
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }
+
+  return product;
+}
 
 export default function ResultScreen() {
   const params = useLocalSearchParams<{ ean: string; fromCache?: string; cachedData?: string }>();
@@ -89,13 +199,7 @@ export default function ResultScreen() {
         try {
           const record = await productRepository.findByEan(params.ean);
           if (record) {
-            dbProduct = {
-              ean: record.ean,
-              name: record.name || 'Unbekanntes Produkt',
-              brand: record.brands || undefined,
-              ingredientsText: record.ingredients || undefined,
-              novaScore: record.nova_score ?? undefined,
-            };
+            dbProduct = buildProductFromRecord(record);
             setLocalProduct(dbProduct);
           }
         } catch {
@@ -244,15 +348,27 @@ export default function ResultScreen() {
     if (product && !loading && !error) {
       const ingredientsText = getBestIngredientsText(product);
       const missingIngredients = ingredientsText === 'Keine Zutatenliste verfügbar';
-      const missingNutrition = !product.novaScore;
+      const missingNova = !product.novaScore;
+      const hasNutritionData =
+        product.nutriments !== undefined &&
+        Object.values(product.nutriments).some((v) => v !== undefined);
+      const missingNutrition = missingNova && !hasNutritionData;
+      const missingImage = !product.imageUrl;
 
-      const hasLocalData = !!(localProduct && localProduct.ingredientsText);
+      const hasLocalData = !!(
+        localProduct &&
+        (localProduct.ingredientsText || localProduct.nutriments)
+      );
 
-      if ((missingIngredients || missingNutrition) && !hasLocalData) {
+      if ((missingIngredients || missingNutrition || missingImage) && !hasLocalData) {
         setShowMissingDataModal(true);
       }
     }
   }, [product, loading, error, localProduct]);
+
+  useEffect(() => {
+    setHeroImageLoaded(false);
+  }, [product?.ean]);
 
   const handleToggleFavorite = async () => {
     if (!product?.ean) {
@@ -330,8 +446,42 @@ export default function ResultScreen() {
     return 'Keine Zutatenliste verfügbar';
   };
 
+  const getIngredientsByLang = (prod: Product): Record<string, string> => {
+    const map: Record<string, string> = {};
+    if (prod.ingredientsTextDe) map.de = prod.ingredientsTextDe;
+    if (prod.ingredientsTextEn) map.en = prod.ingredientsTextEn;
+    if (prod.ingredientsTextByLang) {
+      Object.entries(prod.ingredientsTextByLang).forEach(([lang, text]) => {
+        if (text && !map[lang]) map[lang] = text;
+      });
+    }
+    if (Object.keys(map).length === 0 && prod.ingredientsText) {
+      return { '?': prod.ingredientsText };
+    }
+    return map;
+  };
+
+  const getLangLabel = (code: string): string => {
+    const labels: Record<string, string> = {
+      de: 'Deutsch',
+      en: 'English',
+      fr: 'Français',
+      it: 'Italiano',
+      es: 'Español',
+      nl: 'Nederlands',
+      pt: 'Português',
+      pl: 'Polski',
+      ru: 'Русский',
+      ja: '日本語',
+      zh: '中文',
+      ar: 'العربية',
+      tr: 'Türkçe',
+    };
+    return labels[code] || code.toUpperCase();
+  };
+
   const handleContributePress = () => {
-    router.push({ pathname: '/contribute', params: { ean: params.ean } });
+    router.push({ pathname: `/edit/${params.ean}` });
   };
 
   const handleToggleDataSource = () => {
@@ -490,7 +640,19 @@ export default function ResultScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Product image hero */}
         {product.imageUrl ? (
-          <Image source={{ uri: product.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+          <View style={styles.heroImage}>
+            {!heroImageLoaded && (
+              <View style={styles.heroLoadingOverlay}>
+                <ActivityIndicator size="large" color="#4CAF50" />
+              </View>
+            )}
+            <Image
+              source={{ uri: product.imageUrl }}
+              style={styles.heroImage}
+              resizeMode="cover"
+              onLoadEnd={() => setHeroImageLoaded(true)}
+            />
+          </View>
         ) : (
           <View style={[styles.heroImage, styles.heroPlaceholder]}>
             <Text style={styles.heroPlaceholderText}>Kein Bild</Text>
@@ -596,18 +758,35 @@ export default function ResultScreen() {
         )}
 
         {/* 5. Ingredients */}
-        <View style={styles.section}>
-          <Accordion
-            items={[
-              {
-                title: 'Zutatenliste',
-                content: (
-                  <Text style={styles.ingredientsText}>{getBestIngredientsText(product)}</Text>
-                ),
-              },
-            ]}
-          />
-        </View>
+        {(() => {
+          const langMap = getIngredientsByLang(product);
+          const hasAny = Object.keys(langMap).length > 0;
+
+          if (!hasAny) return null;
+
+          const knownLangs = Object.entries(langMap).filter(([l]) => l !== '?');
+          const unknown = langMap['?'];
+
+          const accordionContent =
+            knownLangs.length > 0 ? (
+              <Accordion
+                items={knownLangs.map(([lang, text]) => ({
+                  title: getLangLabel(lang),
+                  content: <Text style={styles.ingredientsText}>{text}</Text>,
+                }))}
+              />
+            ) : unknown ? (
+              <Text style={styles.ingredientsText}>{unknown}</Text>
+            ) : null;
+
+          if (!accordionContent) return null;
+
+          return (
+            <View style={[styles.section, { paddingTop: 12 }]}>
+              <Accordion items={[{ title: 'Zutatenliste', content: accordionContent }]} />
+            </View>
+          );
+        })()}
 
         {/* 6. Allergens */}
         {product.allergensTags?.length || product.traces ? (
@@ -664,7 +843,7 @@ export default function ResultScreen() {
         )}
 
         {/* 9. Additional Information */}
-        {product.origins || product.manufacturingPlaces || product.stores || product.categories ? (
+        {product.origins || product.manufacturingPlaces || product.stores ? (
           <View style={styles.section}>
             <Accordion
               items={[
@@ -672,9 +851,6 @@ export default function ResultScreen() {
                   title: 'Weitere Informationen',
                   content: (
                     <View>
-                      {product.categories ? (
-                        <InfoRow label="Kategorien" value={product.categories} />
-                      ) : null}
                       {product.origins ? (
                         <InfoRow label="Herkunft" value={product.origins} />
                       ) : null}
@@ -829,6 +1005,16 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: '#1A1A1A',
   },
+  heroLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
   heroPlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -920,7 +1106,6 @@ const styles = StyleSheet.create({
 
   // Ingredients
   ingredientsText: { color: '#CFCFCF', fontSize: 14, lineHeight: 21 },
-
   // Allergens
   allergenGroup: { marginBottom: 12 },
   allergenGroupLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '600', marginBottom: 6 },

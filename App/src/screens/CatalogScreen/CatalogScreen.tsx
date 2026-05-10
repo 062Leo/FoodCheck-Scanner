@@ -95,10 +95,10 @@ export default function CatalogScreen() {
     }
   }, []);
 
-  const isFavorite = useCallback((productId: number | undefined) => {
+  const isFavorite = (productId: number | undefined) => {
     if (!productId) return false;
     return catalogStore.favorites.some((fav) => fav.id === productId);
-  }, []);
+  };
 
   if (isLoading) {
     return (
@@ -147,6 +147,7 @@ export default function CatalogScreen() {
       {filteredProducts.length > 0 && (
         <FlatList
           data={filteredProducts}
+          extraData={catalogStore.favorites}
           keyExtractor={(item) => item.ean}
           renderItem={({ item }) => (
             <ProductCard
