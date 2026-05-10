@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
+  Modal,
+  FlatList,
+  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ProductRepository } from '../infrastructure/db/ProductRepository';
@@ -20,9 +23,15 @@ import { OcrCameraSheet } from '../components/OcrCameraSheet/OcrCameraSheet';
 import type { ContributeFormData } from '../types/ContributeFormData';
 import { Accordion } from '../components/Accordion';
 import type { NovaScore, ProductRecord } from '../types/Product';
+import { DeepLClient } from '../infrastructure/translation/DeepLClient';
+import { TranslationRouter } from '../infrastructure/translation/TranslationRouter';
 
 const repo = new ProductRepository();
 const writeClient = new OpenFoodFactsWriteClient();
+const deepLClient = new DeepLClient();
+const translationRouter = new TranslationRouter();
+
+const OFF_INGREDIENTS_LANGS = ['de', 'en', 'fr', 'it', 'es', 'nl', 'pt', 'pl'] as const;
 
 export default function EditProductScreen() {
   const router = useRouter();
@@ -36,6 +45,7 @@ export default function EditProductScreen() {
   const [quantity, setQuantity] = useState('');
   const [category, setCategory] = useState('');
   const [ingredientsText, setIngredientsText] = useState('');
+  const [ingredientsTextByLang, setIngredientsTextByLang] = useState<Record<string, string>>({});
   const [novaScore, setNovaScore] = useState('');
   const [allergensTags, setAllergensTags] = useState('');
   const [traces, setTraces] = useState('');
@@ -59,6 +69,8 @@ export default function EditProductScreen() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
   const [showOffSetup, setShowOffSetup] = useState(false);
+  const [showLangPicker, setShowLangPicker] = useState(false);
+  const [translateSourceLang, setTranslateSourceLang] = useState<string | null>(null);
 
   useEffect(() => {
     if (ean) {
@@ -91,6 +103,30 @@ export default function EditProductScreen() {
                       ? allergens
                       : ''
                 );
+
+                const langTexts: Record<string, string> = {};
+                if (p.ingredientsTextByLang && typeof p.ingredientsTextByLang === 'object') {
+                  Object.entries(p.ingredientsTextByLang as Record<string, unknown>).forEach(
+                    ([lang, text]) => {
+                      if (typeof text === 'string' && text.length > 0) {
+                        langTexts[lang] = text;
+                      }
+                    }
+                  );
+                }
+                Object.entries(p).forEach(([key, value]) => {
+                  if (
+                    key.startsWith('ingredients_text_') &&
+                    typeof value === 'string' &&
+                    value.length > 0
+                  ) {
+                    const lang = key.replace('ingredients_text_', '');
+                    if (!langTexts[lang]) langTexts[lang] = value;
+                  }
+                });
+                if (Object.keys(langTexts).length > 0) {
+                  setIngredientsTextByLang(langTexts);
+                }
 
                 const n = p.nutriments;
                 if (n) {
@@ -130,6 +166,154 @@ export default function EditProductScreen() {
     }
   }, [ean]);
 
+  const getIngredientsByLang = (): Record<string, string> => {
+    return ingredientsTextByLang;
+  };
+
+  const getLangLabel = (code: string): string => {
+    const labels: Record<string, string> = {
+      de: 'Deutsch',
+      en: 'English',
+      fr: 'Français',
+      it: 'Italiano',
+      es: 'Español',
+      nl: 'Nederlands',
+      pt: 'Português',
+      pl: 'Polski',
+      ru: 'Русский',
+      ja: '日本語',
+      zh: '中文',
+      ar: 'العربية',
+      tr: 'Türkçe',
+    };
+    return labels[code] || code.toUpperCase();
+  };
+
+  const handleIngredientsLangChange = (lang: string, value: string) => {
+    setIngredientsTextByLang((prev) => ({ ...prev, [lang]: value }));
+  };
+
+  const availableLangs = useMemo(() => {
+    const existing = new Set(Object.keys(getIngredientsByLang()));
+    return OFF_INGREDIENTS_LANGS.filter((lang) => !existing.has(lang));
+  }, [ingredientsTextByLang]);
+
+  const ingredientsAccordionContent = useMemo(() => {
+    const langMap = getIngredientsByLang();
+    const knownLangs = Object.entries(langMap);
+
+    if (knownLangs.length === 0 && availableLangs.length === 0) return null;
+
+    const innerAccordion =
+      knownLangs.length > 0 ? (
+        <Accordion
+          items={knownLangs.map(([lang, text]) => ({
+            title: getLangLabel(lang),
+            content: (
+              <View>
+                <View style={styles.langActions}>
+                  <TouchableOpacity
+                    style={styles.langActionBtn}
+                    onPress={() => {
+                      setTranslateSourceLang(lang);
+                      setShowLangPicker(true);
+                    }}
+                  >
+                    <Ionicons name="language-outline" size={16} color="#4CAF50" />
+                    <Text style={styles.translateBtnText}>Translate</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.langActionBtn}
+                    onPress={() => handleRemoveLanguage(lang)}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#F44336" />
+                    <Text style={styles.removeLangBtnText}>Entfernen</Text>
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={[styles.input, styles.multiline, { marginBottom: 0 }]}
+                  value={text}
+                  onChangeText={(v) => handleIngredientsLangChange(lang, v)}
+                  multiline
+                  placeholder={`Zutaten (${getLangLabel(lang)})...`}
+                  placeholderTextColor="#555"
+                />
+              </View>
+            ),
+          }))}
+        />
+      ) : null;
+
+    return (
+      <>
+        {innerAccordion}
+        {availableLangs.length > 0 && (
+          <TouchableOpacity
+            style={styles.addLangBtn}
+            onPress={() => {
+              setTranslateSourceLang(null);
+              setShowLangPicker(true);
+            }}
+          >
+            <Ionicons name="add-circle-outline" size={18} color="#4CAF50" />
+            <Text style={styles.addLangBtnText}>Sprache hinzufügen</Text>
+          </TouchableOpacity>
+        )}
+      </>
+    );
+  }, [ingredientsTextByLang, availableLangs]);
+
+  const handleAddLanguage = (lang: string) => {
+    if (translateSourceLang) {
+      handleTranslateTo(translateSourceLang, lang);
+    } else {
+      setIngredientsTextByLang((prev) => ({ ...prev, [lang]: '' }));
+      setShowLangPicker(false);
+    }
+  };
+
+  const handleTranslateTo = async (sourceLang: string, targetLang: string) => {
+    const sourceText = ingredientsTextByLang[sourceLang];
+    if (!sourceText?.trim()) {
+      Alert.alert('Kein Text', 'Die Quellsprache enthält keinen Text zum Übersetzen.');
+      return;
+    }
+
+    const provider = await translationRouter.getProvider();
+    if (provider === 'deepl') {
+      const apiKey = await deepLClient.getApiKey();
+      if (!apiKey) {
+        Alert.alert(
+          'Kein API Key',
+          'Bitte hinterlege zuerst einen DeepL API Key in den Einstellungen.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+    }
+
+    setShowLangPicker(false);
+    setTranslateSourceLang(null);
+    setIsLoading(true);
+
+    try {
+      const translated = await translationRouter.translate(sourceText, targetLang);
+      setIngredientsTextByLang((prev) => ({ ...prev, [targetLang]: translated }));
+    } catch {
+      Alert.alert('Fehler', 'Übersetzung fehlgeschlagen.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveLanguage = (lang: string) => {
+    setIngredientsTextByLang((prev) => {
+      const next = { ...prev };
+      delete next[lang];
+      return next;
+    });
+  };
+
   const handleOcrConfirm = (text: string) => {
     if (cameraTarget === 'ingredients') {
       setIngredientsText(text);
@@ -156,6 +340,15 @@ export default function EditProductScreen() {
       brands: brand,
       category,
       ingredients: ingredientsText,
+      ingredientsTextDe: ingredientsTextByLang.de || undefined,
+      ingredientsTextEn: ingredientsTextByLang.en || undefined,
+      ingredientsByLang: (() => {
+        const others: Record<string, string> = {};
+        Object.entries(ingredientsTextByLang).forEach(([lang, text]) => {
+          if (lang !== 'de' && lang !== 'en' && text) others[lang] = text;
+        });
+        return Object.keys(others).length > 0 ? others : undefined;
+      })(),
       quantity,
       allergensTags,
       traces,
@@ -196,12 +389,56 @@ export default function EditProductScreen() {
       }
 
       setIsUploading(true);
+
+      await repo.updateProduct({
+        ean,
+        name,
+        brands: brand,
+        category,
+        ingredients: ingredientsText,
+        ingredientsTextDe: ingredientsTextByLang.de || undefined,
+        ingredientsTextEn: ingredientsTextByLang.en || undefined,
+        ingredientsByLang: (() => {
+          const others: Record<string, string> = {};
+          Object.entries(ingredientsTextByLang).forEach(([lang, text]) => {
+            if (lang !== 'de' && lang !== 'en' && text) others[lang] = text;
+          });
+          return Object.keys(others).length > 0 ? others : undefined;
+        })(),
+        quantity,
+        allergensTags,
+        traces,
+        origins,
+        manufacturingPlaces,
+        stores,
+        servingSize,
+        novaScore: novaScore
+          ? (Math.min(4, Math.max(1, Number(novaScore) || 1)) as NovaScore)
+          : undefined,
+        nutriments: {
+          energyKcal100g: energyKcal100g ? Number(energyKcal100g) : undefined,
+          fat100g: fat100g ? Number(fat100g) : undefined,
+          saturatedFat100g: saturatedFat100g ? Number(saturatedFat100g) : undefined,
+          carbohydrates100g: carbohydrates100g ? Number(carbohydrates100g) : undefined,
+          sugars100g: sugars100g ? Number(sugars100g) : undefined,
+          fiber100g: fiber100g ? Number(fiber100g) : undefined,
+          proteins100g: proteins100g ? Number(proteins100g) : undefined,
+          salt100g: salt100g ? Number(salt100g) : undefined,
+        },
+      });
+
+      const byLang: Record<string, string> = {};
+      Object.entries(ingredientsTextByLang).forEach(([lang, text]) => {
+        if (text.trim()) byLang[lang] = text.trim();
+      });
+
       const formData: ContributeFormData = {
         ean,
         productName: name,
         brands: brand,
         categories: category,
         ingredientsText: ingredientsText,
+        ingredientsByLang: Object.keys(byLang).length > 0 ? byLang : undefined,
         nutriments: {
           energyKcal100g: energyKcal100g ? Number(energyKcal100g) : undefined,
           fat100g: fat100g ? Number(fat100g) : undefined,
@@ -215,8 +452,12 @@ export default function EditProductScreen() {
       };
 
       await writeClient.uploadProduct(formData);
-      setToastMessage('Upload erfolgreich!');
-      setToastType('success');
+      await catalogStore.loadAll();
+      const updated = await repo.findByEan(ean);
+      router.replace({
+        pathname: '/result',
+        params: { ean, fromCache: 'true', cachedData: updated?.raw_json || '' },
+      });
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       setToastMessage(`Upload fehlgeschlagen:\n${errorMessage}`);
@@ -300,14 +541,67 @@ export default function EditProductScreen() {
               <Ionicons name="camera" size={22} color="#4CAF50" />
             </TouchableOpacity>
           </View>
-          <TextInput
-            style={[styles.input, styles.multiline]}
-            value={ingredientsText}
-            onChangeText={setIngredientsText}
-            multiline
-            placeholder="Zutatenliste..."
-            placeholderTextColor="#555"
-          />
+          {ingredientsAccordionContent && (
+            <View style={{ paddingBottom: 16 }}>
+              <Accordion
+                items={[{ title: 'Zutatenliste', content: ingredientsAccordionContent }]}
+              />
+            </View>
+          )}
+
+          <Modal
+            visible={showLangPicker}
+            transparent
+            animationType="fade"
+            onRequestClose={() => {
+              setShowLangPicker(false);
+              setTranslateSourceLang(null);
+            }}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => {
+                setShowLangPicker(false);
+                setTranslateSourceLang(null);
+              }}
+            >
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>
+                  {translateSourceLang
+                    ? `Übersetzen von ${getLangLabel(translateSourceLang)}`
+                    : 'Sprache wählen'}
+                </Text>
+                <FlatList
+                  data={availableLangs}
+                  keyExtractor={(lang) => lang}
+                  renderItem={({ item: lang }) => (
+                    <TouchableOpacity
+                      style={styles.langOption}
+                      onPress={() => handleAddLanguage(lang)}
+                    >
+                      <Text style={styles.langOptionText}>
+                        {(() => {
+                          const labels: Record<string, string> = {
+                            de: 'Deutsch',
+                            en: 'English',
+                            fr: 'Français',
+                            it: 'Italiano',
+                            es: 'Español',
+                            nl: 'Nederlands',
+                            pt: 'Português',
+                            pl: 'Polski',
+                          };
+                          return `${labels[lang] || lang.toUpperCase()} (${lang})`;
+                        })()}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  style={styles.langList}
+                />
+              </View>
+            </TouchableOpacity>
+          </Modal>
         </View>
 
         {/* Nutrition */}
@@ -463,6 +757,66 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
+
+  addLangBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    marginBottom: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+    borderStyle: 'dashed',
+  },
+  addLangBtnText: { color: '#4CAF50', fontSize: 14, marginLeft: 6 },
+
+  langActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 8,
+    gap: 12,
+  },
+  langActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  translateBtnText: { color: '#4CAF50', fontSize: 13, marginLeft: 4 },
+  removeLangBtnText: { color: '#F44336', fontSize: 13, marginLeft: 4 },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  modalContent: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 12,
+    padding: 24,
+    width: '100%',
+    maxHeight: 400,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  langList: { maxHeight: 300 },
+  langOption: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2A2A',
+  },
+  langOptionText: { color: '#CFCFCF', fontSize: 16 },
 
   saveBtn: {
     backgroundColor: '#4CAF50',

@@ -146,6 +146,9 @@ export class ProductRepository {
     brands?: string;
     category?: string;
     ingredients?: string;
+    ingredientsTextDe?: string;
+    ingredientsTextEn?: string;
+    ingredientsByLang?: Record<string, string>;
     nutriments?: Record<string, number | undefined>;
     quantity?: string;
     allergensTags?: string;
@@ -182,6 +185,23 @@ export class ProductRepository {
           }
           if (product.ingredients !== undefined) {
             target.ingredientsText = product.ingredients;
+            modified = true;
+          }
+          if (product.ingredientsTextDe !== undefined) {
+            target.ingredientsTextDe = product.ingredientsTextDe;
+            target.ingredients_text_de = product.ingredientsTextDe;
+            modified = true;
+          }
+          if (product.ingredientsTextEn !== undefined) {
+            target.ingredientsTextEn = product.ingredientsTextEn;
+            target.ingredients_text_en = product.ingredientsTextEn;
+            modified = true;
+          }
+          if (product.ingredientsByLang !== undefined) {
+            target.ingredientsTextByLang = product.ingredientsByLang;
+            Object.entries(product.ingredientsByLang).forEach(([lang, text]) => {
+              target[`ingredients_text_${lang}`] = text;
+            });
             modified = true;
           }
           if (product.quantity !== undefined) {
@@ -246,6 +266,23 @@ export class ProductRepository {
           }
           if (product.ingredients !== undefined) {
             target.ingredients_text = product.ingredients;
+            modified = true;
+          }
+          if (product.ingredientsTextDe !== undefined) {
+            target.ingredientsTextDe = product.ingredientsTextDe;
+            target.ingredients_text_de = product.ingredientsTextDe;
+            modified = true;
+          }
+          if (product.ingredientsTextEn !== undefined) {
+            target.ingredientsTextEn = product.ingredientsTextEn;
+            target.ingredients_text_en = product.ingredientsTextEn;
+            modified = true;
+          }
+          if (product.ingredientsByLang !== undefined) {
+            target.ingredientsTextByLang = product.ingredientsByLang;
+            Object.entries(product.ingredientsByLang).forEach(([lang, text]) => {
+              target[`ingredients_text_${lang}`] = text;
+            });
             modified = true;
           }
           if (product.quantity !== undefined) {

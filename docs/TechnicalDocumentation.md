@@ -9,6 +9,7 @@
 - **State:** Zustand
 - **Database:** expo-sqlite
 - **OCR:** @react-native-ml-kit/text-recognition (on-device)
+- **Translation:** DeepL API + MyMemory API
 - **Credentials:** expo-secure-store
 
 ## 2. Architecture
@@ -48,31 +49,41 @@ App/
 │   │   ├── CatalogScreen/    # Scanned product list with filters
 │   │   ├── FavoritesScreen/  # Favorite product list
 │   │   ├── FilterScreen/     # Custom filter rules management
+│   │   ├── SettingsScreen/   # Settings hub (Filters, API Key)
+│   │   ├── ApiKeyScreen/     # Translation provider + API key management
 │   │   ├── ContributeScreen/ # OCR flow + product form + OFF upload
 │   │   └── EditProductScreen.tsx
 │   ├── components/
 │   │   ├── ProductCard/      # Reusable product list row
 │   │   ├── SkeletonLoading/
 │   │   ├── Toast/
-│   │   ├── Accordion/
-│   │   ├── ContributeForm/   # Editable product form
-│   │   └── OffAccountSetup/  # OFF credential setup modal
+│   │   ├── Accordion/        # Collapsible section component
+│   │   ├── OcrCameraSheet/   # Bottom sheet OCR camera overlay
+│   │   ├── OffAccountSetup/  # OFF credential setup modal
+│   │   └── ContributeForm/   # Editable product form
 │   ├── store/                # Zustand stores
 │   │   ├── catalogStore.ts
-│   │   └── filterStore.ts
+│   │   ├── filterStore.ts
+│   │   └── settingsStore.ts
 │   ├── domain/
-│   │   └── analysis/
-│   │       ├── RedFlagAnalyzer.ts      # Ingredients → red flags (pure)
-│   │       ├── NovaScoreEvaluator.ts   # Nova 1-4 → label + color
-│   │       ├── ProductRating.ts        # Red flags + Nova → final status
-│   │       └── defaultRules.ts         # Hardcoded red flag list
+│   │   ├── analysis/
+│   │   │   ├── RedFlagAnalyzer.ts      # Ingredients → red flags (pure)
+│   │   │   ├── NovaScoreEvaluator.ts   # Nova 1-4 → label + color
+│   │   │   ├── ProductRating.ts        # Red flags + Nova → final status
+│   │   │   └── defaultRules.ts         # Hardcoded red flag list
+│   │   └── translation/
+│   │       └── Translator.ts           # Translation interface
 │   ├── infrastructure/
 │   │   ├── api/
 │   │   │   ├── OpenFoodFactsClient.ts       # Read client (GET)
 │   │   │   ├── OpenFoodFactsWriteClient.ts  # Write client (POST)
-│   │   │   └── OpenFoodFacts.types.ts       # API types
+│   │   │   └── ...
 │   │   ├── ocr/
 │   │   │   └── OcrService.ts                # ML Kit text recognition wrapper
+│   │   ├── translation/
+│   │   │   ├── DeepLClient.ts               # DeepL API adapter (implements Translator)
+│   │   │   ├── MyMemoryClient.ts            # MyMemory API adapter (implements Translator)
+│   │   │   └── TranslationRouter.ts         # Provider delegation
 │   │   └── db/
 │   │       ├── DatabaseService.ts       # SQLite init + migrations
 │   │       ├── ProductRepository.ts     # CRUD for products
@@ -207,7 +218,27 @@ CREATE TABLE filter_rules (
 - Requires `Authorization: Basic b2ZmOm9mZg==` header
 - Separate account database from production
 
-## 8. Domain Logic
+## 8. Translation Providers
+
+| | DeepL Free | MyMemory |
+|---|---|---|
+| Endpoint | `POST https://api-free.deepl.com/v2/translate` | `GET https://api.mymemory.translated.net/get` |
+| Auth | Header `DeepL-Auth-Key <key>` | Query `&key=<key>` (optional) |
+| Without Key | Not usable | 5.000 words/day (anonymous) |
+| With Key (free) | 500.000 chars/month | 10.000 words/day |
+| Credit card | Required | Not required |
+| Key format | String ending with `:fx` | Standard API key |
+| Key storage | expo-secure-store | expo-secure-store |
+
+### Architecture
+
+- `domain/translation/Translator.ts` — interface with `translate(text, targetLang?)`
+- `DeepLClient` and `MyMemoryClient` both implement `Translator`
+- `TranslationRouter` delegates to the active provider (default: MyMemory)
+- `settingsStore` manages provider selection and API keys
+- User can switch provider in Settings → API Key screen
+
+## 9. Domain Logic
 
 ### Red Flag Analysis
 
@@ -232,7 +263,7 @@ CREATE TABLE filter_rules (
 - Warning (Yellow): 1–2 red flags or Nova 3
 - Critical (Red): 3+ red flags or Nova 4
 
-## 9. UI Design Tokens
+## 10. UI Design Tokens
 
 ```
 Background:   #121212
@@ -253,24 +284,25 @@ Nova 4:       #F44336
 
 Font: System default (SF Pro on iOS, Roboto on Android). Dark mode first.
 
-## 10. Navigation
+## 11. Navigation
 
 Expo Router file-based routing in `App/app/`:
 
-- **Tabs**: Scanner (`index`), Catalog, Favorites, Filters
+- **Tabs**: Scanner (`index`), Catalog, Favorites, Settings
 - **Stack screens**: `result`, `contribute`, `edit/[ean]`
+- **Settings sub-routes**: `settings/filters`, `settings/api-key`
 - `src/navigation/` is empty — do not add routes there.
 
-## 11. Testing
+## 12. Testing
 
 - **Framework:** Jest with `jest-expo` preset
-- **Count:** 9 suites, 61 tests (all passing)
+- **Count:** 20 suites, 195 tests (all passing)
 - **Location:** `__tests__/` directories alongside source files
 - **No snapshot tests** — all assertion-based `expect()` calls
 - **Run all tests:** `npm test`
 - **Run single file:** `npm test -- --testPathPattern=RedFlagAnalyzer`
 
-## 12. Commands (run from `App/`)
+## 13. Commands (run from `App/`)
 
 | Command | Description |
 |---|---|
@@ -285,7 +317,7 @@ Expo Router file-based routing in `App/app/`:
 | `npm run format:check` | Prettier check |
 | `npx tsc --noEmit` | TypeScript type-check |
 
-## 13. Feature Status
+## 14. Feature Status
 
 | Feature | Phase | Status |
 |---|---|---|
@@ -303,10 +335,12 @@ Expo Router file-based routing in `App/app/`:
 | OFF contribution/upload flow | v3 | Done |
 | Editable product form | v3 | Done |
 | Data source toggle (OFF vs. Local) | v3 | Done |
+| Multi-language ingredients editor | v3 | Done |
+| Translation (DeepL + MyMemory) | v3 | Done |
 | Offline OFF database dump | v3 | Planned |
 | CSV export | v3 | Planned |
 
-## 14. Known Issues
+## 15. Known Issues
 
 1. `npx tsc --noEmit` fails with 4 errors:
    - `FilterRuleRepository.ts`: references `created_at` on `NewFilterRule` (which omits it)
@@ -314,7 +348,7 @@ Expo Router file-based routing in `App/app/`:
    - `FilterScreen.tsx`: references `created_at` on `NewFilterRule`
 2. `src/screens/ResultScreen.tsx` is a dead file — the active version is at `src/screens/ResultScreen/ResultScreen.tsx`.
 
-## 15. Non-Functional Requirements
+## 16. Non-Functional Requirements
 
 | ID | Requirement | Status |
 |---|---|---|

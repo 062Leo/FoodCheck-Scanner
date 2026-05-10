@@ -15,5 +15,6 @@ export interface ContributeFormData {
   brands?: string;
   categories?: string;
   ingredientsText?: string;
+  ingredientsByLang?: Record<string, string>;
   nutriments?: NutrimentData;
 }

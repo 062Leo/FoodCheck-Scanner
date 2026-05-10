@@ -41,11 +41,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="filters"
+        name="settings"
         options={{
-          title: 'Filter',
-          tabBarLabel: 'Filter',
-          tabBarIcon: ({ color }) => <Ionicons name="options" size={24} color={color} />,
+          title: 'Einstellungen',
+          tabBarLabel: 'Einstellungen',
+          tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={24} color={color} />,
         }}
       />
     </Tabs>

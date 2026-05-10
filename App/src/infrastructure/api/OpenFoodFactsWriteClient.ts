@@ -151,6 +151,14 @@ export class OpenFoodFactsWriteClient {
       ingredients_text: data.ingredientsText,
     };
 
+    if (data.ingredientsByLang) {
+      Object.entries(data.ingredientsByLang).forEach(([lang, text]) => {
+        if (text) {
+          (payload as Record<string, string>)[`ingredients_text_${lang}`] = text;
+        }
+      });
+    }
+
     if (data.nutriments) {
       payload.nutriment_energy = data.nutriments.energyKcal100g?.toString();
       payload.nutriment_energy_unit = 'kcal';
