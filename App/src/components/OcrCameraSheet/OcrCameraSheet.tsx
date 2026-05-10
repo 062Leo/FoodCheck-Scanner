@@ -157,6 +157,30 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
     }
   }, [visible]);
 
+  /* Ensure camera is paused and ref cleared when modal closes */
+  useEffect(() => {
+    if (!visible) {
+      try {
+        const anyRef = cameraRef.current as any;
+        if (anyRef && typeof anyRef.pausePreview === 'function') {
+          anyRef.pausePreview();
+        }
+      } catch (err) {
+        // Non-fatal: best-effort cleanup
+        console.warn('Failed to pause OCR camera during cleanup', err);
+      } finally {
+        // clear ref so native camera resources can be reclaimed
+        // (best-effort; component unmount should also free resources)
+        if (cameraRef.current) {
+          // @ts-ignore
+          cameraRef.current = null;
+        }
+        // Bump session key to force a fresh camera when reopened
+        setCameraSessionKey((prev) => prev + 1);
+      }
+    }
+  }, [visible]);
+
   /* ── reset ──────────────────────────────────────────────── */
   const reset = useCallback(() => {
     setPhase('camera');

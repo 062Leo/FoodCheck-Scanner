@@ -9,6 +9,7 @@ export default function ScannerScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
   const frameAnimation = useRef(new Animated.Value(0)).current;
   const productRepository = new ProductRepository();
 
@@ -32,6 +33,10 @@ export default function ScannerScreen() {
   useFocusEffect(
     useCallback(() => {
       setScanned(false);
+      setCameraActive(true);
+      return () => {
+        setCameraActive(false);
+      };
     }, [])
   );
 
@@ -112,13 +117,15 @@ export default function ScannerScreen() {
 
   return (
     <View style={styles.container}>
-      <CameraView
-        style={styles.camera}
-        barcodeScannerSettings={{
-          barcodeTypes: ['ean8', 'ean13'],
-        }}
-        onBarcodeScanned={handleBarCodeScanned}
-      />
+      {cameraActive && (
+        <CameraView
+          style={styles.camera}
+          barcodeScannerSettings={{
+            barcodeTypes: ['ean8', 'ean13'],
+          }}
+          onBarcodeScanned={handleBarCodeScanned}
+        />
+      )}
 
       <View style={styles.overlay}>
         <Animated.View

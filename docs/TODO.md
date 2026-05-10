@@ -1,166 +1,126 @@
-# FoodScanner – TODO
+# Development Tasks
+
+## Task 0: Audit Current OpenFoodFacts API Integration
+
+**Status:** Not Started
+
+**Description:**
+Investigate and document how the OpenFoodFacts API is currently integrated in the codebase, if at all. This includes identifying existing API client code, current endpoints being used, authentication methods, error handling, and any missing functionality.
+
+**Scope:**
+- [ ] Search for all OpenFoodFacts API client code in `App/src/infrastructure/api/` and related directories
+- [ ] Document what API endpoints are currently being called
+- [ ] List any existing helper functions or utilities related to OFF integration
+- [ ] Note current authentication mechanism (if any)
+- [ ] Identify error handling strategies currently in place
+- [ ] Document which endpoints are missing but needed based on Task 1 requirements
+- [ ] Create a summary document of findings
+
+**Output:**
+A brief report (e.g., `docs/CURRENT_API_STATUS.md`) documenting the current state so subsequent tasks can build upon or replace existing code appropriately.
 
 ---
 
-## ✅ Milestone 0 – Projekt-Setup
-- [x] Expo-Projekt mit TypeScript erstellen
-- [x] Expo Go auf Gerät installieren & testen
-- [x] Abhängigkeiten installieren (`expo-camera`, `expo-sqlite`, `zustand`, `expo-router`, etc.)
-- [x] Verzeichnisstruktur anlegen
-- [x] ESLint + Prettier konfigurieren
+## Task 1: OpenFoodFacts API Integration
 
-## ✅ Milestone 1 – MVP: Scan & Bewertung
-- [x] `types/ScanResult.ts` – Analyse-Ergebnis-Typen
-- [x] `domain/rules/defaultRules.ts` – hardcodierte Red-Flag-Liste
-- [x] `domain/analysis/RedFlagAnalyzer.ts` – pure function, keine Framework-Abhängigkeiten
-- [x] `domain/analysis/NovaScoreEvaluator.ts` – Nova 1–4 → Label & Farbe
-- [x] `domain/analysis/ProductRating.ts` – Red Flags + Nova → Gesamtstatus
-- [x] Unit-Tests: RedFlagAnalyzer, NovaScoreEvaluator, ProductRating
+**Status:** Not Started
 
-### Infrastruktur & API
-- [x] `infrastructure/api/OpenFoodFacts.types.ts` – API-Response-Typen
-- [x] `infrastructure/api/OpenFoodFactsClient.ts` – fetch, User-Agent, null bei status=0
-- [x] Offline-Check (`@react-native-community/netinfo`)
+**Description:**
+Properly integrate the OpenFoodFacts API and verify functionality through comprehensive tests.
 
-### Screens & Navigation
-
-### State & Integration
- ### Setup
- - [x] `@react-native-ml-kit/text-recognition` installieren
- - [x] `expo-secure-store` installieren
- - [x] OFF-Account anlegen (einmalig auf openfoodfacts.org)
- - [x] `types/ContributeFormData.ts` anlegen
-
-### Abnahme
- - [x] `@react-native-ml-kit/text-recognition` installieren
- - [x] `expo-secure-store` installieren
- - [x] OFF-Account anlegen (einmalig auf openfoodfacts.org)
- - [x] `types/ContributeFormData.ts` anlegen
- 
- ### OcrService
-
-## ⏳ Milestone 3 – Custom Filter-Regeln
-
-### Domain & Datenbank
- [x] `infrastructure/db/FilterRuleRepository.ts` – CRUD für Regeln (insert, findAll, update, deleteById + 3/3 tests passing)
-
-### State & UI
-
-### Abnahme
-
-
-## ⏳ Milestone 4 – OCR & OFF-Contribution-Flow *(v3)*
- - [x] `filter_rules`-Tabelle in SQLite aktivieren
- - [x] `infrastructure/db/FilterRuleRepository.ts` – CRUD für Regeln (insert, findAll, update, deleteById + 3/3 tests passing)
-- [x] `RedFlagAnalyzer` auf dynamische Regeln umstellen (statt hardcoded)
- 
- ### State & UI
- - [x] `store/filterStore.ts` mit Zustand anlegen
-
-### OcrService
-
-### OFF Write Client
- ### Domain & Datenbank
- - [x] `types/FilterRule.ts` – Typen finalisieren (Ingredient-Rule + Nutrient-Rule mit Threshold)
- - [x] `filter_rules`-Tabelle in SQLite aktivieren
- - [x] Migrations-Logik: hardcodierte Regeln als Seed in DB importieren
- - [x] `infrastructure/db/FilterRuleRepository.ts` – CRUD für Regeln (insert, findAll, update, deleteById + 3/3 tests passing)
- - [x] `RedFlagAnalyzer` auf dynamische Regeln umstellen (statt hardcoded)
- 
- ### State & UI
- - [x] `store/filterStore.ts` mit Zustand anlegen
-- [x] Filter-Verwaltungs-Screen – Liste aller Regeln, hinzufügen, bearbeiten, löschen
-- [x] UI: Ingredient-Regel anlegen (Suchfeld + Severity-Toggle: Red Flag / OK)
-- [x] UI: Nutrient-Regel anlegen (Nährwert auswählen, Operator `>` / `<`, Grenzwert eingeben)
-
-### ContributeScreen – 3-Schritt-Flow
- - [x] `@react-native-ml-kit/text-recognition` installieren
- - [x] `expo-secure-store` installieren
- - [x] OFF-Account anlegen (einmalig auf openfoodfacts.org)
- - [x] `types/ContributeFormData.ts` anlegen
-
-### OFF-Account Setup
-
-### Abnahme
- ### State & Integration
- - [x] Scan-Flow erweitern: nach Analyse → Produkt in SQLite speichern
- - [x] Tab-Navigation für alle 3 Tabs aktivieren
- - [x] Offline-Ansicht: gecachte Produkte ohne Internet anzeigen
- 
- ### Abnahme
- - [x] 10 Produkte scannen → alle im Katalog sichtbar
- - [x] Favorit setzen → erscheint im Favoriten-Tab
- - [x] App neu starten → Daten bleiben erhalten
- - [x] Produkt löschen → verschwindet aus Katalog und Favoriten
- 
- ---
- 
- ## ✅ Milestone 3 – Custom Filter-Regeln
- 
- ### Domain & Datenbank
- - [x] `types/FilterRule.ts` – Typen finalisieren (Ingredient-Rule + Nutrient-Rule mit Threshold)
- - [x] `filter_rules`-Tabelle in SQLite aktivieren
- - [x] Migrations-Logik: hardcodierte Regeln als Seed in DB importieren
- - [x] `infrastructure/db/FilterRuleRepository.ts` – CRUD für Regeln (insert, findAll, update, deleteById + 3/3 tests passing)
- - [x] `RedFlagAnalyzer` auf dynamische Regeln umstellen (statt hardcoded)
- 
- ### State & UI
- - [x] `store/filterStore.ts` mit Zustand anlegen
- - [x] Filter-Verwaltungs-Screen – Liste aller Regeln, hinzufügen, bearbeiten, löschen
- - [x] UI: Ingredient-Regel anlegen (Suchfeld + Severity-Toggle: Red Flag / OK)
- - [x] UI: Nutrient-Regel anlegen (Nährwert auswählen, Operator `>` / `<`, Grenzwert eingeben)
- 
- ### Abnahme
- - [x] Regel „Palmöl = OK" → taucht nicht mehr als Red Flag auf
- - [x] Regel „Zucker > 3 g/100 ml = Warnung" → greift korrekt
- - [x] Regeln überleben App-Neustart
- 
- ---
- 
- ## ✅ Milestone 4 – OCR & OFF-Contribution-Flow *(v3)*
- 
- ### Setup
- - [x] `@react-native-ml-kit/text-recognition` installieren
- - [x] `expo-secure-store` installieren
- - [x] OFF-Account anlegen (einmalig auf openfoodfacts.org)
- - [x] `types/ContributeFormData.ts` anlegen
- 
- ### OcrService
- - [x] `infrastructure/ocr/OcrService.ts` – ML Kit Wrapper (ImageUri → Rohtext) + parseNutriments()
- - [x] Unit-Test für OcrService (recognizeText + parseNutriments mit 8 tests passing)
- 
- ### OFF Write Client
- - [x] `infrastructure/api/OpenFoodFactsWriteClient.ts` – POST zu OFF API
- - [x] Fehlerbehandlung: offline, Auth-Fehler, Server-Error
- - [x] Unit-Test mit gemocktem fetch
- 
- ### ContributeScreen – 3-Schritt-Flow
- - [x] Screen-Grundstruktur mit Schritt-Indikator
- - [x] **Schritt 1:** Kamera für Zutatenliste, "Foto aufnehmen" + "Überspringen"
- - [x] **Schritt 2:** Kamera für Nährwerte, "Foto aufnehmen" + "Überspringen"
- - [x] **Schritt 3:** Editierbares Formular (Name, Marke, Kategorie, Zutaten, Nährwerte) – OCR-vorausgefüllt
- - [x] Pflichtfeld-Validierung (Produktname)
- - [x] Bestätigungs-Dialog vor Upload
- - [x] Upload → `OpenFoodFactsWriteClient` + sofortige lokale Analyse → ResultScreen
- - [x] Upload-Fehler → Toast, lokale Analyse trotzdem anzeigen
- 
- ### OFF-Account Setup
- - [x] Einmaliger Setup-Flow beim ersten Contribute-Versuch
- - [x] Credentials speichern mit `expo-secure-store`
- - [x] "Beitragen"-Button im ResultScreen bei `status === 0` einbauen
- 
- ### Abnahme
- - [x] Foto Zutatenliste → Text korrekt ins Formular übernommen
- - [x] Foto Nährwerte → Felder vorausgefüllt
- - [x] Beide Schritte überspringen → Formular manuell ausfüllbar
- - [x] Upload ohne Produktname → Button deaktiviert
- - [x] Upload erfolgreich → ResultScreen mit sofortiger Analyse
- - [x] Upload offline → Toast, Analyse trotzdem sichtbar
+**Reference Documentation:**
+- [OpenFoodFacts API Reference](openfoodfacts_api_reference.md) — Complete technical reference for all API endpoints, authentication, rate limits, and error handling
+- [TODO_OFF.md](TODO_OFF.md) — Step-by-step implementation guide with acceptance criteria for each phase (Setup → Production Go-Live)
+- Start with Task 0 findings to understand what needs to be replaced or improved
 
 ---
 
-## ⏳ Zukünftige & Geplante Punkte (aus dem Lastenheft)
+## Task 2: Remove Upload-to-OFF Prompt After Contributing Missing Ingredients
 
-- [ ] `F-11`: Filter-Profile speichern (mehrere Regelsets speichern und umschalten)
-- [ ] `F-15`: Offline OFF-Datenbank Dump (Open Food Facts Dump lokal speichern für schnellere Suche)
-- [ ] `F-16`: Katalog als CSV exportieren
+
+**Description:**
+After a user manually adds missing ingredients to a scanned product and completes the contribution form, the application currently displays a button prompting the user to upload the product to the OpenFoodFacts database. This prompt should be removed.
+
+**Current Behavior:**
+1. User scans a product with missing ingredients
+2. User is prompted to take a photo and add missing ingredients
+3. User completes the contribution form
+4. A button appears asking: "Do you want to upload to OpenFoodFacts?"
+
+**Expected Behavior:**
+- After completing the ingredient contribution form, only a "Save Locally" button should appear
+- The product is saved to the local database only
+- Uploading to OpenFoodFacts should occur at a different location in the user flow (out of scope for this task)
+
+**Acceptance Criteria:**
+- [ ] Remove the "Upload to OFF" button from the post-contribution screen
+- [ ] Display only the "Save Locally" button
+- [ ] Product data is correctly saved to the local SQLite database
+- [ ] Tests verify that no upload-related code is executed after ingredient contribution
+
+---
+
+## Task 3: Fix Product Data Persistence and Add Local vs. OFF Data Source Toggle
+
+
+**Description:**
+When a user adds missing ingredients and other product information locally, the application should recognize that all required information is now available. Currently, when viewing a previously contributed product in the catalog, the app incorrectly reports that ingredients are still missing, prompting the user to add them again despite the local contribution.
+
+### Subtask 3A: Fix Missing Ingredient Recognition
+
+**Current Behavior:**
+1. User scans a product with missing ingredients (e.g., name, brand, category, nutrition facts, ingredients)
+2. User photographs and enters missing ingredients
+3. User enters additional product information (brand, category, nutrition facts)
+4. Product is saved locally with complete information
+5. User opens the product from the catalog
+6. App displays error: "Missing ingredients" and prompts to re-enter data
+
+**Expected Behavior:**
+- App correctly recognizes that ingredients and other information have been added locally
+- No re-entry prompt is displayed for products with complete local data
+
+**Acceptance Criteria:**
+- [ ] Local product repository correctly identifies when all required fields are present
+- [ ] ResultScreen/CatalogScreen checks local data before requesting missing information
+- [ ] Product details are loaded from the local database without re-entry prompts
+- [ ] Tests verify correct detection of missing vs. complete product data
+
+### Subtask 3B: Implement Data Source Toggle
+
+**Description:**
+Add a toggle switch to allow users to switch between viewing:
+- **Option A:** Product information from the OpenFoodFacts database
+- **Option B:** Product information from the local device database
+
+**Expected Behavior:**
+- A toggle switch appears in the product view (e.g., in ResultScreen or CatalogScreen)
+- Toggle displays: "OFF Database" ↔ "Local Database"
+- Selecting a data source loads and displays product information from that source
+- The active data source is visually indicated
+
+**Acceptance Criteria:**
+- [ ] Toggle component is implemented and visible in product detail views
+- [ ] Selecting "OFF Database" loads product data from OpenFoodFacts API
+- [ ] Selecting "Local Database" loads product data from SQLite repository
+- [ ] UI clearly indicates which data source is currently active
+- [ ] Both data sources can be accessed without re-scanning the product
+- [ ] Tests verify that data is correctly loaded from the selected source
+
+### Subtask 3C: Enable Data Merging and Synchronization (Optional Enhancement)
+
+**Description:**
+Allow users to merge data from both sources and choose which values to keep (e.g., title from OFF, but nutrition facts from local database).
+
+**Note:** This is an enhancement feature. Prioritize 3A and 3B first.
+
+**Possible Future Behavior:**
+- User can select which fields to merge (e.g., "Use OFF title + local nutrition facts")
+- Merged data can be pushed to both local and OFF databases
+- Synchronization creates a unified product record
+
+**Acceptance Criteria (Future):**
+- [ ] UI provides a way to select fields from each source
+- [ ] Merged data is saved correctly to both databases (when applicable)
+- [ ] Synchronization does not overwrite unmodified data 
+
