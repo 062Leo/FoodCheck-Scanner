@@ -1,6 +1,16 @@
 import * as SecureStore from 'expo-secure-store';
 import { ContributeFormData } from '../../types/ContributeFormData';
-import { NutrimentData } from '../../types/ContributeFormData';
+import {
+  BASE_URL,
+  USER_AGENT,
+  STAGING_AUTH,
+  USE_STAGING,
+  APP_NAME,
+  APP_VERSION,
+  generateAppUUID,
+} from './config';
+import { ApiError } from './ApiError';
+import { retryWithBackoff } from './retry';
 
 export class UploadError extends Error {
   constructor(
@@ -12,9 +22,51 @@ export class UploadError extends Error {
   }
 }
 
+export interface ProductWritePayload {
+  product_name?: string;
+  brands?: string;
+  categories?: string;
+  quantity?: string;
+  serving_size?: string;
+  labels?: string;
+  countries?: string;
+  ingredients_text?: string;
+  nutrition_data_per?: '100g' | 'serving';
+  nutriment_energy?: string;
+  nutriment_energy_unit?: string;
+  nutriment_fat?: string;
+  'nutriment_saturated-fat'?: string;
+  nutriment_carbohydrates?: string;
+  nutriment_sugars?: string;
+  nutriment_proteins?: string;
+  nutriment_salt?: string;
+  nutriment_sodium?: string;
+  nutriment_sodium_unit?: string;
+  nutriment_fiber?: string;
+  no_nutrition_data?: 'on';
+  add_categories?: string;
+  add_labels?: string;
+  add_brands?: string;
+}
+
+export type NutrimentPayload = Pick<
+  ProductWritePayload,
+  | 'nutriment_energy'
+  | 'nutriment_energy_unit'
+  | 'nutriment_fat'
+  | 'nutriment_saturated-fat'
+  | 'nutriment_carbohydrates'
+  | 'nutriment_sugars'
+  | 'nutriment_proteins'
+  | 'nutriment_salt'
+  | 'nutriment_sodium'
+  | 'nutriment_sodium_unit'
+  | 'nutriment_fiber'
+  | 'no_nutrition_data'
+>;
+
 export class OpenFoodFactsWriteClient {
-  private readonly uploadUrl = 'https://world.openfoodfacts.org/cgi/product_jqm2.pl';
-  private readonly userAgent = 'FoodScanner/1.0 (private)';
+  private readonly uploadUrl = `${BASE_URL}/cgi/product_jqm2.pl`;
 
   async saveCredentials(username: string, password: string): Promise<void> {
     await SecureStore.setItemAsync('off_username', username);
@@ -33,70 +85,91 @@ export class OpenFoodFactsWriteClient {
     return null;
   }
 
-  async uploadProduct(data: ContributeFormData): Promise<void> {
-    try {
-      const credentials = await this.loadCredentials();
-      if (!credentials) {
-        throw new UploadError('No credentials stored. Please save credentials first.');
-      }
+  async updateProduct(barcode: string, payload: ProductWritePayload): Promise<void> {
+    return retryWithBackoff(async () => {
+      try {
+        const credentials = await this.loadCredentials();
+        if (!credentials) {
+          throw new UploadError('No credentials stored. Please save credentials first.');
+        }
 
-      const formData = new FormData();
-      formData.append('code', data.ean);
-      formData.append('user_id', credentials.username);
-      formData.append('password', credentials.password);
-      formData.append('product_name', data.productName);
-      if (data.brands) formData.append('brands', data.brands);
-      if (data.categories) formData.append('categories', data.categories);
-      if (data.ingredientsText) formData.append('ingredients_text', data.ingredientsText);
+        const formData = new FormData();
+        formData.append('code', barcode);
+        formData.append('user_id', credentials.username);
+        formData.append('password', credentials.password);
+        formData.append('app_name', APP_NAME);
+        formData.append('app_version', APP_VERSION);
+        formData.append('app_uuid', generateAppUUID(credentials.username));
 
-      if (data.nutriments) {
-        this.appendNutriment(formData, data.nutriments);
-      }
+        for (const [key, value] of Object.entries(payload)) {
+          if (value !== undefined && value !== null && value !== '') {
+            formData.append(key, value);
+          }
+        }
 
-      const response = await fetch(this.uploadUrl, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'User-Agent': this.userAgent,
-        },
-      });
+        const headers: Record<string, string> = {
+          'User-Agent': USER_AGENT,
+        };
+        if (USE_STAGING) {
+          headers['Authorization'] = STAGING_AUTH;
+        }
 
-      if (!response.ok) {
-        throw new UploadError(`Upload failed with status ${response.status}`);
-      }
+        const response = await fetch(this.uploadUrl, {
+          method: 'POST',
+          body: formData,
+          headers,
+        });
 
-      // OFF returns 1 in the body for success
-      const text = await response.text();
-      if (!text.includes('1')) {
-        throw new UploadError('Upload failed: OFF did not return success');
+        if (!response.ok) {
+          throw ApiError.fromHttpStatus(response.status);
+        }
+
+        const text = await response.text();
+        if (!text.includes('1')) {
+          throw new UploadError('Upload failed: OFF did not return success');
+        }
+      } catch (error) {
+        if (error instanceof ApiError && error.retryable) throw error;
+        if (error instanceof UploadError) throw error;
+        throw new UploadError(
+          `Failed to upload product: ${error instanceof Error ? error.message : String(error)}`,
+          error
+        );
       }
-    } catch (error) {
-      if (error instanceof UploadError) {
-        throw error;
-      }
-      throw new UploadError(
-        `Failed to upload product: ${error instanceof Error ? error.message : String(error)}`,
-        error
-      );
-    }
+    });
   }
 
-  private appendNutriment(formData: FormData, nutriments: NutrimentData): void {
-    if (nutriments.energyKcal100g !== undefined)
-      formData.append('nutriments_energy-kcal_100g', String(nutriments.energyKcal100g));
-    if (nutriments.fat100g !== undefined)
-      formData.append('nutriments_fat_100g', String(nutriments.fat100g));
-    if (nutriments.saturatedFat100g !== undefined)
-      formData.append('nutriments_saturated-fat_100g', String(nutriments.saturatedFat100g));
-    if (nutriments.carbohydrates100g !== undefined)
-      formData.append('nutriments_carbohydrates_100g', String(nutriments.carbohydrates100g));
-    if (nutriments.sugars100g !== undefined)
-      formData.append('nutriments_sugars_100g', String(nutriments.sugars100g));
-    if (nutriments.fiber100g !== undefined)
-      formData.append('nutriments_fiber_100g', String(nutriments.fiber100g));
-    if (nutriments.proteins100g !== undefined)
-      formData.append('nutriments_proteins_100g', String(nutriments.proteins100g));
-    if (nutriments.salt100g !== undefined)
-      formData.append('nutriments_salt_100g', String(nutriments.salt100g));
+  async submitNutritionData(barcode: string, nutriments: NutrimentPayload): Promise<void> {
+    return this.updateProduct(barcode, nutriments);
+  }
+
+  async uploadProduct(data: ContributeFormData): Promise<void> {
+    const payload: ProductWritePayload = {
+      product_name: data.productName,
+      brands: data.brands,
+      categories: data.categories,
+      ingredients_text: data.ingredientsText,
+    };
+
+    if (data.nutriments) {
+      payload.nutriment_energy = data.nutriments.energyKcal100g?.toString();
+      payload.nutriment_energy_unit = 'kcal';
+      if (data.nutriments.fat100g !== undefined)
+        payload.nutriment_fat = data.nutriments.fat100g.toString();
+      if (data.nutriments.saturatedFat100g !== undefined)
+        payload['nutriment_saturated-fat'] = data.nutriments.saturatedFat100g.toString();
+      if (data.nutriments.carbohydrates100g !== undefined)
+        payload.nutriment_carbohydrates = data.nutriments.carbohydrates100g.toString();
+      if (data.nutriments.sugars100g !== undefined)
+        payload.nutriment_sugars = data.nutriments.sugars100g.toString();
+      if (data.nutriments.fiber100g !== undefined)
+        payload.nutriment_fiber = data.nutriments.fiber100g.toString();
+      if (data.nutriments.proteins100g !== undefined)
+        payload.nutriment_proteins = data.nutriments.proteins100g.toString();
+      if (data.nutriments.salt100g !== undefined)
+        payload.nutriment_salt = data.nutriments.salt100g.toString();
+    }
+
+    return this.updateProduct(data.ean, payload);
   }
 }

@@ -65,9 +65,7 @@ export function ProductCard({
         text: 'Löschen',
         onPress: async () => {
           try {
-            await Haptics.notificationAsync(
-              Haptics.NotificationFeedbackType.Success
-            );
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             await onDelete(product.ean);
             setShowDeleteArea(false);
           } catch (err) {
@@ -95,9 +93,7 @@ export function ProductCard({
     : '';
 
   const statusColor = STATUS_COLORS[product.rating];
-  const novaLabel = product.nova_score
-    ? `Nova ${product.nova_score}`
-    : 'N/A';
+  const novaLabel = product.nova_score ? `Nova ${product.nova_score}` : 'N/A';
 
   return (
     <View style={styles.container}>
@@ -109,9 +105,7 @@ export function ProductCard({
       >
         <View style={styles.card}>
           {/* Status dot */}
-          <View
-            style={[styles.statusDot, { backgroundColor: statusColor }]}
-          />
+          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
 
           {/* Product info */}
           <View style={styles.content}>
@@ -130,7 +124,11 @@ export function ProductCard({
 
           <View style={styles.actionRow}>
             {/* Edit icon */}
-            <TouchableOpacity onPress={() => router.push({ pathname: '/edit/[ean]', params: { ean: product.ean } })} disabled={isDeleting} style={styles.iconButton}>
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: '/edit/[ean]', params: { ean: product.ean } })}
+              disabled={isDeleting}
+              style={styles.iconButton}
+            >
               <Ionicons name="pencil" size={20} color="#bbb" />
             </TouchableOpacity>
 
@@ -140,19 +138,20 @@ export function ProductCard({
               disabled={isDeleting}
               style={styles.iconButton}
             >
-              <Text style={styles.favoriteIcon}>
-                {isFavorite ? '★' : '☆'}
-              </Text>
+              <Text style={styles.favoriteIcon}>{isFavorite ? '★' : '☆'}</Text>
             </TouchableOpacity>
 
             {/* Delete icon */}
-            <TouchableOpacity onPress={handleDelete} disabled={isDeleting} style={styles.iconButton}>
+            <TouchableOpacity
+              onPress={handleDelete}
+              disabled={isDeleting}
+              style={styles.iconButton}
+            >
               <Ionicons name="trash" size={20} color="#F44336" />
             </TouchableOpacity>
           </View>
         </View>
       </TouchableOpacity>
-
 
       {/* Hidden delete area (swipe left) */}
       {showDeleteArea && (
@@ -162,9 +161,7 @@ export function ProductCard({
             disabled={isDeleting}
             style={styles.deleteButton}
           >
-            <Text style={styles.deleteText}>
-              {isDeleting ? '...' : 'Löschen'}
-            </Text>
+            <Text style={styles.deleteText}>{isDeleting ? '...' : 'Löschen'}</Text>
           </TouchableOpacity>
         </View>
       )}

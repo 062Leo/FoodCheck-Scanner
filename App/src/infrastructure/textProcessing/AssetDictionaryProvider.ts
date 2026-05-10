@@ -6,14 +6,16 @@ import type { Dictionary, TermFrequency } from '../../domain/textProcessing/Dict
 export class AssetDictionaryProvider implements Dictionary {
   private constructor(private readonly terms: TermFrequency[]) {}
 
-  static async fromAsset(moduleIdOrContent: number | TermFrequency[]): Promise<AssetDictionaryProvider> {
+  static async fromAsset(
+    moduleIdOrContent: number | TermFrequency[]
+  ): Promise<AssetDictionaryProvider> {
     if (Array.isArray(moduleIdOrContent)) {
       return new AssetDictionaryProvider(moduleIdOrContent);
     }
 
     if (typeof moduleIdOrContent !== 'number') {
       throw new Error(
-        `Invalid asset module id for dictionary. Expected a number from require(...), got ${Object.prototype.toString.call(moduleIdOrContent)}.`,
+        `Invalid asset module id for dictionary. Expected a number from require(...), got ${Object.prototype.toString.call(moduleIdOrContent)}.`
       );
     }
 
@@ -31,4 +33,3 @@ export class AssetDictionaryProvider implements Dictionary {
     return this.terms;
   }
 }
-

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Modal, Image, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import * as Haptics from 'expo-haptics';
@@ -14,12 +14,27 @@ import { NovaScoreEvaluator } from '../../domain/analysis/NovaScoreEvaluator';
 import { ProductRating } from '../../domain/analysis/ProductRating';
 import { defaultRules } from '../../domain/rules/defaultRules';
 import { SkeletonLoadingScreen } from '../../components/SkeletonLoading';
-import { Toast } from '../../components/Toast';
 import { Accordion } from '../../components/Accordion';
-import { OffAccountSetup } from '../../components/OffAccountSetup/OffAccountSetup';
-import { OpenFoodFactsWriteClient } from '../../infrastructure/api/OpenFoodFactsWriteClient';
+import { NutritionTable } from '../../components/NutritionTable';
+import { ImageGallery } from '../../components/ImageGallery';
 
 type ErrorType = 'offline' | 'not-found' | 'generic';
+type DataSource = 'off' | 'local';
+
+const NUTRI_SCORE_COLORS: Record<string, string> = {
+  a: '#038141',
+  b: '#85BB2F',
+  c: '#FECB02',
+  d: '#EE8100',
+  e: '#E63E11',
+};
+
+const NOVA_COLORS: Record<number, string> = {
+  1: '#4CAF50',
+  2: '#8BC34A',
+  3: '#FFC107',
+  4: '#F44336',
+};
 
 export default function ResultScreen() {
   const params = useLocalSearchParams<{ ean: string; fromCache?: string; cachedData?: string }>();
@@ -32,8 +47,11 @@ export default function ResultScreen() {
   const [productId, setProductId] = useState<number | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
-  const [showSetupModal, setShowSetupModal] = useState(false);
   const [showMissingDataModal, setShowMissingDataModal] = useState(false);
+  const [dataSource, setDataSource] = useState<DataSource>('off');
+  const [offProduct, setOffProduct] = useState<Product | null>(null);
+  const [localProduct, setLocalProduct] = useState<Product | null>(null);
+  const [heroImageLoaded, setHeroImageLoaded] = useState(false);
 
   const catalogStore = useCatalogStore();
   const productRepository = new ProductRepository();
@@ -52,7 +70,9 @@ export default function ResultScreen() {
           try {
             const cachedJson = JSON.parse(params.cachedData) as unknown;
             const cachedProduct =
-              cachedJson && typeof cachedJson === 'object' && 'product' in (cachedJson as Record<string, unknown>)
+              cachedJson &&
+              typeof cachedJson === 'object' &&
+              'product' in (cachedJson as Record<string, unknown>)
                 ? (cachedJson as { product: unknown }).product
                 : cachedJson;
 
@@ -65,9 +85,29 @@ export default function ResultScreen() {
           }
         }
 
+        let dbProduct: Product | null = null;
+        try {
+          const record = await productRepository.findByEan(params.ean);
+          if (record) {
+            dbProduct = {
+              ean: record.ean,
+              name: record.name || 'Unbekanntes Produkt',
+              brand: record.brands || undefined,
+              ingredientsText: record.ingredients || undefined,
+              novaScore: record.nova_score ?? undefined,
+            };
+            setLocalProduct(dbProduct);
+          }
+        } catch {
+          // Ignore DB errors
+        }
+
         const netState = await NetInfo.fetch();
         if (!netState.isConnected) {
-          if (cachedOverrides) {
+          if (dbProduct && dbProduct.ingredientsText) {
+            setProduct(dbProduct);
+            setDataSource('local');
+          } else if (cachedOverrides) {
             const offlinePlaceholder: Product = {
               ean: params.ean,
               name: 'Unbekanntes Produkt',
@@ -99,6 +139,19 @@ export default function ResultScreen() {
         const fetchedProduct = await client.getProductByEan(params.ean);
 
         if (!fetchedProduct) {
+          if (dbProduct) {
+            setProduct(dbProduct);
+            setDataSource('local');
+            const currentRules = useFilterStore.getState().rules;
+            const analyzer = new RedFlagAnalyzer(defaultRules);
+            const evaluator = new NovaScoreEvaluator();
+            const rater = new ProductRating(analyzer, evaluator);
+            const scanResult = rater.rate(dbProduct, currentRules);
+            setResult(scanResult);
+            setLoading(false);
+            return;
+          }
+
           setError({
             type: 'not-found',
             message: 'Produkt nicht in der Datenbank',
@@ -117,12 +170,14 @@ export default function ResultScreen() {
           name: overrideName ? overrideName : fetchedProduct.name,
           brand: overrideBrand ? overrideBrand : fetchedProduct.brand,
           ingredientsText:
-            (cachedOverrides?.ingredientsText && cachedOverrides.ingredientsText.trim())
+            cachedOverrides?.ingredientsText && cachedOverrides.ingredientsText.trim()
               ? cachedOverrides.ingredientsText
               : fetchedProduct.ingredientsText,
         };
 
+        setOffProduct(mergedProduct);
         setProduct(mergedProduct);
+        setDataSource('off');
 
         const currentRules = useFilterStore.getState().rules;
         const analyzer = new RedFlagAnalyzer(defaultRules);
@@ -131,7 +186,6 @@ export default function ResultScreen() {
         const scanResult = rater.rate(mergedProduct, currentRules);
         setResult(scanResult);
 
-        // Save product to database in the background (fire-and-forget)
         (async () => {
           try {
             setSavingProduct(true);
@@ -147,15 +201,15 @@ export default function ResultScreen() {
               rating: scanResult.status,
             };
             await catalogStore.addProduct(record);
-          } catch (err) {
-            console.error('Failed to save product to database:', err);
+          } catch (_err) {
+            console.error('Failed to save product to database:', _err);
           } finally {
             setSavingProduct(false);
           }
         })();
 
         setLoading(false);
-      } catch (err) {
+      } catch {
         setError({
           type: 'generic',
           message: 'Fehler beim Abrufen der Produktdaten',
@@ -167,7 +221,6 @@ export default function ResultScreen() {
     fetchAndRate();
   }, [params.ean, params.fromCache, params.cachedData]);
 
-  // Load productId and check favorite status
   useEffect(() => {
     if (!product?.ean) {
       return;
@@ -178,26 +231,28 @@ export default function ResultScreen() {
         const foundProduct = await productRepository.findByEan(product.ean);
         if (foundProduct?.id) {
           setProductId(foundProduct.id);
-          const favoriteStatus = catalogStore.favorites.some(
-            (fav) => fav.id === foundProduct.id
-          );
+          const favoriteStatus = catalogStore.favorites.some((fav) => fav.id === foundProduct.id);
           setIsFavorite(favoriteStatus);
         }
-      } catch (err) {
-        console.error('Failed to load product details:', err);
+      } catch (_err) {
+        console.error('Failed to load product details:', _err);
       }
     })();
   }, [product?.ean]);
 
   useEffect(() => {
     if (product && !loading && !error) {
-      const missingIngredients = getBestIngredientsText(product) === 'Keine Zutatenliste verfügbar';
+      const ingredientsText = getBestIngredientsText(product);
+      const missingIngredients = ingredientsText === 'Keine Zutatenliste verfügbar';
       const missingNutrition = !product.novaScore;
-      if (missingIngredients || missingNutrition) {
+
+      const hasLocalData = !!(localProduct && localProduct.ingredientsText);
+
+      if ((missingIngredients || missingNutrition) && !hasLocalData) {
         setShowMissingDataModal(true);
       }
     }
-  }, [product, loading, error]);
+  }, [product, loading, error, localProduct]);
 
   const handleToggleFavorite = async () => {
     if (!product?.ean) {
@@ -205,7 +260,6 @@ export default function ResultScreen() {
     }
 
     try {
-      // Ensure product is saved first
       let currentProductId = productId;
       if (!currentProductId && !isCached) {
         setSavingProduct(true);
@@ -234,8 +288,8 @@ export default function ResultScreen() {
         await catalogStore.toggleFavorite(currentProductId);
         setIsFavorite(!isFavorite);
       }
-    } catch (err) {
-      console.error('Failed to toggle favorite:', err);
+    } catch (_err) {
+      console.error('Failed to toggle favorite:', _err);
     }
   };
 
@@ -276,37 +330,78 @@ export default function ResultScreen() {
     return 'Keine Zutatenliste verfügbar';
   };
 
-  const handleContributePress = async () => {
-    try {
-      const client = new OpenFoodFactsWriteClient();
-      const credentials = await client.loadCredentials();
-      if (credentials) {
-        router.push({ pathname: '/contribute', params: { ean: params.ean } });
-      } else {
-        setShowSetupModal(true);
-      }
-    } catch {
-      setShowSetupModal(true);
+  const handleContributePress = () => {
+    router.push({ pathname: '/contribute', params: { ean: params.ean } });
+  };
+
+  const handleToggleDataSource = () => {
+    if (dataSource === 'off' && localProduct) {
+      setProduct(localProduct);
+      setDataSource('local');
+      const currentRules = useFilterStore.getState().rules;
+      const analyzer = new RedFlagAnalyzer(defaultRules);
+      const evaluator = new NovaScoreEvaluator();
+      const rater = new ProductRating(analyzer, evaluator);
+      const scanResult = rater.rate(localProduct, currentRules);
+      setResult(scanResult);
+    } else if (dataSource === 'local' && offProduct) {
+      setProduct(offProduct);
+      setDataSource('off');
+      const currentRules = useFilterStore.getState().rules;
+      const analyzer = new RedFlagAnalyzer(defaultRules);
+      const evaluator = new NovaScoreEvaluator();
+      const rater = new ProductRating(analyzer, evaluator);
+      const scanResult = rater.rate(offProduct, currentRules);
+      setResult(scanResult);
     }
   };
 
+  const buildGalleryImages = (prod: Product) => {
+    const entries: { uri: string; label: string }[] = [];
+    if (prod.imageUrl) entries.push({ uri: prod.imageUrl, label: 'Vorderseite' });
+    if (prod.imageIngredientsUrl) entries.push({ uri: prod.imageIngredientsUrl, label: 'Zutaten' });
+    if (prod.imageNutritionUrl) entries.push({ uri: prod.imageNutritionUrl, label: 'Nährwerte' });
+    if (prod.imagePackagingUrl) entries.push({ uri: prod.imagePackagingUrl, label: 'Verpackung' });
+    return entries;
+  };
+
+  const parseCategoryChips = (categories?: string): string[] => {
+    if (!categories) return [];
+    return categories
+      .split(',')
+      .map((c) => c.trim())
+      .filter((c) => c.length > 0)
+      .slice(0, 5);
+  };
+
+  const formatAllergenLabel = (tag: string): string => {
+    const name = tag.startsWith('en:') ? tag.slice(3) : tag;
+    return name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ');
+  };
+
+  const formatDate = (isoDate?: string): string => {
+    if (!isoDate) return 'Unbekannt';
+    try {
+      const date = new Date(isoDate);
+      return date.toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
+    } catch {
+      return isoDate;
+    }
+  };
+
+  // --- Render: Loading state ---
   if (loading) {
     return <SkeletonLoadingScreen />;
   }
 
+  // --- Render: Error state ---
   if (error || !result || !product) {
     return (
       <View style={styles.container}>
-        <OffAccountSetup
-          visible={showSetupModal}
-          onSuccess={() => {
-            setShowSetupModal(false);
-            if (params.ean) {
-              router.push({ pathname: '/contribute', params: { ean: params.ean } });
-            }
-          }}
-          onCancel={() => setShowSetupModal(false)}
-        />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
             <Text style={styles.backText}>← Zurück</Text>
@@ -321,8 +416,8 @@ export default function ResultScreen() {
                 <Text style={styles.notFoundSubtitle}>
                   Hilf mit, den Katalog zu erweitern und füge das Produkt hinzu!
                 </Text>
-                <TouchableOpacity 
-                  style={styles.primaryContributeButton} 
+                <TouchableOpacity
+                  style={styles.primaryContributeButton}
                   onPress={handleContributePress}
                 >
                   <Text style={styles.primaryContributeButtonText}>Jetzt beitragen</Text>
@@ -337,16 +432,20 @@ export default function ResultScreen() {
 
   const statusColor = getStatusColor(result.status);
   const statusLabel = getStatusLabel(result.status);
-  const novaColor = result.nova.score === 4 ? '#F44336' : statusColor;
+  const categoryChips = parseCategoryChips(product.categories);
+  const galleryImages = buildGalleryImages(product);
 
+  // --- Render: Main content ---
   return (
     <View style={styles.container}>
+      {/* Missing data modal */}
       <Modal visible={showMissingDataModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Daten fehlen</Text>
             <Text style={styles.modalBody}>
-              This product has no ingredients/nutrition data. Would you like to add them now via photo?
+              This product has no ingredients/nutrition data. Would you like to add them now via
+              photo?
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -369,17 +468,7 @@ export default function ResultScreen() {
         </View>
       </Modal>
 
-      <OffAccountSetup
-        visible={showSetupModal}
-        onSuccess={() => {
-          setShowSetupModal(false);
-          if (params.ean) {
-            router.push({ pathname: '/contribute', params: { ean: params.ean } });
-          }
-        }}
-        onCancel={() => setShowSetupModal(false)}
-      />
-
+      {/* 1. Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backText}>← Zurück</Text>
@@ -390,10 +479,7 @@ export default function ResultScreen() {
               <Text style={styles.cachedBadgeText}>Cache</Text>
             </View>
           )}
-          <TouchableOpacity
-            onPress={handleToggleFavorite}
-            disabled={!product || savingProduct}
-          >
+          <TouchableOpacity onPress={handleToggleFavorite} disabled={!product || savingProduct}>
             <Text style={[styles.favoriteIcon, isFavorite && styles.favoriteFilled]}>
               {isFavorite ? '★' : '☆'}
             </Text>
@@ -401,12 +487,71 @@ export default function ResultScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={[styles.statusBanner, { backgroundColor: statusColor }]}>
-          <Text style={styles.statusText}>{statusLabel}</Text>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Product image hero */}
+        {product.imageUrl ? (
+          <Image source={{ uri: product.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+        ) : (
+          <View style={[styles.heroImage, styles.heroPlaceholder]}>
+            <Text style={styles.heroPlaceholderText}>Kein Bild</Text>
+          </View>
+        )}
+
+        {/* Product name, brand, quantity */}
+        <View style={styles.productIdentity}>
+          <Text style={styles.productName} numberOfLines={3}>
+            {product.name}
+          </Text>
+          <View style={styles.productSubline}>
+            {product.brand && <Text style={styles.productBrand}>{product.brand}</Text>}
+            {product.quantity && <Text style={styles.productQuantity}>{product.quantity}</Text>}
+          </View>
+          <Text style={styles.productEAN}>EAN: {product.ean}</Text>
         </View>
 
-        <View style={styles.redFlagsSection}>
+        {/* 2. Main Product Info — Status + Nutri-Score + NOVA + Categories */}
+        <View style={styles.section}>
+          <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+            <Text style={styles.statusBadgeText}>{statusLabel}</Text>
+          </View>
+
+          <View style={styles.scoreRow}>
+            {product.nutritionGrades && (
+              <View
+                style={[
+                  styles.nutriScoreBadge,
+                  { backgroundColor: NUTRI_SCORE_COLORS[product.nutritionGrades] || '#757575' },
+                ]}
+              >
+                <Text style={styles.nutriScoreLetter}>{product.nutritionGrades.toUpperCase()}</Text>
+                <Text style={styles.nutriScoreLabel}>Nutri-Score</Text>
+              </View>
+            )}
+
+            <View
+              style={[
+                styles.novaBadge,
+                { backgroundColor: product.novaScore ? NOVA_COLORS[product.novaScore] : '#757575' },
+              ]}
+            >
+              <Text style={styles.novaBadgeNumber}>{product.novaScore || '?'}</Text>
+              <Text style={styles.novaBadgeLabel}>NOVA</Text>
+            </View>
+          </View>
+
+          {categoryChips.length > 0 && (
+            <View style={styles.chipRow}>
+              {categoryChips.map((cat, i) => (
+                <View key={i} style={styles.chip}>
+                  <Text style={styles.chipText}>{cat}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* 3. Red Flags */}
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Red Flags</Text>
           {result.redFlags.length > 0 ? (
             result.redFlags.map((flag, index) => (
@@ -428,23 +573,30 @@ export default function ResultScreen() {
           )}
         </View>
 
-        <View style={styles.productInfo}>
-          <Text style={styles.productName}>{product.name}</Text>
-          {product.brand && <Text style={styles.productBrand}>{product.brand}</Text>}
-          <Text style={styles.productEAN}>EAN: {product.ean}</Text>
-        </View>
-
-        <View style={styles.novaSection}>
-          <Text style={styles.sectionTitle}>Verarbeitungsgrad</Text>
-          <View style={styles.novaDisplay}>
-            <View style={[styles.novaScore, { backgroundColor: novaColor }]}>
-              <Text style={styles.novaScoreText}>{result.nova.score}</Text>
+        {/* 4. Nutrition Summary */}
+        {product.nutriments && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Nährwerte</Text>
+            <View style={styles.nutritionSummaryRow}>
+              <NutritionSummaryCard
+                label="Kalorien"
+                value={product.nutriments.energyKcal100g}
+                unit="kcal"
+              />
+              <NutritionSummaryCard label="Fett" value={product.nutriments.fat100g} unit="g" />
+              <NutritionSummaryCard label="Zucker" value={product.nutriments.sugars100g} unit="g" />
+              <NutritionSummaryCard
+                label="Eiweiß"
+                value={product.nutriments.proteins100g}
+                unit="g"
+              />
+              <NutritionSummaryCard label="Salz" value={product.nutriments.salt100g} unit="g" />
             </View>
-            <Text style={styles.novaLabel}>{result.nova.label || 'Unbekannt'}</Text>
           </View>
-        </View>
+        )}
 
-        <View style={styles.accordionSection}>
+        {/* 5. Ingredients */}
+        <View style={styles.section}>
           <Accordion
             items={[
               {
@@ -457,14 +609,177 @@ export default function ResultScreen() {
           />
         </View>
 
+        {/* 6. Allergens */}
+        {product.allergensTags?.length || product.traces ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Allergene</Text>
+
+            {product.allergensTags && product.allergensTags.length > 0 && (
+              <View style={styles.allergenGroup}>
+                <Text style={styles.allergenGroupLabel}>Enthält</Text>
+                <View style={styles.chipRow}>
+                  {product.allergensTags.map((tag, i) => (
+                    <View key={i} style={styles.allergenChip}>
+                      <Text style={styles.allergenChipText}>{formatAllergenLabel(tag)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {product.traces ? (
+              <View style={styles.allergenGroup}>
+                <Text style={styles.allergenGroupLabel}>Kann Spuren enthalten von</Text>
+                <Text style={styles.tracesText}>{product.traces}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
+        {/* 7. Nutrition Table */}
+        {product.nutriments && (
+          <View style={styles.section}>
+            <Accordion
+              items={[
+                {
+                  title: 'Nährwerttabelle (pro 100 g)',
+                  content: (
+                    <NutritionTable
+                      nutriments={product.nutriments}
+                      servingSize={product.servingSize}
+                    />
+                  ),
+                },
+              ]}
+            />
+          </View>
+        )}
+
+        {/* 8. Image Gallery */}
+        {galleryImages.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Produktbilder</Text>
+            <ImageGallery images={galleryImages} />
+          </View>
+        )}
+
+        {/* 9. Additional Information */}
+        {product.origins || product.manufacturingPlaces || product.stores || product.categories ? (
+          <View style={styles.section}>
+            <Accordion
+              items={[
+                {
+                  title: 'Weitere Informationen',
+                  content: (
+                    <View>
+                      {product.categories ? (
+                        <InfoRow label="Kategorien" value={product.categories} />
+                      ) : null}
+                      {product.origins ? (
+                        <InfoRow label="Herkunft" value={product.origins} />
+                      ) : null}
+                      {product.manufacturingPlaces ? (
+                        <InfoRow label="Herstellungsort" value={product.manufacturingPlaces} />
+                      ) : null}
+                      {product.stores ? <InfoRow label="Geschäfte" value={product.stores} /> : null}
+                      <InfoRow
+                        label="Letzte Aktualisierung"
+                        value={formatDate(product.lastModified)}
+                      />
+                    </View>
+                  ),
+                },
+              ]}
+            />
+          </View>
+        ) : null}
+
+        {/* Data source toggle */}
+        {(offProduct || localProduct) && (
+          <View style={styles.dataSourceToggle}>
+            <TouchableOpacity
+              style={[styles.toggleOption, dataSource === 'off' && styles.toggleOptionActive]}
+              onPress={handleToggleDataSource}
+              disabled={dataSource === 'off'}
+            >
+              <Text style={[styles.toggleText, dataSource === 'off' && styles.toggleTextActive]}>
+                OFF Database
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleOption, dataSource === 'local' && styles.toggleOptionActive]}
+              onPress={handleToggleDataSource}
+              disabled={dataSource === 'local' || !localProduct}
+            >
+              <Text
+                style={[
+                  styles.toggleText,
+                  dataSource === 'local' && styles.toggleTextActive,
+                  !localProduct && styles.toggleTextDisabled,
+                ]}
+              >
+                Local Database
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.spacer} />
+        <Text style={styles.dataDisclaimer}>
+          Product data is provided by Open Food Facts contributors and may be incomplete or
+          inaccurate.
+        </Text>
+        <View style={styles.bottomPadding} />
       </ScrollView>
     </View>
   );
 }
 
+// --- Sub-components ---
+
+function NutritionSummaryCard({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value?: number;
+  unit: string;
+}) {
+  const display = value !== undefined ? `${formatNutrientValue(value)}` : '–';
+  return (
+    <View style={summaryStyles.card}>
+      <Text style={summaryStyles.value}>
+        {display}
+        <Text style={summaryStyles.unit}> {unit}</Text>
+      </Text>
+      <Text style={summaryStyles.label}>{label}</Text>
+    </View>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={infoStyles.row}>
+      <Text style={infoStyles.label}>{label}</Text>
+      <Text style={infoStyles.value} numberOfLines={2}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function formatNutrientValue(value: number): string {
+  if (value < 0.1 && value > 0) return '<0.1';
+  return value % 1 === 0 ? value.toString() : value.toFixed(1);
+}
+
+// --- Styles ---
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212' },
+
+  // Header
   header: {
     paddingTop: 48,
     paddingHorizontal: 16,
@@ -474,6 +789,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#121212',
   },
   headerRightSection: {
     flexDirection: 'row',
@@ -491,14 +807,177 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
-  favoriteIcon: {
-    color: '#BDBDBD',
-    fontSize: 28,
-  },
-  favoriteFilled: {
-    color: '#FFD700',
-  },
+  favoriteIcon: { color: '#BDBDBD', fontSize: 28 },
+  favoriteFilled: { color: '#FFD700' },
+  backText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+
+  // Content
   content: { flex: 1 },
+  section: { paddingHorizontal: 16, paddingTop: 20 },
+  sectionTitle: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  // Hero image
+  heroImage: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#1A1A1A',
+  },
+  heroPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 120,
+  },
+  heroPlaceholderText: { color: '#555', fontSize: 14 },
+
+  // Product identity
+  productIdentity: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
+  productName: { color: '#FFFFFF', fontSize: 20, fontWeight: '700', lineHeight: 26 },
+  productSubline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 8,
+  },
+  productBrand: { color: '#BDBDBD', fontSize: 14, fontWeight: '500' },
+  productQuantity: { color: '#9E9E9E', fontSize: 13 },
+  productEAN: { color: '#757575', fontSize: 11, marginTop: 6 },
+
+  // Status badge
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginBottom: 12,
+  },
+  statusBadgeText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', letterSpacing: 1.5 },
+
+  // Score row
+  scoreRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  nutriScoreBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
+    minWidth: 72,
+  },
+  nutriScoreLetter: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },
+  nutriScoreLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '600', marginTop: 2 },
+  novaBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  novaBadgeNumber: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },
+  novaBadgeLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 9, fontWeight: '600', marginTop: 2 },
+
+  // Category chips
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: {
+    backgroundColor: '#2A2A2A',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  chipText: { color: '#BDBDBD', fontSize: 12 },
+
+  // Red flags
+  redFlagItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 6,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#F44336',
+  },
+  severityDot: { width: 8, height: 8, borderRadius: 4, marginRight: 10, marginTop: 3 },
+  flagContent: { flex: 1 },
+  flagIngredient: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', marginBottom: 1 },
+  flagCategory: { color: '#9E9E9E', fontSize: 12 },
+  emptyStateText: { color: '#9E9E9E', fontSize: 13 },
+
+  // Nutrition summary
+  nutritionSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  // Ingredients
+  ingredientsText: { color: '#CFCFCF', fontSize: 14, lineHeight: 21 },
+
+  // Allergens
+  allergenGroup: { marginBottom: 12 },
+  allergenGroupLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '600', marginBottom: 6 },
+  allergenChip: {
+    backgroundColor: '#4A2A2A',
+    borderWidth: 1,
+    borderColor: '#F44336',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  allergenChipText: { color: '#FF8A80', fontSize: 12, fontWeight: '600' },
+  tracesText: { color: '#FFC107', fontSize: 13, lineHeight: 19 },
+
+  // Data source toggle
+  dataSourceToggle: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  toggleOption: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  toggleOptionActive: {
+    backgroundColor: '#4CAF50',
+  },
+  toggleText: {
+    color: '#9E9E9E',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  toggleTextActive: {
+    color: '#FFFFFF',
+  },
+  toggleTextDisabled: {
+    color: '#555',
+  },
+
+  // Footer
+  spacer: { height: 20 },
+  dataDisclaimer: {
+    color: '#757575',
+    fontSize: 11,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  bottomPadding: { height: 40 },
+
+  // Error styles
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -506,81 +985,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 32,
   },
-  statusBanner: {
-    margin: 16,
-    paddingVertical: 32,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statusText: { color: '#FFFFFF', fontSize: 28, fontWeight: '700', letterSpacing: 2 },
-  productInfo: { paddingHorizontal: 16, paddingVertical: 16 },
-  productName: { color: '#FFFFFF', fontSize: 18, fontWeight: '600', marginBottom: 4 },
-  productBrand: { color: '#BDBDBD', fontSize: 14, marginBottom: 8 },
-  productEAN: { color: '#9E9E9E', fontSize: 12 },
-  novaSection: { paddingHorizontal: 16, paddingVertical: 12 },
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-  },
-  novaDisplay: { flexDirection: 'row', alignItems: 'center' },
-  novaScore: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: '#2E2E2E',
-  },
-  novaScoreText: { color: '#FFFFFF', fontSize: 30, fontWeight: '800' },
-  novaLabel: { color: '#9E9E9E', fontSize: 16, flex: 1 },
-  redFlagsSection: { paddingHorizontal: 16, paddingVertical: 12 },
-  accordionSection: { paddingHorizontal: 16, paddingBottom: 24 },
-  redFlagItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    backgroundColor: '#1E1E1E',
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#F44336',
-  },
-  severityDot: { width: 8, height: 8, borderRadius: 4, marginRight: 12, marginTop: 4 },
-  flagContent: { flex: 1 },
-  flagIngredient: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', marginBottom: 2 },
-  flagCategory: { color: '#9E9E9E', fontSize: 12 },
-  emptyStateText: { color: '#9E9E9E', fontSize: 14 },
-  ingredientsText: { color: '#FFFFFF', fontSize: 14, lineHeight: 20 },
-  spacer: { height: 24 },
   errorText: { color: '#F44336', fontSize: 18, fontWeight: '600', textAlign: 'center' },
-  backButton: {
-    marginTop: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    alignSelf: 'center',
+  notFoundCard: { marginTop: 32, alignItems: 'center' },
+  notFoundSubtitle: {
+    color: '#BDBDBD',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 16,
+    lineHeight: 22,
   },
-  backText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  contributeButton: {
-    marginTop: 24,
+  primaryContributeButton: {
     backgroundColor: '#4CAF50',
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 8,
   },
-  contributeButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  primaryContributeButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+
+  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -602,8 +1025,47 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 16 },
   cancelLink: { paddingVertical: 12, paddingHorizontal: 16 },
   cancelLinkText: { color: '#9E9E9E', fontSize: 16, fontWeight: '600' },
-  notFoundCard: { marginTop: 32, alignItems: 'center' },
-  notFoundSubtitle: { color: '#BDBDBD', fontSize: 16, textAlign: 'center', marginBottom: 20, paddingHorizontal: 16, lineHeight: 22 },
-  primaryContributeButton: { backgroundColor: '#4CAF50', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 8 },
-  primaryContributeButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+});
+
+// Sub-component styles
+const summaryStyles = StyleSheet.create({
+  card: {
+    flex: 1,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    marginHorizontal: 3,
+  },
+  value: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  unit: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#9E9E9E',
+  },
+  label: {
+    color: '#9E9E9E',
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+});
+
+const infoStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2A2A',
+  },
+  label: { color: '#9E9E9E', fontSize: 13, flex: 1 },
+  value: { color: '#FFFFFF', fontSize: 13, flex: 2, textAlign: 'right' },
 });

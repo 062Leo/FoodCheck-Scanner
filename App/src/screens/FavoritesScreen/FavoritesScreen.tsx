@@ -1,11 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCatalogStore } from '../../store/catalogStore';
 import { ProductCard } from '../../components/ProductCard/ProductCard';
@@ -64,27 +58,21 @@ export default function FavoritesScreen() {
     [router]
   );
 
-  const handleDeleteProduct = useCallback(
-    async (ean: string) => {
-      try {
-        await catalogStore.deleteProduct(ean);
-      } catch (err) {
-        console.error('Failed to delete product:', err);
-      }
-    },
-    []
-  );
+  const handleDeleteProduct = useCallback(async (ean: string) => {
+    try {
+      await catalogStore.deleteProduct(ean);
+    } catch (err) {
+      console.error('Failed to delete product:', err);
+    }
+  }, []);
 
-  const handleToggleFavorite = useCallback(
-    async (productId: number) => {
-      try {
-        await catalogStore.toggleFavorite(productId);
-      } catch (err) {
-        console.error('Failed to toggle favorite:', err);
-      }
-    },
-    []
-  );
+  const handleToggleFavorite = useCallback(async (productId: number) => {
+    try {
+      await catalogStore.toggleFavorite(productId);
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -106,9 +94,7 @@ export default function FavoritesScreen() {
       {/* Empty State */}
       {catalogStore.favorites.length === 0 && (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            Noch keine Favoriten – tippe im Scan-Ergebnis auf ★
-          </Text>
+          <Text style={styles.emptyText}>Noch keine Favoriten – tippe im Scan-Ergebnis auf ★</Text>
         </View>
       )}
 

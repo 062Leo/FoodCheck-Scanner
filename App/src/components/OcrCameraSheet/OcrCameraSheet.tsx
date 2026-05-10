@@ -53,7 +53,12 @@ const validIds = new Set(OCR_LANGUAGE_OPTIONS.map((opt) => opt.id));
 
 type Phase = 'camera' | 'crop' | 'review';
 
-interface Rect { x: number; y: number; w: number; h: number }
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 interface Props {
   visible: boolean;
@@ -87,15 +92,15 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
   const [defaultLanguageId, setDefaultLanguageId] = useState(DEFAULT_LANGUAGE_ID);
   const [selectedLanguageId, setSelectedLanguageId] = useState(DEFAULT_LANGUAGE_ID);
   const [favoriteLanguageIds, setFavoriteLanguageIds] = useState<string[]>(
-    DEFAULT_FAVORITE_LANGUAGE_IDS,
+    DEFAULT_FAVORITE_LANGUAGE_IDS
   );
 
   const modeLabel = mode === 'ingredients' ? 'Zutatenliste scannen' : 'Nährwerttabelle scannen';
   const selectedLanguage = useMemo(
     () =>
-      OCR_LANGUAGE_OPTIONS.find((option) => option.id === selectedLanguageId)
-      ?? OCR_LANGUAGE_OPTIONS[0],
-    [selectedLanguageId],
+      OCR_LANGUAGE_OPTIONS.find((option) => option.id === selectedLanguageId) ??
+      OCR_LANGUAGE_OPTIONS[0],
+    [selectedLanguageId]
   );
   const favoriteLanguages = useMemo(() => {
     const favoriteSet = new Set(favoriteLanguageIds);
@@ -112,7 +117,8 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
     const loadPreferences = async () => {
       try {
         const storedDefault = await SecureStore.getItemAsync('ocr_default_language');
-        const resolvedDefault = storedDefault && validIds.has(storedDefault) ? storedDefault : DEFAULT_LANGUAGE_ID;
+        const resolvedDefault =
+          storedDefault && validIds.has(storedDefault) ? storedDefault : DEFAULT_LANGUAGE_ID;
 
         const storedFavorites = await SecureStore.getItemAsync('ocr_favorite_languages');
         let resolvedFavorites = DEFAULT_FAVORITE_LANGUAGE_IDS;
@@ -120,8 +126,7 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
           const parsed = JSON.parse(storedFavorites) as unknown;
           if (Array.isArray(parsed)) {
             const filtered = parsed.filter(
-              (entry): entry is string =>
-                typeof entry === 'string' && validIds.has(entry),
+              (entry): entry is string => typeof entry === 'string' && validIds.has(entry)
             );
             if (filtered.length > 0) {
               resolvedFavorites = Array.from(new Set(filtered));
@@ -195,15 +200,18 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
     setOcrError(null);
   }, [defaultLanguageId]);
 
-  const toggleFavoriteLanguage = useCallback(async (id: string) => {
-    const nextFavorites = favoriteLanguageIds.includes(id)
-      ? favoriteLanguageIds.filter((item) => item !== id)
-      : [...favoriteLanguageIds, id];
+  const toggleFavoriteLanguage = useCallback(
+    async (id: string) => {
+      const nextFavorites = favoriteLanguageIds.includes(id)
+        ? favoriteLanguageIds.filter((item) => item !== id)
+        : [...favoriteLanguageIds, id];
 
-    const deduped = Array.from(new Set(nextFavorites));
-    setFavoriteLanguageIds(deduped);
-    await SecureStore.setItemAsync(OCR_FAVORITE_LANGUAGES_KEY, JSON.stringify(deduped));
-  }, [favoriteLanguageIds]);
+      const deduped = Array.from(new Set(nextFavorites));
+      setFavoriteLanguageIds(deduped);
+      await SecureStore.setItemAsync(OCR_FAVORITE_LANGUAGES_KEY, JSON.stringify(deduped));
+    },
+    [favoriteLanguageIds]
+  );
 
   const updateDefaultLanguage = useCallback(async (id: string) => {
     setDefaultLanguageId(id);
@@ -211,7 +219,10 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
     await SecureStore.setItemAsync(OCR_DEFAULT_LANGUAGE_KEY, id);
   }, []);
 
-  const handleCancel = useCallback(() => { reset(); onCancel(); }, [reset, onCancel]);
+  const handleCancel = useCallback(() => {
+    reset();
+    onCancel();
+  }, [reset, onCancel]);
 
   useEffect(() => {
     if (visible && !wasVisibleRef.current) {
@@ -236,7 +247,7 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
       if (focusTimer.current) clearTimeout(focusTimer.current);
       focusTimer.current = setTimeout(() => setFocusPoint(null), 1200);
     },
-    [],
+    []
   );
 
   const handleCapture = useCallback(async () => {
@@ -283,7 +294,7 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
       onPanResponderRelease: () => {
         dragStartRef.current = null;
       },
-    }),
+    })
   ).current;
 
   const handleExtract = useCallback(async () => {
@@ -350,7 +361,7 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
           const cropped = await ImageManipulator.manipulateAsync(
             photoUri,
             [{ crop: { originX: cropX, originY: cropY, width: cropW, height: cropH } }],
-            { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG },
+            { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
           );
           uriToOcr = cropped.uri;
         }
@@ -362,10 +373,9 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
     } catch (e) {
       // Surface the real error – do NOT silently swallow it
       const rawMsg = e instanceof Error ? e.message : String(e);
-      const msg =
-        /NoSuchMethodError|expoimagemanipulator\.manipulate/i.test(rawMsg)
-          ? 'Bildverarbeitung fehlgeschlagen: inkompatible Version von expo-image-manipulator. Bitte `npm install` ausfuehren und den Development Build neu installieren.'
-          : rawMsg;
+      const msg = /NoSuchMethodError|expoimagemanipulator\.manipulate/i.test(rawMsg)
+        ? 'Bildverarbeitung fehlgeschlagen: inkompatible Version von expo-image-manipulator. Bitte `npm install` ausfuehren und den Development Build neu installieren.'
+        : rawMsg;
       setOcrError(msg);
       setExtractedText('');
     } finally {
@@ -399,8 +409,12 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
 
   /* ── Render ─────────────────────────────────────────────── */
   return (
-    <Modal visible={visible} animationType="slide" statusBarTranslucent onRequestClose={handleCancel}>
-
+    <Modal
+      visible={visible}
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={handleCancel}
+    >
       {/* ═══ Phase 1: Live Camera ═══════════════════════════════════════ */}
       {phase === 'camera' && (
         <View style={styles.root}>
@@ -424,7 +438,11 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
 
           {/* Top bar */}
           <View style={styles.topBar} pointerEvents="box-none">
-            <TouchableOpacity onPress={handleCancel} style={styles.topBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity
+              onPress={handleCancel}
+              style={styles.topBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
               <Text style={styles.topBtnLabel}>✕</Text>
             </TouchableOpacity>
             <Text style={styles.phaseLabel}>{modeLabel}</Text>
@@ -446,9 +464,11 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
           {/* Capture button */}
           <View style={styles.captureWrap} pointerEvents="box-none">
             <TouchableOpacity style={styles.captureBtn} onPress={handleCapture} disabled={isBusy}>
-              {isBusy
-                ? <ActivityIndicator color="#fff" size="large" />
-                : <View style={styles.captureBtnInner} />}
+              {isBusy ? (
+                <ActivityIndicator color="#fff" size="large" />
+              ) : (
+                <View style={styles.captureBtnInner} />
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -466,38 +486,100 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
           }}
         >
           {/* FIX 2: resizeMode="cover" matches camera preview appearance */}
-          <Image
-            source={{ uri: photoUri }}
-            style={StyleSheet.absoluteFill}
-            resizeMode="cover"
-          />
+          <Image source={{ uri: photoUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
 
           {/* FIX 3: PanResponder on a single absolute-fill View */}
           <View style={StyleSheet.absoluteFill} {...panResponder.panHandlers}>
             {cropRect && (
               <>
                 {/* Dim top */}
-                <View style={[styles.dim, { top: 0, left: 0, right: 0, height: cropRect.y }]} pointerEvents="none"/>
+                <View
+                  style={[styles.dim, { top: 0, left: 0, right: 0, height: cropRect.y }]}
+                  pointerEvents="none"
+                />
                 {/* Dim bottom */}
-                <View style={[styles.dim, { top: cropRect.y + cropRect.h, left: 0, right: 0, bottom: 0 }]} pointerEvents="none"/>
+                <View
+                  style={[
+                    styles.dim,
+                    { top: cropRect.y + cropRect.h, left: 0, right: 0, bottom: 0 },
+                  ]}
+                  pointerEvents="none"
+                />
                 {/* Dim left */}
-                <View style={[styles.dim, { top: cropRect.y, left: 0, width: cropRect.x, height: cropRect.h }]} pointerEvents="none"/>
+                <View
+                  style={[
+                    styles.dim,
+                    { top: cropRect.y, left: 0, width: cropRect.x, height: cropRect.h },
+                  ]}
+                  pointerEvents="none"
+                />
                 {/* Dim right */}
-                <View style={[styles.dim, { top: cropRect.y, left: cropRect.x + cropRect.w, right: 0, height: cropRect.h }]} pointerEvents="none"/>
+                <View
+                  style={[
+                    styles.dim,
+                    {
+                      top: cropRect.y,
+                      left: cropRect.x + cropRect.w,
+                      right: 0,
+                      height: cropRect.h,
+                    },
+                  ]}
+                  pointerEvents="none"
+                />
                 {/* Selection border */}
-                <View style={[styles.selRect, { top: cropRect.y, left: cropRect.x, width: cropRect.w, height: cropRect.h }]} pointerEvents="none"/>
+                <View
+                  style={[
+                    styles.selRect,
+                    { top: cropRect.y, left: cropRect.x, width: cropRect.w, height: cropRect.h },
+                  ]}
+                  pointerEvents="none"
+                />
                 {/* Corner handles */}
-                <View style={[styles.corner, styles.cornerTL, { top: cropRect.y - 2, left: cropRect.x - 2 }]} pointerEvents="none"/>
-                <View style={[styles.corner, styles.cornerTR, { top: cropRect.y - 2, left: cropRect.x + cropRect.w - 14 }]} pointerEvents="none"/>
-                <View style={[styles.corner, styles.cornerBL, { top: cropRect.y + cropRect.h - 14, left: cropRect.x - 2 }]} pointerEvents="none"/>
-                <View style={[styles.corner, styles.cornerBR, { top: cropRect.y + cropRect.h - 14, left: cropRect.x + cropRect.w - 14 }]} pointerEvents="none"/>
+                <View
+                  style={[
+                    styles.corner,
+                    styles.cornerTL,
+                    { top: cropRect.y - 2, left: cropRect.x - 2 },
+                  ]}
+                  pointerEvents="none"
+                />
+                <View
+                  style={[
+                    styles.corner,
+                    styles.cornerTR,
+                    { top: cropRect.y - 2, left: cropRect.x + cropRect.w - 14 },
+                  ]}
+                  pointerEvents="none"
+                />
+                <View
+                  style={[
+                    styles.corner,
+                    styles.cornerBL,
+                    { top: cropRect.y + cropRect.h - 14, left: cropRect.x - 2 },
+                  ]}
+                  pointerEvents="none"
+                />
+                <View
+                  style={[
+                    styles.corner,
+                    styles.cornerBR,
+                    { top: cropRect.y + cropRect.h - 14, left: cropRect.x + cropRect.w - 14 },
+                  ]}
+                  pointerEvents="none"
+                />
               </>
             )}
           </View>
 
           {/* Top bar */}
           <View style={styles.topBar} pointerEvents="box-none">
-            <TouchableOpacity onPress={() => { setCropRect(null); setPhase('camera'); }} style={styles.topBtn}>
+            <TouchableOpacity
+              onPress={() => {
+                setCropRect(null);
+                setPhase('camera');
+              }}
+              style={styles.topBtn}
+            >
               <Text style={styles.topBtnLabel}>↩</Text>
             </TouchableOpacity>
             <Text style={styles.phaseLabel}>Bereich auswählen</Text>
@@ -509,7 +591,9 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
           {/* Hint */}
           <View style={styles.hintWrap} pointerEvents="none">
             <Text style={styles.hint}>
-              {cropRect ? 'Rechteck OK – oder neu ziehen' : 'Rechteck ziehen oder direkt extrahieren'}
+              {cropRect
+                ? 'Rechteck OK – oder neu ziehen'
+                : 'Rechteck ziehen oder direkt extrahieren'}
             </Text>
           </View>
 
@@ -520,9 +604,11 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
               onPress={handleExtract}
               disabled={isBusy}
             >
-              {isBusy
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.btnText}>Extrahieren →</Text>}
+              {isBusy ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.btnText}>Extrahieren →</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -548,23 +634,26 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
                 <View style={styles.errorBox}>
                   <Text style={styles.errorTitle}>⚠ Texterkennung fehlgeschlagen</Text>
                   <Text style={styles.errorMsg}>{ocrError}</Text>
-                  {ocrError.includes("linked") || ocrError.includes("native") ? (
+                  {ocrError.includes('linked') || ocrError.includes('native') ? (
                     <Text style={styles.errorHint}>
-                      Hinweis: Die Texterkennung benötigt einen Development Build.{"\n"}
-                      Starte die App mit:{"\n"}
+                      Hinweis: Die Texterkennung benötigt einen Development Build.{'\n'}
+                      Starte die App mit:{'\n'}
                       <Text style={styles.errorCode}>expo run:android</Text>
-                      {" oder "}
+                      {' oder '}
                       <Text style={styles.errorCode}>expo run:ios</Text>
                     </Text>
                   ) : null}
-                  <Text style={styles.errorHint}>Du kannst den Text auch manuell unten eingeben.</Text>
+                  <Text style={styles.errorHint}>
+                    Du kannst den Text auch manuell unten eingeben.
+                  </Text>
                 </View>
               )}
               {!ocrError && !extractedText.trim() && (
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyStateTitle}>Kein Text erkannt</Text>
                   <Text style={styles.emptyStateText}>
-                    Probiere einen engeren Zuschnitt, bessere Beleuchtung oder ein anderes OCR-Script.
+                    Probiere einen engeren Zuschnitt, bessere Beleuchtung oder ein anderes
+                    OCR-Script.
                   </Text>
                 </View>
               )}
@@ -580,10 +669,24 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
             </ScrollView>
 
             <View style={styles.rowActions}>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={() => { setCropRect(null); setPhase('crop'); }}>
+              <TouchableOpacity
+                style={styles.secondaryBtn}
+                onPress={() => {
+                  setCropRect(null);
+                  setPhase('crop');
+                }}
+              >
                 <Text style={styles.secondaryBtnText}>↩ Neu zuschneiden</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={() => { setCropRect(null); setPhotoUri(null); setExtractedText(''); setPhase('camera'); }}>
+              <TouchableOpacity
+                style={styles.secondaryBtn}
+                onPress={() => {
+                  setCropRect(null);
+                  setPhotoUri(null);
+                  setExtractedText('');
+                  setPhase('camera');
+                }}
+              >
                 <Text style={styles.secondaryBtnText}>📷 Neu aufnehmen</Text>
               </TouchableOpacity>
             </View>
@@ -619,7 +722,8 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingsTitle}>OCR Sprache</Text>
                 <Text style={styles.settingsSubTitle}>
-                  ML Kit lädt die passenden Modelle bei Bedarf. Auto nutzt Latein als sicheren Standard.
+                  ML Kit lädt die passenden Modelle bei Bedarf. Auto nutzt Latein als sicheren
+                  Standard.
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setSettingsVisible(false)} style={styles.closeChip}>
@@ -636,7 +740,11 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
             </View>
 
             <Text style={styles.settingsSectionTitle}>Favoriten</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.favoriteScroll}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.favoriteScroll}
+            >
               {favoriteLanguages.map((option) => (
                 <TouchableOpacity
                   key={option.id}
@@ -645,7 +753,9 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
                     selectedLanguageId === option.id && styles.favoriteChipActive,
                   ]}
                   onPress={() => setSelectedLanguageId(option.id)}
-                  onLongPress={() => { void toggleFavoriteLanguage(option.id); }}
+                  onLongPress={() => {
+                    void toggleFavoriteLanguage(option.id);
+                  }}
                 >
                   <Text style={styles.favoriteChipText}>{option.label}</Text>
                   <Text style={styles.favoriteChipSubText}>Tippen</Text>
@@ -662,12 +772,11 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
                 return (
                   <TouchableOpacity
                     key={option.id}
-                    style={[
-                      styles.languageChip,
-                      isSelected && styles.languageChipActive,
-                    ]}
+                    style={[styles.languageChip, isSelected && styles.languageChipActive]}
                     onPress={() => setSelectedLanguageId(option.id)}
-                    onLongPress={() => { void toggleFavoriteLanguage(option.id); }}
+                    onLongPress={() => {
+                      void toggleFavoriteLanguage(option.id);
+                    }}
                   >
                     <Text style={styles.languageChipText}>{option.label}</Text>
                     <Text style={styles.languageChipMeta}>
@@ -702,9 +811,16 @@ const styles = StyleSheet.create({
 
   // Top bar
   topBar: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingTop: 52, paddingHorizontal: 16, paddingBottom: 14,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 52,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
     backgroundColor: 'rgba(9, 12, 18, 0.78)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
@@ -723,9 +839,12 @@ const styles = StyleSheet.create({
   // Hint
   hintWrap: { position: 'absolute', bottom: 140, left: 0, right: 0, alignItems: 'center' },
   hint: {
-    color: '#fff', fontSize: 14,
+    color: '#fff',
+    fontSize: 14,
     backgroundColor: 'rgba(15,18,26,0.82)',
-    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   langHint: {
     marginTop: 8,
@@ -740,23 +859,32 @@ const styles = StyleSheet.create({
   // Capture / action button row
   captureWrap: { position: 'absolute', bottom: 52, left: 0, right: 0, alignItems: 'center' },
   captureBtn: {
-    width: 80, height: 80, borderRadius: 40,
-    borderWidth: 4, borderColor: '#fff',
-    justifyContent: 'center', alignItems: 'center',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 4,
+    borderColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   captureBtnInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
 
   // Focus ring
   focusRing: {
-    position: 'absolute', width: 60, height: 60, borderRadius: 30,
-    borderWidth: 2, borderColor: '#FFEB3B',
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#FFEB3B',
   },
 
   // Crop phase
   dim: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.55)' },
   selRect: {
     position: 'absolute',
-    borderWidth: 2, borderColor: '#4CAF50',
+    borderWidth: 2,
+    borderColor: '#4CAF50',
   },
   corner: { position: 'absolute', width: 16, height: 16, borderColor: '#4CAF50' },
   cornerTL: { borderTopWidth: 3, borderLeftWidth: 3 },
@@ -783,9 +911,11 @@ const styles = StyleSheet.create({
     opacity: 0.22,
   },
   reviewPanel: {
-    flex: 1, marginTop: 170,
+    flex: 1,
+    marginTop: 170,
     backgroundColor: '#171C24',
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.08)',
@@ -794,36 +924,72 @@ const styles = StyleSheet.create({
   reviewSubtitle: { color: '#AAB2C0', fontSize: 13, marginBottom: 12 },
   reviewScroll: { flex: 1, marginBottom: 12 },
   reviewInput: {
-    backgroundColor: '#232A36', color: '#fff',
-    padding: 14, borderRadius: 10,
-    fontSize: 15, lineHeight: 22,
-    minHeight: 160, textAlignVertical: 'top',
+    backgroundColor: '#232A36',
+    color: '#fff',
+    padding: 14,
+    borderRadius: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    minHeight: 160,
+    textAlignVertical: 'top',
   },
   rowActions: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: 10, gap: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    gap: 10,
   },
   secondaryBtn: {
-    flex: 1, paddingVertical: 12, paddingHorizontal: 10,
-    backgroundColor: '#232A36', borderRadius: 12, alignItems: 'center',
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    backgroundColor: '#232A36',
+    borderRadius: 12,
+    alignItems: 'center',
   },
   secondaryBtnText: { color: '#D3DAE4', fontSize: 14, fontWeight: '600' },
 
   // Shared
-  btn: { backgroundColor: '#4CAF50', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 14, alignItems: 'center' },
+  btn: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
   btnDisabled: { opacity: 0.4 },
   btnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   cancelTxt: { paddingVertical: 14, paddingHorizontal: 16 },
   cancelTxtLabel: { color: '#9E9E9E', fontSize: 16 },
 
   // Permission
-  permContainer: { flex: 1, backgroundColor: '#121212', justifyContent: 'center', alignItems: 'center', gap: 20 },
+  permContainer: {
+    flex: 1,
+    backgroundColor: '#121212',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 20,
+  },
   permText: { color: '#fff', fontSize: 18, textAlign: 'center' },
 
   // Error panel
-  errorBox: { backgroundColor: '#2C1A1A', borderRadius: 10, padding: 14, marginBottom: 12, borderLeftWidth: 3, borderLeftColor: '#F44336' },
+  errorBox: {
+    backgroundColor: '#2C1A1A',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#F44336',
+  },
   errorTitle: { color: '#F44336', fontSize: 15, fontWeight: 'bold', marginBottom: 6 },
-  errorMsg: { color: '#FFCDD2', fontSize: 13, lineHeight: 19, marginBottom: 8, fontFamily: 'monospace' },
+  errorMsg: {
+    color: '#FFCDD2',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 8,
+    fontFamily: 'monospace',
+  },
   errorHint: { color: '#BDBDBD', fontSize: 13, lineHeight: 19, marginBottom: 4 },
   errorCode: { color: '#80CBC4', fontWeight: 'bold' },
 

@@ -24,7 +24,10 @@ export class RedFlagAnalyzer {
           blockedKeys.add(this.normalizeRuleKey(rule.key));
         }
 
-        if (rule.type === 'nutrient' && this.extractNutrientValue(ingredientsText, rule.key) !== null) {
+        if (
+          rule.type === 'nutrient' &&
+          this.extractNutrientValue(ingredientsText, rule.key) !== null
+        ) {
           blockedKeys.add(this.normalizeRuleKey(rule.key));
         }
       }
@@ -99,8 +102,17 @@ export class RedFlagAnalyzer {
     return value.toLowerCase().trim();
   }
 
-  private matchesThreshold(value: number, operator: FilterRule['operator'], threshold: number | null | undefined): boolean {
-    if (threshold === null || threshold === undefined || operator === null || operator === undefined) {
+  private matchesThreshold(
+    value: number,
+    operator: FilterRule['operator'],
+    threshold: number | null | undefined
+  ): boolean {
+    if (
+      threshold === null ||
+      threshold === undefined ||
+      operator === null ||
+      operator === undefined
+    ) {
       return false;
     }
 

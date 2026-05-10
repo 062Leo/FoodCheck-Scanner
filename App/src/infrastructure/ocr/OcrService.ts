@@ -5,7 +5,10 @@ import { NutrimentData } from '../../types/ContributeFormData';
  * Thrown when OCR recognition fails.
  */
 export class OcrError extends Error {
-  constructor(message: string, public readonly cause?: unknown) {
+  constructor(
+    message: string,
+    public readonly cause?: unknown
+  ) {
     super(message);
     this.name = 'OcrError';
   }
@@ -50,11 +53,16 @@ function cleanupOcrText(text: string): string {
     cleanedLines.push(kept.join(' '));
   }
 
-  return cleanedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return cleanedLines
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function isGreekVowel(ch: string): boolean {
-  return /[\u0391\u0395\u0397\u0399\u039F\u03A5\u03A9\u03B1\u03B5\u03B7\u03B9\u03BF\u03C5\u03C9]/.test(ch);
+  return /[\u0391\u0395\u0397\u0399\u039F\u03A5\u03A9\u03B1\u03B5\u03B7\u03B9\u03BF\u03C5\u03C9]/.test(
+    ch
+  );
 }
 
 function isLatinVowel(ch: string): boolean {
@@ -95,7 +103,10 @@ function cleanupNutrimentOcrText(text: string): string {
     cleanedLines.push(kept.join(' '));
   }
 
-  return cleanedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return cleanedLines
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /**
@@ -106,17 +117,17 @@ function cleanupNutrimentOcrText(text: string): string {
 export class OcrService {
   /**
    * Uses ML Kit to recognize text from an image.
-    * Resolves the requested OCR script and falls back to Latin for auto mode.
+   * Resolves the requested OCR script and falls back to Latin for auto mode.
    *
-    * Resolves the requested OCR script and falls back to Latin for auto mode.
+   * Resolves the requested OCR script and falls back to Latin for auto mode.
    *
    * @param imageUri - URI of the image to recognize text from
    * @returns Promise resolving to the full recognized text as a single string
-    * @throws OcrError if recognition fails or produces no text
+   * @throws OcrError if recognition fails or produces no text
    */
   static async recognizeText(
     imageUri: string,
-    selection: OcrScriptSelection = 'auto',
+    selection: OcrScriptSelection = 'auto'
   ): Promise<string> {
     const script = resolveScript(selection);
 
@@ -133,12 +144,10 @@ export class OcrService {
       if (error instanceof OcrError) throw error;
       throw new OcrError(
         `Failed to recognize text using ${script} OCR: ${error instanceof Error ? error.message : String(error)}`,
-        error,
+        error
       );
     }
   }
-
-
 
   /**
    * Parses German nutrient label text and extracts numeric values.
@@ -181,13 +190,14 @@ export class OcrService {
 
     // Energie: can be kJ or kcal; if kJ, convert to kcal (1 kcal ≈ 4.184 kJ)
     // Pattern: "Energie" followed by optional colon/equals and a number, optionally with kJ/kcal
-    const energyMatch = sanitizedText.match(
-      /Energie\s*:?\s*(\d+(?:[.,]\d+)?)\s*(?:kJ|kcal)?/i,
-    );
+    const energyMatch = sanitizedText.match(/Energie\s*:?\s*(\d+(?:[.,]\d+)?)\s*(?:kJ|kcal)?/i);
     if (energyMatch) {
       let value = parseFloat(energyMatch[1].replace(',', '.'));
       // If no unit or kJ assumed, convert from kJ to kcal (1 kcal ≈ 4.184 kJ)
-      if (sanitizedText.match(/Energie\s*:?\s*\d+(?:[.,]\d+)?\s*kJ/i) || !sanitizedText.match(/Energie.*kcal/i)) {
+      if (
+        sanitizedText.match(/Energie\s*:?\s*\d+(?:[.,]\d+)?\s*kJ/i) ||
+        !sanitizedText.match(/Energie.*kcal/i)
+      ) {
         // Looks like kJ, convert to kcal
         if (sanitizedText.match(/Energie\s*:?\s*\d+(?:[.,]\d+)?\s*kJ/i)) {
           value = value / 4.184;
@@ -203,21 +213,17 @@ export class OcrService {
 
     // gesättigte Fettsäuren (saturated fat)
     result.saturatedFat100g = extractValue(
-      /gesättigte\s+Fettsäuren\s*:?\s*(\d+(?:[.,]\d+)?)\s*g?/i,
+      /gesättigte\s+Fettsäuren\s*:?\s*(\d+(?:[.,]\d+)?)\s*g?/i
     );
 
     // Kohlenhydrate (carbohydrates)
-    result.carbohydrates100g = extractValue(
-      /Kohlenhydrate\s*:?\s*(\d+(?:[.,]\d+)?)\s*g?/i,
-    );
+    result.carbohydrates100g = extractValue(/Kohlenhydrate\s*:?\s*(\d+(?:[.,]\d+)?)\s*g?/i);
 
     // Zucker (sugar)
     result.sugars100g = extractValue(/Zucker\s*:?\s*(\d+(?:[.,]\d+)?)\s*g?/i);
 
     // Ballaststoffe (fiber)
-    result.fiber100g = extractValue(
-      /Ballaststoffe\s*:?\s*(\d+(?:[.,]\d+)?)\s*g?/i,
-    );
+    result.fiber100g = extractValue(/Ballaststoffe\s*:?\s*(\d+(?:[.,]\d+)?)\s*g?/i);
 
     // Eiweiß (protein)
     result.proteins100g = extractValue(/Eiweiß\s*:?\s*(\d+(?:[.,]\d+)?)\s*g?/i);

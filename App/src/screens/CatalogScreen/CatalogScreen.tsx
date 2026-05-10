@@ -79,35 +79,26 @@ export default function CatalogScreen() {
     [router]
   );
 
-  const handleDeleteProduct = useCallback(
-    async (ean: string) => {
-      try {
-        await catalogStore.deleteProduct(ean);
-      } catch (err) {
-        console.error('Failed to delete product:', err);
-      }
-    },
-    []
-  );
+  const handleDeleteProduct = useCallback(async (ean: string) => {
+    try {
+      await catalogStore.deleteProduct(ean);
+    } catch (err) {
+      console.error('Failed to delete product:', err);
+    }
+  }, []);
 
-  const handleToggleFavorite = useCallback(
-    async (productId: number) => {
-      try {
-        await catalogStore.toggleFavorite(productId);
-      } catch (err) {
-        console.error('Failed to toggle favorite:', err);
-      }
-    },
-    []
-  );
+  const handleToggleFavorite = useCallback(async (productId: number) => {
+    try {
+      await catalogStore.toggleFavorite(productId);
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    }
+  }, []);
 
-  const isFavorite = useCallback(
-    (productId: number | undefined) => {
-      if (!productId) return false;
-      return catalogStore.favorites.some((fav) => fav.id === productId);
-    },
-    []
-  );
+  const isFavorite = useCallback((productId: number | undefined) => {
+    if (!productId) return false;
+    return catalogStore.favorites.some((fav) => fav.id === productId);
+  }, []);
 
   if (isLoading) {
     return (
@@ -132,17 +123,9 @@ export default function CatalogScreen() {
           <TouchableOpacity
             key={option}
             onPress={() => setFilter(option)}
-            style={[
-              styles.filterChip,
-              filter === option && styles.filterChipActive,
-            ]}
+            style={[styles.filterChip, filter === option && styles.filterChipActive]}
           >
-            <Text
-              style={[
-                styles.filterChipText,
-                filter === option && styles.filterChipTextActive,
-              ]}
-            >
+            <Text style={[styles.filterChipText, filter === option && styles.filterChipTextActive]}>
               {option === 'All' ? 'Alle' : option === 'Warning' ? 'Warnung' : option}
             </Text>
           </TouchableOpacity>
@@ -155,9 +138,7 @@ export default function CatalogScreen() {
           <Text style={styles.emptyText}>
             {filter === 'All'
               ? 'Noch keine Produkte gescannt'
-              : `Keine Produkte mit Status "${
-                  filter === 'Warning' ? 'Warnung' : filter
-                }"`}
+              : `Keine Produkte mit Status "${filter === 'Warning' ? 'Warnung' : filter}"`}
           </Text>
         </View>
       )}

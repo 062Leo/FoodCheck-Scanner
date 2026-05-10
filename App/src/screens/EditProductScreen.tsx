@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ProductRepository } from '../infrastructure/db/ProductRepository';
 import { useCatalogStore } from '../store/catalogStore';
@@ -39,42 +47,45 @@ export default function EditProductScreen() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
   const [showOffSetup, setShowOffSetup] = useState(false);
 
   useEffect(() => {
     if (ean) {
-      repo.findByEan(ean).then((product) => {
-        if (product) {
-          setName(product.name || '');
-          setBrand(product.brands || '');
-          setIngredientsText(product.ingredients || '');
+      repo
+        .findByEan(ean)
+        .then((product) => {
+          if (product) {
+            setName(product.name || '');
+            setBrand(product.brands || '');
+            setIngredientsText(product.ingredients || '');
 
-          if (product.raw_json) {
-            try {
-              const parsed = JSON.parse(product.raw_json);
-              setCategory(parsed.categories || '');
-              const n = parsed.product?.nutriments || parsed.nutriments;
-              if (n) {
-                setEnergy(n['energy-kcal_100g']?.toString() || '');
-                setFat(n.fat_100g?.toString() || '');
-                setSatFat(n['saturated-fat_100g']?.toString() || '');
-                setCarbs(n.carbohydrates_100g?.toString() || '');
-                setSugars(n.sugars_100g?.toString() || '');
-                setFiber(n.fiber_100g?.toString() || '');
-                setProteins(n.proteins_100g?.toString() || '');
-                setSalt(n.salt_100g?.toString() || '');
-              }
-            } catch (e) {}
+            if (product.raw_json) {
+              try {
+                const parsed = JSON.parse(product.raw_json);
+                setCategory(parsed.categories || '');
+                const n = parsed.product?.nutriments || parsed.nutriments;
+                if (n) {
+                  setEnergy(n['energy-kcal_100g']?.toString() || '');
+                  setFat(n.fat_100g?.toString() || '');
+                  setSatFat(n['saturated-fat_100g']?.toString() || '');
+                  setCarbs(n.carbohydrates_100g?.toString() || '');
+                  setSugars(n.sugars_100g?.toString() || '');
+                  setFiber(n.fiber_100g?.toString() || '');
+                  setProteins(n.proteins_100g?.toString() || '');
+                  setSalt(n.salt_100g?.toString() || '');
+                }
+              } catch (e) {}
+            }
           }
-        }
-        setIsLoading(false);
-      }).catch((e) => {
-        console.error(e);
-        setIsLoading(false);
-      });
+          setIsLoading(false);
+        })
+        .catch((e) => {
+          console.error(e);
+          setIsLoading(false);
+        });
     }
   }, [ean]);
 
@@ -113,7 +124,7 @@ export default function EditProductScreen() {
         fiber100g: fiber100g ? Number(fiber100g) : undefined,
         proteins100g: proteins100g ? Number(proteins100g) : undefined,
         salt100g: salt100g ? Number(salt100g) : undefined,
-      }
+      },
     });
     await catalogStore.loadAll(); // Force immediate UI refresh in catalog
     router.back();
@@ -145,7 +156,7 @@ export default function EditProductScreen() {
           fiber100g: fiber100g ? Number(fiber100g) : undefined,
           proteins100g: proteins100g ? Number(proteins100g) : undefined,
           salt100g: salt100g ? Number(salt100g) : undefined,
-        }
+        },
       };
 
       await writeClient.uploadProduct(formData);
@@ -168,27 +179,74 @@ export default function EditProductScreen() {
     );
   }
 
-
   const isUploadEnabled = name.trim().length > 0 && brand.trim().length > 0;
 
   const nutritionContent = (
     <View style={styles.nutritionContainer}>
       <Text style={styles.label}>Energie (kcal/100g)</Text>
-      <TextInput style={styles.input} value={energyKcal100g} onChangeText={setEnergy} keyboardType="numeric" placeholderTextColor="#aaa" />
+      <TextInput
+        style={styles.input}
+        value={energyKcal100g}
+        onChangeText={setEnergy}
+        keyboardType="numeric"
+        placeholderTextColor="#aaa"
+      />
       <Text style={styles.label}>Fett (g/100g)</Text>
-      <TextInput style={styles.input} value={fat100g} onChangeText={setFat} keyboardType="numeric" placeholderTextColor="#aaa" />
+      <TextInput
+        style={styles.input}
+        value={fat100g}
+        onChangeText={setFat}
+        keyboardType="numeric"
+        placeholderTextColor="#aaa"
+      />
       <Text style={styles.label}>Gesättigte Fettsäuren (g/100g)</Text>
-      <TextInput style={styles.input} value={saturatedFat100g} onChangeText={setSatFat} keyboardType="numeric" placeholderTextColor="#aaa" />
+      <TextInput
+        style={styles.input}
+        value={saturatedFat100g}
+        onChangeText={setSatFat}
+        keyboardType="numeric"
+        placeholderTextColor="#aaa"
+      />
       <Text style={styles.label}>Kohlenhydrate (g/100g)</Text>
-      <TextInput style={styles.input} value={carbohydrates100g} onChangeText={setCarbs} keyboardType="numeric" placeholderTextColor="#aaa" />
+      <TextInput
+        style={styles.input}
+        value={carbohydrates100g}
+        onChangeText={setCarbs}
+        keyboardType="numeric"
+        placeholderTextColor="#aaa"
+      />
       <Text style={styles.label}>Zucker (g/100g)</Text>
-      <TextInput style={styles.input} value={sugars100g} onChangeText={setSugars} keyboardType="numeric" placeholderTextColor="#aaa" />
+      <TextInput
+        style={styles.input}
+        value={sugars100g}
+        onChangeText={setSugars}
+        keyboardType="numeric"
+        placeholderTextColor="#aaa"
+      />
       <Text style={styles.label}>Ballaststoffe (g/100g)</Text>
-      <TextInput style={styles.input} value={fiber100g} onChangeText={setFiber} keyboardType="numeric" placeholderTextColor="#aaa" />
+      <TextInput
+        style={styles.input}
+        value={fiber100g}
+        onChangeText={setFiber}
+        keyboardType="numeric"
+        placeholderTextColor="#aaa"
+      />
       <Text style={styles.label}>Protein (g/100g)</Text>
-      <TextInput style={styles.input} value={proteins100g} onChangeText={setProteins} keyboardType="numeric" placeholderTextColor="#aaa" />
+      <TextInput
+        style={styles.input}
+        value={proteins100g}
+        onChangeText={setProteins}
+        keyboardType="numeric"
+        placeholderTextColor="#aaa"
+      />
       <Text style={styles.label}>Salz (g/100g)</Text>
-      <TextInput style={styles.input} value={salt100g} onChangeText={setSalt} keyboardType="numeric" placeholderTextColor="#aaa" />
+      <TextInput
+        style={styles.input}
+        value={salt100g}
+        onChangeText={setSalt}
+        keyboardType="numeric"
+        placeholderTextColor="#aaa"
+      />
     </View>
   );
 
@@ -205,13 +263,31 @@ export default function EditProductScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Text style={styles.label}>Name</Text>
-        <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Produktname" placeholderTextColor="#aaa" />
+        <TextInput
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+          placeholder="Produktname"
+          placeholderTextColor="#aaa"
+        />
 
         <Text style={styles.label}>Marke</Text>
-        <TextInput style={styles.input} value={brand} onChangeText={setBrand} placeholder="Marke" placeholderTextColor="#aaa" />
+        <TextInput
+          style={styles.input}
+          value={brand}
+          onChangeText={setBrand}
+          placeholder="Marke"
+          placeholderTextColor="#aaa"
+        />
 
         <Text style={styles.label}>Kategorie (Offline)</Text>
-        <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder="Kategorie" placeholderTextColor="#aaa" />
+        <TextInput
+          style={styles.input}
+          value={category}
+          onChangeText={setCategory}
+          placeholder="Kategorie"
+          placeholderTextColor="#aaa"
+        />
 
         <View style={styles.labelRow}>
           <Text style={styles.label}>Zutaten</Text>
@@ -219,7 +295,14 @@ export default function EditProductScreen() {
             <Ionicons name="camera" size={24} color="#4CAF50" />
           </TouchableOpacity>
         </View>
-        <TextInput style={[styles.input, styles.multiline]} value={ingredientsText} onChangeText={setIngredientsText} multiline placeholder="Zutatenliste..." placeholderTextColor="#aaa" />
+        <TextInput
+          style={[styles.input, styles.multiline]}
+          value={ingredientsText}
+          onChangeText={setIngredientsText}
+          multiline
+          placeholder="Zutatenliste..."
+          placeholderTextColor="#aaa"
+        />
 
         <View style={[styles.labelRow, { marginTop: 10, marginBottom: 10 }]}>
           <Text style={styles.label}>Nährwerte per 100g</Text>
@@ -238,9 +321,11 @@ export default function EditProductScreen() {
           onPress={handleUploadOFF}
           disabled={!isUploadEnabled || isUploading}
         >
-          {isUploading
-            ? <ActivityIndicator color="#000" />
-            : <Text style={styles.uploadBtnText}>Upload to Open Food Facts</Text>}
+          {isUploading ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <Text style={styles.uploadBtnText}>Upload to Open Food Facts</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
@@ -256,13 +341,9 @@ export default function EditProductScreen() {
           void handleUploadOFF();
         }}
       />
-      
+
       {toastMessage && (
-        <Toast
-          message={toastMessage}
-          type={toastType}
-          onDismiss={() => setToastMessage(null)}
-        />
+        <Toast message={toastMessage} type={toastType} onDismiss={() => setToastMessage(null)} />
       )}
     </View>
   );
@@ -272,27 +353,74 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212', padding: 20 },
   centered: { justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginBottom: 20, marginTop: 40 },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
   label: { color: '#ccc', fontSize: 14, fontWeight: '600' },
-  input: { backgroundColor: '#1E1E1E', color: '#fff', padding: 14, borderRadius: 8, marginBottom: 16, fontSize: 16 },
+  input: {
+    backgroundColor: '#1E1E1E',
+    color: '#fff',
+    padding: 14,
+    borderRadius: 8,
+    marginBottom: 16,
+    fontSize: 16,
+  },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
   nutritionContainer: { paddingTop: 8 },
-  saveBtn: { backgroundColor: '#4CAF50', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 10 },
+  saveBtn: {
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
   saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  uploadBtn: { backgroundColor: '#00BFA5', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 15 },
+  uploadBtn: {
+    backgroundColor: '#00BFA5',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 15,
+  },
   uploadBtnDisabled: { backgroundColor: '#114D45' },
   uploadBtnText: { color: '#000', fontWeight: 'bold', fontSize: 16 },
-  cancelBtn: { backgroundColor: '#333', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 15 },
+  cancelBtn: {
+    backgroundColor: '#333',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 15,
+  },
   cancelBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   camera: { flex: 1, margin: -20 },
   cameraOverlay: { flex: 1, justifyContent: 'space-between', padding: 20 },
-  cameraTopBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 40 },
+  cameraTopBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 40,
+  },
   scrollContent: { paddingBottom: 40 },
   cameraBackButton: { padding: 10, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 8 },
   cameraBackText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  cameraInstruction: { color: '#fff', fontSize: 18, fontWeight: 'bold', backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 8 },
+  cameraInstruction: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 10,
+    borderRadius: 8,
+  },
   cameraPlaceholder: { width: 60 },
   cameraBottomBar: { alignItems: 'center', marginBottom: 40 },
-  cameraCaptureBtn: { backgroundColor: '#4CAF50', paddingVertical: 16, paddingHorizontal: 32, borderRadius: 30 },
-  cameraCaptureText: { color: '#fff', fontSize: 18, fontWeight: 'bold' }
+  cameraCaptureBtn: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 30,
+  },
+  cameraCaptureText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
 });

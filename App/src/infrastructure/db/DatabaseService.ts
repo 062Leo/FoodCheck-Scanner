@@ -74,7 +74,9 @@ async function migrateSchema(database: SQLite.SQLiteDatabase): Promise<void> {
     const currentVersion = await getSchemaVersion(database);
 
     if (currentVersion > DATABASE_VERSION) {
-      throw new Error(`Unsupported database version ${currentVersion}. Expected at most ${DATABASE_VERSION}.`);
+      throw new Error(
+        `Unsupported database version ${currentVersion}. Expected at most ${DATABASE_VERSION}.`
+      );
     }
 
     if (currentVersion === DATABASE_VERSION) {
@@ -99,7 +101,9 @@ async function migrateSchema(database: SQLite.SQLiteDatabase): Promise<void> {
     };
 
     const dbAny = database as unknown as {
-      withExclusiveTransactionAsync?: (fn: (tx: SQLite.SQLiteDatabase) => Promise<void>) => Promise<void>;
+      withExclusiveTransactionAsync?: (
+        fn: (tx: SQLite.SQLiteDatabase) => Promise<void>
+      ) => Promise<void>;
       withTransactionAsync?: (fn: (tx: SQLite.SQLiteDatabase) => Promise<void>) => Promise<void>;
     };
 

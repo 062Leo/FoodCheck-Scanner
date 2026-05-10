@@ -34,7 +34,7 @@ describe('OcrService', () => {
       expect(TextRecognition.recognize).toHaveBeenCalledTimes(1);
       expect(TextRecognition.recognize).toHaveBeenCalledWith(
         'file:///path/to/image.jpg',
-        TextRecognitionScript.LATIN,
+        TextRecognitionScript.LATIN
       );
     });
 
@@ -43,14 +43,14 @@ describe('OcrService', () => {
 
       const result = await OcrService.recognizeText(
         'file:///path/to/image.jpg',
-        TextRecognitionScript.JAPANESE,
+        TextRecognitionScript.JAPANESE
       );
 
       expect(result).toBe('Greek-like text');
       expect(TextRecognition.recognize).toHaveBeenCalledTimes(1);
       expect(TextRecognition.recognize).toHaveBeenCalledWith(
         'file:///path/to/image.jpg',
-        TextRecognitionScript.JAPANESE,
+        TextRecognitionScript.JAPANESE
       );
     });
 
@@ -58,23 +58,19 @@ describe('OcrService', () => {
       const testError = new Error('ML Kit error');
       (TextRecognition.recognize as jest.Mock).mockRejectedValue(testError);
 
-      await expect(
-        OcrService.recognizeText('file:///path/to/image.jpg'),
-      ).rejects.toThrow(OcrError);
-      await expect(
-        OcrService.recognizeText('file:///path/to/image.jpg'),
-      ).rejects.toThrow(/Failed to recognize text/);
+      await expect(OcrService.recognizeText('file:///path/to/image.jpg')).rejects.toThrow(OcrError);
+      await expect(OcrService.recognizeText('file:///path/to/image.jpg')).rejects.toThrow(
+        /Failed to recognize text/
+      );
     });
 
     it('should throw OcrError if no text recognized', async () => {
       (TextRecognition.recognize as jest.Mock).mockResolvedValue({ text: '' });
 
-      await expect(
-        OcrService.recognizeText('file:///path/to/image.jpg'),
-      ).rejects.toThrow(OcrError);
-      await expect(
-        OcrService.recognizeText('file:///path/to/image.jpg'),
-      ).rejects.toThrow(/No text recognized/);
+      await expect(OcrService.recognizeText('file:///path/to/image.jpg')).rejects.toThrow(OcrError);
+      await expect(OcrService.recognizeText('file:///path/to/image.jpg')).rejects.toThrow(
+        /No text recognized/
+      );
     });
   });
 

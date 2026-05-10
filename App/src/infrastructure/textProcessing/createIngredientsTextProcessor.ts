@@ -6,7 +6,7 @@ import { AssetDictionaryProvider } from './AssetDictionaryProvider';
 
 export async function createIngredientsTextProcessor(): Promise<TextProcessor> {
   const dictionary = await AssetDictionaryProvider.fromAsset(
-    require('../../../assets/dictionaries/ingredients_symspell.json'),
+    require('../../../assets/dictionaries/ingredients_symspell.json')
   );
 
   return new TextProcessor(new DefaultTextSegmenter(), new SymSpellSpellCorrector(dictionary));

@@ -23,7 +23,9 @@ export class FilterRuleRepository {
         }
       );
     } catch (error) {
-      throw new Error(`Failed to insert filter rule for key ${rule.key}: ${getErrorMessage(error)}`);
+      throw new Error(
+        `Failed to insert filter rule for key ${rule.key}: ${getErrorMessage(error)}`
+      );
     }
   }
 

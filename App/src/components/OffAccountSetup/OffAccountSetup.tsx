@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  ActivityIndicator,
+  Linking,
+} from 'react-native';
 import { OpenFoodFactsWriteClient } from '../../infrastructure/api/OpenFoodFactsWriteClient';
 
 interface OffAccountSetupProps {
@@ -78,16 +87,20 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity 
-              style={[styles.button, styles.cancelButton]} 
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
               onPress={onCancel}
               disabled={isSaving}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={[styles.button, styles.saveButton, (!username.trim() || !password.trim()) && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.saveButton,
+                (!username.trim() || !password.trim()) && styles.disabledButton,
+              ]}
               onPress={handleSave}
               disabled={isSaving || !username.trim() || !password.trim()}
             >
@@ -139,7 +152,13 @@ const styles = StyleSheet.create({
   },
   errorText: { color: '#F44336', marginBottom: 16, fontSize: 14 },
   buttonRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
-  button: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, minWidth: 100, alignItems: 'center' },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
+  },
   cancelButton: { backgroundColor: 'transparent' },
   cancelButtonText: { color: '#BDBDBD', fontSize: 16, fontWeight: '600' },
   saveButton: { backgroundColor: '#4CAF50' },

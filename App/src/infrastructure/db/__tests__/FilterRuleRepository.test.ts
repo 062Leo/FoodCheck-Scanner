@@ -16,10 +16,15 @@ type MockDatabase = {
   execAsync: jest.Mock<Promise<void>, [string]>;
   getFirstAsync: jest.Mock<Promise<unknown>, [string, ...unknown[]]>;
   getAllAsync: jest.Mock<Promise<unknown[]>, [string, ...unknown[]]>;
-  runAsync: jest.Mock<Promise<{ changes: number; lastInsertRowId: number }>, [string, ...unknown[]]>;
+  runAsync: jest.Mock<
+    Promise<{ changes: number; lastInsertRowId: number }>,
+    [string, ...unknown[]]
+  >;
 };
 
-const openDatabaseAsync = SQLite.openDatabaseAsync as jest.MockedFunction<typeof SQLite.openDatabaseAsync>;
+const openDatabaseAsync = SQLite.openDatabaseAsync as jest.MockedFunction<
+  typeof SQLite.openDatabaseAsync
+>;
 
 describe('FilterRuleRepository', () => {
   let repository: FilterRuleRepository;
@@ -34,8 +39,12 @@ describe('FilterRuleRepository', () => {
 
     database = {
       execAsync: jest.fn(async () => undefined),
-      getFirstAsync: jest.fn(async (sql: string, ...params: unknown[]) => handleGetFirst(sql, params, state)),
-      getAllAsync: jest.fn(async (sql: string, ...params: unknown[]) => handleGetAll(sql, params, state)),
+      getFirstAsync: jest.fn(async (sql: string, ...params: unknown[]) =>
+        handleGetFirst(sql, params, state)
+      ),
+      getAllAsync: jest.fn(async (sql: string, ...params: unknown[]) =>
+        handleGetAll(sql, params, state)
+      ),
       runAsync: jest.fn(async (sql: string, ...params: unknown[]) => handleRun(sql, params, state)),
     };
 
@@ -137,7 +146,11 @@ function handleGetAll(sql: string, _params: unknown[], state: DbState): unknown[
   });
 }
 
-function handleRun(sql: string, params: unknown[], state: DbState): { changes: number; lastInsertRowId: number } {
+function handleRun(
+  sql: string,
+  params: unknown[],
+  state: DbState
+): { changes: number; lastInsertRowId: number } {
   const normalizedSql = normalizeSql(sql);
 
   if (normalizedSql.includes('INSERT INTO filter_rules')) {
@@ -181,9 +194,18 @@ function handleRun(sql: string, params: unknown[], state: DbState): { changes: n
       id: existing.id,
       type: values['$type'] !== undefined ? (values['$type'] as FilterRule['type']) : existing.type,
       key: values['$key'] !== undefined ? (values['$key'] as string) : existing.key,
-      threshold: values['$threshold'] !== undefined ? (values['$threshold'] as number | null) : existing.threshold,
-      operator: values['$operator'] !== undefined ? (values['$operator'] as string | null) : existing.operator,
-      severity: values['$severity'] !== undefined ? (values['$severity'] as FilterRule['severity']) : existing.severity,
+      threshold:
+        values['$threshold'] !== undefined
+          ? (values['$threshold'] as number | null)
+          : existing.threshold,
+      operator:
+        values['$operator'] !== undefined
+          ? (values['$operator'] as string | null)
+          : existing.operator,
+      severity:
+        values['$severity'] !== undefined
+          ? (values['$severity'] as FilterRule['severity'])
+          : existing.severity,
       created_at: existing.created_at,
     };
 

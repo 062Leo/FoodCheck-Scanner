@@ -21,7 +21,8 @@ describe('ResultScreen cached override merge flow', () => {
       ean: mockOFFProduct.ean,
       name: (mockCachedOverrides as any).name?.trim() || mockOFFProduct.name,
       brand: (mockCachedOverrides as any).brand?.trim() || mockOFFProduct.brand,
-      ingredientsText: mockCachedOverrides.ingredientsText?.trim() || mockOFFProduct.ingredientsText,
+      ingredientsText:
+        mockCachedOverrides.ingredientsText?.trim() || mockOFFProduct.ingredientsText,
     };
 
     expect(merged.name).toBe('Test Product from OFF');
@@ -42,7 +43,8 @@ describe('ResultScreen cached override merge flow', () => {
       ean: mockOFFProduct.ean,
       name: cachedWithEmptyName.name?.trim() || mockOFFProduct.name,
       brand: cachedWithEmptyName.brand?.trim() || mockOFFProduct.brand,
-      ingredientsText: cachedWithEmptyName.ingredientsText?.trim() || mockOFFProduct.ingredientsText,
+      ingredientsText:
+        cachedWithEmptyName.ingredientsText?.trim() || mockOFFProduct.ingredientsText,
     };
 
     expect(merged.name).toBe('Test Product from OFF');
@@ -86,9 +88,10 @@ describe('ResultScreen cached override merge flow', () => {
   it('should match ContributeScreen flow: cachedData with only ingredientsText, OFF has name/brand', () => {
     const cachedData = JSON.stringify({ product: { ingredientsText: 'OCR ingredients' } });
     const parsed = JSON.parse(cachedData) as unknown;
-    const cachedProduct = parsed && typeof parsed === 'object' && 'product' in (parsed as Record<string, unknown>)
-      ? (parsed as { product: unknown }).product
-      : parsed;
+    const cachedProduct =
+      parsed && typeof parsed === 'object' && 'product' in (parsed as Record<string, unknown>)
+        ? (parsed as { product: unknown }).product
+        : parsed;
     const cachedOverrides = cachedProduct as Partial<Product>;
 
     const overrideName = cachedOverrides?.name?.trim();
@@ -101,7 +104,7 @@ describe('ResultScreen cached override merge flow', () => {
       name: overrideName ? overrideName : mockOFFProduct.name,
       brand: overrideBrand ? overrideBrand : mockOFFProduct.brand,
       ingredientsText:
-        (cachedOverrides?.ingredientsText && cachedOverrides.ingredientsText.trim())
+        cachedOverrides?.ingredientsText && cachedOverrides.ingredientsText.trim()
           ? cachedOverrides.ingredientsText
           : mockOFFProduct.ingredientsText,
     };

@@ -2,22 +2,22 @@
 
 ## Task 0: Audit Current OpenFoodFacts API Integration
 
-**Status:** Not Started
+**Status:** ✅ Done — see [docs/CURRENT_API_STATUS.md](CURRENT_API_STATUS.md)
 
 **Description:**
 Investigate and document how the OpenFoodFacts API is currently integrated in the codebase, if at all. This includes identifying existing API client code, current endpoints being used, authentication methods, error handling, and any missing functionality.
 
 **Scope:**
-- [ ] Search for all OpenFoodFacts API client code in `App/src/infrastructure/api/` and related directories
-- [ ] Document what API endpoints are currently being called
-- [ ] List any existing helper functions or utilities related to OFF integration
-- [ ] Note current authentication mechanism (if any)
-- [ ] Identify error handling strategies currently in place
-- [ ] Document which endpoints are missing but needed based on Task 1 requirements
-- [ ] Create a summary document of findings
+- [x] Search for all OpenFoodFacts API client code in `App/src/infrastructure/api/` and related directories
+- [x] Document what API endpoints are currently being called
+- [x] List any existing helper functions or utilities related to OFF integration
+- [x] Note current authentication mechanism (if any)
+- [x] Identify error handling strategies currently in place
+- [x] Document which endpoints are missing but needed based on Task 1 requirements
+- [x] Create a summary document of findings
 
 **Output:**
-A brief report (e.g., `docs/CURRENT_API_STATUS.md`) documenting the current state so subsequent tasks can build upon or replace existing code appropriately.
+`docs/CURRENT_API_STATUS.md` — comprehensive audit covering all existing code, gaps, and recommendations.
 
 ---
 
@@ -37,6 +37,7 @@ Properly integrate the OpenFoodFacts API and verify functionality through compre
 
 ## Task 2: Remove Upload-to-OFF Prompt After Contributing Missing Ingredients
 
+**Status:** ✅ Done
 
 **Description:**
 After a user manually adds missing ingredients to a scanned product and completes the contribution form, the application currently displays a button prompting the user to upload the product to the OpenFoodFacts database. This prompt should be removed.
@@ -53,15 +54,16 @@ After a user manually adds missing ingredients to a scanned product and complete
 - Uploading to OpenFoodFacts should occur at a different location in the user flow (out of scope for this task)
 
 **Acceptance Criteria:**
-- [ ] Remove the "Upload to OFF" button from the post-contribution screen
-- [ ] Display only the "Save Locally" button
-- [ ] Product data is correctly saved to the local SQLite database
-- [ ] Tests verify that no upload-related code is executed after ingredient contribution
+- [x] Remove the "Upload to OFF" button from the post-contribution screen
+- [x] Display only the "Save Locally" button
+- [x] Product data is correctly saved to the local SQLite database
+- [x] Tests verify that no upload-related code is executed after ingredient contribution
 
 ---
 
 ## Task 3: Fix Product Data Persistence and Add Local vs. OFF Data Source Toggle
 
+**Status:** ✅ Done
 
 **Description:**
 When a user adds missing ingredients and other product information locally, the application should recognize that all required information is now available. Currently, when viewing a previously contributed product in the catalog, the app incorrectly reports that ingredients are still missing, prompting the user to add them again despite the local contribution.
@@ -81,10 +83,10 @@ When a user adds missing ingredients and other product information locally, the 
 - No re-entry prompt is displayed for products with complete local data
 
 **Acceptance Criteria:**
-- [ ] Local product repository correctly identifies when all required fields are present
-- [ ] ResultScreen/CatalogScreen checks local data before requesting missing information
-- [ ] Product details are loaded from the local database without re-entry prompts
-- [ ] Tests verify correct detection of missing vs. complete product data
+- [x] Local product repository correctly identifies when all required fields are present
+- [x] ResultScreen/CatalogScreen checks local data before requesting missing information
+- [x] Product details are loaded from the local database without re-entry prompts
+- [x] Tests verify correct detection of missing vs. complete product data
 
 ### Subtask 3B: Implement Data Source Toggle
 
@@ -100,27 +102,16 @@ Add a toggle switch to allow users to switch between viewing:
 - The active data source is visually indicated
 
 **Acceptance Criteria:**
-- [ ] Toggle component is implemented and visible in product detail views
-- [ ] Selecting "OFF Database" loads product data from OpenFoodFacts API
-- [ ] Selecting "Local Database" loads product data from SQLite repository
-- [ ] UI clearly indicates which data source is currently active
-- [ ] Both data sources can be accessed without re-scanning the product
-- [ ] Tests verify that data is correctly loaded from the selected source
+- [x] Toggle component is implemented and visible in product detail views
+- [x] Selecting "OFF Database" loads product data from OpenFoodFacts API
+- [x] Selecting "Local Database" loads product data from SQLite repository
+- [x] UI clearly indicates which data source is currently active
+- [x] Both data sources can be accessed without re-scanning the product
+- [x] Tests verify that data is correctly loaded from the selected source
 
 ### Subtask 3C: Enable Data Merging and Synchronization (Optional Enhancement)
 
-**Description:**
-Allow users to merge data from both sources and choose which values to keep (e.g., title from OFF, but nutrition facts from local database).
-
 **Note:** This is an enhancement feature. Prioritize 3A and 3B first.
 
-**Possible Future Behavior:**
-- User can select which fields to merge (e.g., "Use OFF title + local nutrition facts")
-- Merged data can be pushed to both local and OFF databases
-- Synchronization creates a unified product record
-
-**Acceptance Criteria (Future):**
-- [ ] UI provides a way to select fields from each source
-- [ ] Merged data is saved correctly to both databases (when applicable)
-- [ ] Synchronization does not overwrite unmodified data 
+Deferred for future implementation.
 

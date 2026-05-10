@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { OpenFoodFactsWriteClient } from '../../infrastructure/api/OpenFoodFactsWriteClient';
 import { RedFlagAnalyzer } from '../../domain/analysis/RedFlagAnalyzer';
 import { NovaScoreEvaluator } from '../../domain/analysis/NovaScoreEvaluator';
 import { ProductRating } from '../../domain/analysis/ProductRating';
@@ -88,16 +87,10 @@ export default function ContributeScreen() {
     if (step === 1) setStep(2);
   };
 
-  /* ── Upload ── */
+  /* ── Save locally ── */
 
-  const handleUpload = async (formData: ContributeFormData) => {
+  const handleSaveLocally = async (formData: ContributeFormData) => {
     setIsProcessing(true);
-    try {
-      const client = new OpenFoodFactsWriteClient();
-      await client.uploadProduct(formData);
-    } catch (err) {
-      setToastMessage(err instanceof Error ? err.message : 'Upload failed');
-    }
 
     try {
       const product = {
@@ -140,6 +133,7 @@ export default function ContributeScreen() {
       });
     } catch (e) {
       setIsProcessing(false);
+      setToastMessage(e instanceof Error ? e.message : 'Save failed');
     }
   };
 
@@ -160,7 +154,7 @@ export default function ContributeScreen() {
           initialIngredients={ingredientsText}
           initialProductName={offProduct?.name || ''}
           initialBrand={offProduct?.brand || ''}
-          onSubmit={handleUpload}
+          onSubmit={handleSaveLocally}
           isSubmitting={isProcessing}
         />
       </View>
@@ -171,7 +165,8 @@ export default function ContributeScreen() {
   const isStep1 = step === 1;
   const stepLabel = 'Schritt 1 von 1';
   const stepTitle = 'Zutatenliste fotografieren';
-  const stepDesc = 'Mach ein Foto der Zutatenliste. Du kannst danach den relevanten Bereich auswählen.';
+  const stepDesc =
+    'Mach ein Foto der Zutatenliste. Du kannst danach den relevanten Bereich auswählen.';
   const doneIndicator = ingredientsText;
 
   return (
@@ -197,21 +192,18 @@ export default function ContributeScreen() {
         {doneIndicator ? (
           <View style={styles.doneBox}>
             <Text style={styles.doneIcon}>✓</Text>
-            <Text style={styles.doneText} numberOfLines={3}>{doneIndicator}</Text>
+            <Text style={styles.doneText} numberOfLines={3}>
+              {doneIndicator}
+            </Text>
           </View>
         ) : null}
 
-        <TouchableOpacity
-          style={styles.primaryBtn}
-          onPress={() => setCameraTarget('ingredients')}
-        >
-          <Text style={styles.primaryBtnText}>📷  Foto aufnehmen</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={() => setCameraTarget('ingredients')}>
+          <Text style={styles.primaryBtnText}>📷 Foto aufnehmen</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-          <Text style={styles.skipBtnText}>
-            {doneIndicator ? 'Weiter →' : 'Überspringen →'}
-          </Text>
+          <Text style={styles.skipBtnText}>{doneIndicator ? 'Weiter →' : 'Überspringen →'}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -261,6 +253,12 @@ const styles = StyleSheet.create({
   skipBtnText: { color: '#BDBDBD', fontSize: 16, fontWeight: '600' },
   permissionText: { color: '#BDBDBD', fontSize: 16 },
   errorText: { color: '#F44336', fontSize: 18, fontWeight: '600', marginBottom: 20 },
-  permissionButton: { marginTop: 20, paddingVertical: 12, paddingHorizontal: 30, backgroundColor: '#4CAF50', borderRadius: 8 },
+  permissionButton: {
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+  },
   permissionButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
 });

@@ -16,10 +16,15 @@ type MockDatabase = {
   execAsync: jest.Mock<Promise<void>, [string]>;
   getFirstAsync: jest.Mock<Promise<unknown>, [string, ...unknown[]]>;
   getAllAsync: jest.Mock<Promise<unknown[]>, [string, ...unknown[]]>;
-  runAsync: jest.Mock<Promise<{ changes: number; lastInsertRowId: number }>, [string, ...unknown[]]>;
+  runAsync: jest.Mock<
+    Promise<{ changes: number; lastInsertRowId: number }>,
+    [string, ...unknown[]]
+  >;
 };
 
-const openDatabaseAsync = SQLite.openDatabaseAsync as jest.MockedFunction<typeof SQLite.openDatabaseAsync>;
+const openDatabaseAsync = SQLite.openDatabaseAsync as jest.MockedFunction<
+  typeof SQLite.openDatabaseAsync
+>;
 
 describe('ProductRepository', () => {
   let repository: ProductRepository;
@@ -34,8 +39,12 @@ describe('ProductRepository', () => {
 
     database = {
       execAsync: jest.fn(async () => undefined),
-      getFirstAsync: jest.fn(async (sql: string, ...params: unknown[]) => handleGetFirst(sql, params, state)),
-      getAllAsync: jest.fn(async (sql: string, ...params: unknown[]) => handleGetAll(sql, params, state)),
+      getFirstAsync: jest.fn(async (sql: string, ...params: unknown[]) =>
+        handleGetFirst(sql, params, state)
+      ),
+      getAllAsync: jest.fn(async (sql: string, ...params: unknown[]) =>
+        handleGetAll(sql, params, state)
+      ),
       runAsync: jest.fn(async (sql: string, ...params: unknown[]) => handleRun(sql, params, state)),
     };
 
@@ -135,7 +144,7 @@ function handleGetFirst(sql: string, params: unknown[], state: DbState): unknown
 
   const ean = getNamedParam(params[0], '$ean');
 
-  return ean ? state.records.get(ean) ?? null : null;
+  return ean ? (state.records.get(ean) ?? null) : null;
 }
 
 function handleGetAll(sql: string, _params: unknown[], state: DbState): unknown[] {
@@ -153,7 +162,11 @@ function handleGetAll(sql: string, _params: unknown[], state: DbState): unknown[
   });
 }
 
-function handleRun(sql: string, params: unknown[], state: DbState): { changes: number; lastInsertRowId: number } {
+function handleRun(
+  sql: string,
+  params: unknown[],
+  state: DbState
+): { changes: number; lastInsertRowId: number } {
   const normalizedSql = normalizeSql(sql);
 
   if (normalizedSql.includes('INSERT INTO products')) {

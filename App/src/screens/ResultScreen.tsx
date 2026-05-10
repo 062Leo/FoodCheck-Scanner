@@ -106,9 +106,7 @@ export default function ResultScreen() {
         const foundProduct = await productRepository.findByEan(product.ean);
         if (foundProduct?.id) {
           setProductId(foundProduct.id);
-          const favoriteStatus = catalogStore.favorites.some(
-            (fav) => fav.id === foundProduct.id
-          );
+          const favoriteStatus = catalogStore.favorites.some((fav) => fav.id === foundProduct.id);
           setIsFavorite(favoriteStatus);
         }
       } catch (err) {
@@ -246,10 +244,7 @@ export default function ResultScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backText}>← Zurück</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleToggleFavorite}
-          disabled={!product || savingProduct}
-        >
+        <TouchableOpacity onPress={handleToggleFavorite} disabled={!product || savingProduct}>
           <Text style={[styles.favoriteIcon, isFavorite && styles.favoriteFilled]}>
             {isFavorite ? '★' : '☆'}
           </Text>

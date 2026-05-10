@@ -65,3 +65,5 @@ Screens commonly instantiate domain classes and infrastructure repositories **di
 - [Roadmap](docs/04_Roadmap.md) — all phases complete, useful for understanding what was built
 - [Lastenheft](docs/01_Lastenheft.md) — requirements and acceptance criteria
 - [UX-Konzept](docs/03_UX-Konzept.md) — screen behavior and visual design tokens
+- [OFF API Reference](docs/openfoodfacts_api_reference.md) — complete OFF API technical reference
+- [Current API Status](docs/CURRENT_API_STATUS.md) — audit of existing OFF integration with gap analysis

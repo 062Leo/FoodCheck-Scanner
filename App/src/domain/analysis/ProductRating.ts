@@ -12,7 +12,10 @@ export class ProductRating {
 
   rate(product: Product, rules?: FilterRule[]): ScanResult {
     const redFlags = product.ingredientsText
-      ? this.redFlagAnalyzer.analyze(product.ingredientsText, rules && rules.length > 0 ? rules : undefined)
+      ? this.redFlagAnalyzer.analyze(
+          product.ingredientsText,
+          rules && rules.length > 0 ? rules : undefined
+        )
       : [];
 
     const novaScore = product.novaScore || 1;

@@ -13,9 +13,21 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { useFilterStore } from '../../store/filterStore';
-import type { FilterRule, FilterRuleOperator, FilterRuleSeverity, FilterRuleType, NewFilterRule } from '../../types/FilterRule';
+import type {
+  FilterRule,
+  FilterRuleOperator,
+  FilterRuleSeverity,
+  FilterRuleType,
+  NewFilterRule,
+} from '../../types/FilterRule';
 
-const NUTRIENT_OPTIONS = ['sugars_100g', 'fat_100g', 'saturated-fat_100g', 'salt_100g', 'energy-kcal_100g'] as const;
+const NUTRIENT_OPTIONS = [
+  'sugars_100g',
+  'fat_100g',
+  'saturated-fat_100g',
+  'salt_100g',
+  'energy-kcal_100g',
+] as const;
 const OPERATOR_OPTIONS: FilterRuleOperator[] = ['gt', 'lt', 'eq'];
 
 type FilterMode = 'ingredient' | 'nutrient';
@@ -68,7 +80,8 @@ export default function FilterScreen() {
       ingredientKey: rule.type === 'ingredient' ? rule.key : '',
       nutrientKey: isNutrientOption(rule.key) ? rule.key : 'sugars_100g',
       operator: rule.operator ?? 'gt',
-      threshold: rule.threshold !== null && rule.threshold !== undefined ? String(rule.threshold) : '',
+      threshold:
+        rule.threshold !== null && rule.threshold !== undefined ? String(rule.threshold) : '',
       severity: rule.severity,
     });
     setIsEditorVisible(true);
@@ -175,11 +188,25 @@ export default function FilterScreen() {
                   <Text style={styles.ruleMeta}>{describeRule(rule)}</Text>
                 </View>
                 <View style={styles.badgesRow}>
-                  <View style={[styles.badge, rule.type === 'ingredient' ? styles.badgeIngredient : styles.badgeNutrient]}>
-                    <Text style={styles.badgeText}>{rule.type === 'ingredient' ? 'INGREDIENT' : 'NUTRIENT'}</Text>
+                  <View
+                    style={[
+                      styles.badge,
+                      rule.type === 'ingredient' ? styles.badgeIngredient : styles.badgeNutrient,
+                    ]}
+                  >
+                    <Text style={styles.badgeText}>
+                      {rule.type === 'ingredient' ? 'INGREDIENT' : 'NUTRIENT'}
+                    </Text>
                   </View>
-                  <View style={[styles.badge, rule.severity === 'red_flag' ? styles.badgeRed : styles.badgeOk]}>
-                    <Text style={styles.badgeText}>{rule.severity === 'red_flag' ? 'RED FLAG' : 'OK'}</Text>
+                  <View
+                    style={[
+                      styles.badge,
+                      rule.severity === 'red_flag' ? styles.badgeRed : styles.badgeOk,
+                    ]}
+                  >
+                    <Text style={styles.badgeText}>
+                      {rule.severity === 'red_flag' ? 'RED FLAG' : 'OK'}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -197,28 +224,48 @@ export default function FilterScreen() {
         </ScrollView>
       )}
 
-      <Modal visible={isEditorVisible} animationType="slide" transparent onRequestClose={closeModal}>
+      <Modal
+        visible={isEditorVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={closeModal}
+      >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editingRule ? 'Regel bearbeiten' : 'Regel hinzufügen'}</Text>
+              <Text style={styles.modalTitle}>
+                {editingRule ? 'Regel bearbeiten' : 'Regel hinzufügen'}
+              </Text>
               <TouchableOpacity onPress={closeModal}>
                 <Ionicons name="close" size={22} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.tabRow}>
-              <TabButton label="Ingredient Rule" active={formState.type === 'ingredient'} onPress={() => setFormState((current) => ({ ...current, type: 'ingredient' }))} />
-              <TabButton label="Nutrient Rule" active={formState.type === 'nutrient'} onPress={() => setFormState((current) => ({ ...current, type: 'nutrient' }))} />
+              <TabButton
+                label="Ingredient Rule"
+                active={formState.type === 'ingredient'}
+                onPress={() => setFormState((current) => ({ ...current, type: 'ingredient' }))}
+              />
+              <TabButton
+                label="Nutrient Rule"
+                active={formState.type === 'nutrient'}
+                onPress={() => setFormState((current) => ({ ...current, type: 'nutrient' }))}
+              />
             </View>
 
-            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.formContent}>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.formContent}
+            >
               {formState.type === 'ingredient' ? (
                 <View style={styles.fieldGroup}>
                   <Text style={styles.fieldLabel}>Ingredient keyword</Text>
                   <TextInput
                     value={formState.ingredientKey}
-                    onChangeText={(value) => setFormState((current) => ({ ...current, ingredientKey: value }))}
+                    onChangeText={(value) =>
+                      setFormState((current) => ({ ...current, ingredientKey: value }))
+                    }
                     placeholder="z. B. palmöl"
                     placeholderTextColor="#6B7280"
                     style={styles.input}
@@ -229,7 +276,10 @@ export default function FilterScreen() {
                 <>
                   <View style={styles.fieldGroup}>
                     <Text style={styles.fieldLabel}>Nutrient</Text>
-                    <TouchableOpacity style={styles.selectButton} onPress={() => setIsNutrientPickerVisible(true)}>
+                    <TouchableOpacity
+                      style={styles.selectButton}
+                      onPress={() => setIsNutrientPickerVisible(true)}
+                    >
                       <Text style={styles.selectButtonText}>{formState.nutrientKey}</Text>
                       <Ionicons name="chevron-down" size={18} color="#D1D5DB" />
                     </TouchableOpacity>
@@ -253,7 +303,9 @@ export default function FilterScreen() {
                     <Text style={styles.fieldLabel}>Threshold</Text>
                     <TextInput
                       value={formState.threshold}
-                      onChangeText={(value) => setFormState((current) => ({ ...current, threshold: value }))}
+                      onChangeText={(value) =>
+                        setFormState((current) => ({ ...current, threshold: value }))
+                      }
                       placeholder="z. B. 3"
                       placeholderTextColor="#6B7280"
                       style={styles.input}
@@ -269,7 +321,9 @@ export default function FilterScreen() {
                   <SegmentButton
                     label="RED FLAG"
                     active={formState.severity === 'red_flag'}
-                    onPress={() => setFormState((current) => ({ ...current, severity: 'red_flag' }))}
+                    onPress={() =>
+                      setFormState((current) => ({ ...current, severity: 'red_flag' }))
+                    }
                   />
                   <SegmentButton
                     label="OK"
@@ -287,7 +341,12 @@ export default function FilterScreen() {
         </View>
       </Modal>
 
-      <Modal visible={isNutrientPickerVisible} animationType="fade" transparent onRequestClose={() => setIsNutrientPickerVisible(false)}>
+      <Modal
+        visible={isNutrientPickerVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setIsNutrientPickerVisible(false)}
+      >
         <View style={styles.modalBackdrop}>
           <View style={styles.pickerCard}>
             <Text style={styles.pickerTitle}>Nutrient auswählen</Text>
@@ -303,7 +362,10 @@ export default function FilterScreen() {
                 <Text style={styles.pickerOptionText}>{option}</Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity style={styles.cancelButton} onPress={() => setIsNutrientPickerVisible(false)}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setIsNutrientPickerVisible(false)}
+            >
               <Text style={styles.cancelButtonText}>Abbrechen</Text>
             </TouchableOpacity>
           </View>
@@ -339,7 +401,10 @@ function TabButton({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity style={[styles.tabButton, active && styles.tabButtonActive]} onPress={onPress}>
+    <TouchableOpacity
+      style={[styles.tabButton, active && styles.tabButtonActive]}
+      onPress={onPress}
+    >
       <Text style={[styles.tabButtonText, active && styles.tabButtonTextActive]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -355,8 +420,13 @@ function SegmentButton({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity style={[styles.segmentButton, active && styles.segmentButtonActive]} onPress={onPress}>
-      <Text style={[styles.segmentButtonText, active && styles.segmentButtonTextActive]}>{label}</Text>
+    <TouchableOpacity
+      style={[styles.segmentButton, active && styles.segmentButtonActive]}
+      onPress={onPress}
+    >
+      <Text style={[styles.segmentButtonText, active && styles.segmentButtonTextActive]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }

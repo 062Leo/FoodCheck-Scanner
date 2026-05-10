@@ -8,7 +8,7 @@ export class SymSpellSpellCorrector implements SpellCorrector {
 
   constructor(
     dictionary: Dictionary,
-    private readonly config: SymSpellConfig = defaultSymSpellConfig,
+    private readonly config: SymSpellConfig = defaultSymSpellConfig
   ) {
     this.terms = dictionary.all().map((t) => ({ term: t.term, frequency: t.frequency }));
   }
@@ -48,11 +48,11 @@ export class SymSpellSpellCorrector implements SpellCorrector {
     let bestFrequency = 0;
 
     for (const entry of this.terms) {
-      const terms = entry.term.split(',').map(t => t.trim().toLowerCase());
-      
+      const terms = entry.term.split(',').map((t) => t.trim().toLowerCase());
+
       for (const term of terms) {
         if (!term) continue;
-        
+
         const dist = damerauLevenshtein(lowerWord, term, this.config.maxEditDistance);
         if (dist === null) continue;
 
@@ -75,9 +75,7 @@ export class SymSpellSpellCorrector implements SpellCorrector {
   }
 }
 
-type Token =
-  | { type: 'word'; value: string }
-  | { type: 'other'; value: string };
+type Token = { type: 'word'; value: string } | { type: 'other'; value: string };
 
 function tokenize(text: string): Token[] {
   const tokens: Token[] = [];

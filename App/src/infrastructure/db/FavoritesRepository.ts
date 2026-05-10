@@ -41,7 +41,9 @@ export class FavoritesRepository {
         }
       );
     } catch (error) {
-      throw new Error(`Failed to remove product ${productId} from favorites: ${getErrorMessage(error)}`);
+      throw new Error(
+        `Failed to remove product ${productId} from favorites: ${getErrorMessage(error)}`
+      );
     }
   }
 
@@ -90,7 +92,9 @@ export class FavoritesRepository {
 
       return favorite !== null;
     } catch (error) {
-      throw new Error(`Failed to check favorite state for product ${productId}: ${getErrorMessage(error)}`);
+      throw new Error(
+        `Failed to check favorite state for product ${productId}: ${getErrorMessage(error)}`
+      );
     }
   }
 

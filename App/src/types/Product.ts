@@ -15,6 +15,17 @@ export interface ProductRecord {
   rating: ScanStatus;
 }
 
+export interface ProductNutriments {
+  energyKcal100g?: number;
+  fat100g?: number;
+  saturatedFat100g?: number;
+  carbohydrates100g?: number;
+  sugars100g?: number;
+  fiber100g?: number;
+  proteins100g?: number;
+  salt100g?: number;
+}
+
 export interface Product {
   ean: string;
   name: string;
@@ -25,4 +36,29 @@ export interface Product {
   ingredientsTextByLang?: Record<string, string>;
   novaScore?: NovaScore;
   imageUrl?: string;
+  imageIngredientsUrl?: string;
+  imagePackagingUrl?: string;
+  nutritionGrades?: string;
+  ecoscoreGrade?: string;
+  allergensTags?: string[];
+  traces?: string;
+  additivesTags?: string[];
+  categories?: string;
+  miscTags?: string[];
+  labelsTags?: string[];
+  quantity?: string;
+  servingSize?: string;
+  imageNutritionUrl?: string;
+  nutriments?: ProductNutriments;
+  origins?: string;
+  manufacturingPlaces?: string;
+  stores?: string;
+  lastModified?: string;
+}
+
+export function getMissingScoreTags(product: Product): string[] {
+  if (!product.miscTags) return [];
+  return product.miscTags.filter(
+    (tag) => tag.startsWith('en:nutriscore-missing-') || tag.startsWith('en:ecoscore-')
+  );
 }

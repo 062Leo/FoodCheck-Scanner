@@ -13,7 +13,7 @@ export type TextProcessorOutput = {
 export class TextProcessor {
   constructor(
     private readonly segmenter: TextSegmenter,
-    private readonly spellCorrector: SpellCorrector,
+    private readonly spellCorrector: SpellCorrector
   ) {}
 
   process(input: TextProcessorInput): TextProcessorOutput {
