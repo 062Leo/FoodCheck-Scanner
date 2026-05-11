@@ -1,8 +1,8 @@
 import * as SQLite from 'expo-sqlite';
-import { defaultRules } from '../../domain/rules/defaultRules';
+import { seedRules } from '../../domain/rules/seedRules';
 
 const DATABASE_NAME = 'foodscanner.db';
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 5;
 const META_SCHEMA_VERSION_KEY = 'schema_version';
 
 type Migration = (database: SQLite.SQLiteDatabase) => Promise<void>;
@@ -14,6 +14,9 @@ export let db: SQLite.SQLiteDatabase | null = null;
 const migrations: Record<number, Migration> = {
   1: createInitialSchema,
   2: seedDefaultFilterRules,
+  3: addProductStorageColumns,
+  4: addVisitTrackingColumns,
+  5: addCategoryColumn,
 };
 
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -172,7 +175,15 @@ async function createInitialSchema(database: SQLite.SQLiteDatabase): Promise<voi
         nutriscore TEXT,
         raw_json TEXT,
         scanned_at TEXT NOT NULL,
-        rating TEXT NOT NULL
+        rating TEXT NOT NULL,
+        data_version INTEGER DEFAULT 1,
+        last_api_fetch TEXT,
+        image_url TEXT,
+        image_ingredients_url TEXT,
+        image_nutrition_url TEXT,
+        image_packaging_url TEXT,
+        visit_count INTEGER DEFAULT 1,
+        last_seen_at TEXT
       );
 
       CREATE TABLE IF NOT EXISTS favorites (
@@ -185,6 +196,7 @@ async function createInitialSchema(database: SQLite.SQLiteDatabase): Promise<voi
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT NOT NULL,
         key TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT '',
         threshold REAL,
         operator TEXT,
         severity TEXT NOT NULL,
@@ -198,38 +210,35 @@ async function createInitialSchema(database: SQLite.SQLiteDatabase): Promise<voi
 
 async function seedDefaultFilterRules(database: SQLite.SQLiteDatabase): Promise<void> {
   try {
-    // Check if filter_rules table already has data (idempotent check)
     const existingRules = await database.getFirstAsync<{ count: number }>(
       'SELECT COUNT(*) as count FROM filter_rules;'
     );
 
     if (existingRules && existingRules.count > 0) {
-      // Already seeded, skip
       return;
     }
 
-    // Map default rules to FilterRule records
-    // Both 'critical' and 'warning' severities map to 'red_flag'
     const now = new Date().toISOString();
-    const seedStatements = defaultRules.map((rule) => ({
+    const seedStatements = seedRules.map((rule) => ({
       type: 'ingredient' as const,
-      key: rule.searchTerm,
+      key: rule.key,
+      category: rule.category,
       threshold: null,
       operator: null,
       severity: 'red_flag' as const,
       created_at: now,
     }));
 
-    // Insert all rules
     for (const rule of seedStatements) {
       await database.runAsync(
         `
-          INSERT INTO filter_rules (type, key, threshold, operator, severity, created_at)
-          VALUES ($type, $key, $threshold, $operator, $severity, $created_at);
+          INSERT INTO filter_rules (type, key, category, threshold, operator, severity, created_at)
+          VALUES ($type, $key, $category, $threshold, $operator, $severity, $created_at);
         `,
         {
           $type: rule.type,
           $key: rule.key,
+          $category: rule.category,
           $threshold: rule.threshold,
           $operator: rule.operator,
           $severity: rule.severity,
@@ -239,6 +248,102 @@ async function seedDefaultFilterRules(database: SQLite.SQLiteDatabase): Promise<
     }
   } catch (error) {
     throw new Error(`Failed to seed default filter rules: ${getErrorMessage(error)}`);
+  }
+}
+
+async function addProductStorageColumns(database: SQLite.SQLiteDatabase): Promise<void> {
+  const columns = [
+    'data_version INTEGER DEFAULT 1',
+    'last_api_fetch TEXT',
+    'image_url TEXT',
+    'image_ingredients_url TEXT',
+    'image_nutrition_url TEXT',
+    'image_packaging_url TEXT',
+  ];
+
+  for (const colDef of columns) {
+    const colName = colDef.split(' ')[0];
+    try {
+      await database.execAsync(`ALTER TABLE products ADD COLUMN ${colDef};`);
+    } catch (error) {
+      const msg = getErrorMessage(error);
+      if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+        throw new Error(`Failed to add column ${colName}: ${msg}`);
+      }
+    }
+  }
+}
+
+async function addVisitTrackingColumns(database: SQLite.SQLiteDatabase): Promise<void> {
+  const columns = ['visit_count INTEGER DEFAULT 1', 'last_seen_at TEXT'];
+
+  for (const colDef of columns) {
+    const colName = colDef.split(' ')[0];
+    try {
+      await database.execAsync(`ALTER TABLE products ADD COLUMN ${colDef};`);
+    } catch (error) {
+      const msg = getErrorMessage(error);
+      if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+        throw new Error(`Failed to add column ${colName}: ${msg}`);
+      }
+    }
+  }
+}
+
+async function addCategoryColumn(database: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    await database.execAsync(`
+      ALTER TABLE filter_rules ADD COLUMN category TEXT NOT NULL DEFAULT '';
+    `);
+  } catch (error) {
+    const message = getErrorMessage(error);
+    if (!message.includes('duplicate column name') && !message.includes('already exists')) {
+      throw new Error(`Failed to add category column: ${message}`);
+    }
+  }
+
+  try {
+    const existing = await database.getAllAsync<{ key: string }>(
+      "SELECT key FROM filter_rules WHERE type = 'ingredient'"
+    );
+    const existingKeys = new Set(existing.map((r) => r.key.toLowerCase()));
+
+    const now = new Date().toISOString();
+    for (const rule of seedRules) {
+      if (existingKeys.has(rule.key.toLowerCase())) {
+        continue;
+      }
+
+      await database.runAsync(
+        `
+          INSERT INTO filter_rules (type, key, category, threshold, operator, severity, created_at)
+          VALUES ($type, $key, $category, NULL, NULL, $severity, $created_at);
+        `,
+        {
+          $type: 'ingredient',
+          $key: rule.key,
+          $category: rule.category,
+          $severity: 'red_flag',
+          $created_at: now,
+        }
+      );
+    }
+
+    for (const rule of seedRules) {
+      await database.runAsync(
+        `
+          UPDATE filter_rules
+          SET category = $category
+          WHERE type = 'ingredient' AND key = $key AND category = '';
+        `,
+        {
+          $key: rule.key,
+          $category: rule.category,
+        }
+      );
+    }
+  } catch (error) {
+    throw new Error(`Failed to seed missing filter rules: ${getErrorMessage(error)}`);
   }
 }
 

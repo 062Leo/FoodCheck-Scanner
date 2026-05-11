@@ -37,7 +37,7 @@ export function NutritionTable({ nutriments, servingSize }: NutritionTableProps)
 
         {NUTRIENT_ROWS.map((row, index) => {
           const value = nutriments[row.key];
-          if (value === undefined) return null;
+          if (value == null) return null;
 
           return (
             <View key={row.key} style={[styles.row, index % 2 === 1 && styles.rowAlt]}>

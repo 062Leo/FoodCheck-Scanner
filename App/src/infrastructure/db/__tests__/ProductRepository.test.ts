@@ -73,10 +73,12 @@ describe('ProductRepository', () => {
 
     const found = await repository.findByEan(record.ean);
 
-    expect(found).toEqual({
-      id: 1,
-      ...record,
-    });
+    expect(found).toEqual(
+      expect.objectContaining({
+        id: 1,
+        ...record,
+      })
+    );
   });
 
   it('findAll returns records sorted by scanned_at descending', async () => {
@@ -189,6 +191,14 @@ function handleRun(
       raw_json: getStringOrNull(values['$raw_json']),
       scanned_at: getStringValue(values['$scanned_at']),
       rating: getStringValue(values['$rating']) as ProductRecord['rating'],
+      data_version: getNumberOrNull(values['$data_version']),
+      last_api_fetch: getStringOrNull(values['$last_api_fetch']),
+      image_url: getStringOrNull(values['$image_url']),
+      image_ingredients_url: getStringOrNull(values['$image_ingredients_url']),
+      image_nutrition_url: getStringOrNull(values['$image_nutrition_url']),
+      image_packaging_url: getStringOrNull(values['$image_packaging_url']),
+      visit_count: getNumberOrNull(values['$visit_count']),
+      last_seen_at: getStringOrNull(values['$last_seen_at']),
     };
 
     state.records.set(ean, record);
@@ -255,6 +265,10 @@ function getNovaScoreOrNull(value: unknown): ProductRecord['nova_score'] {
   }
 
   return null;
+}
+
+function getNumberOrNull(value: unknown): number | null {
+  return typeof value === 'number' ? value : null;
 }
 
 function normalizeSql(sql: string): string {

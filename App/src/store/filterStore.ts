@@ -6,6 +6,7 @@ import type { FilterRule, NewFilterRule } from '../types/FilterRule';
 interface FilterStoreState {
   rules: FilterRule[];
   isLoading: boolean;
+  isInitialized: boolean;
   loadRules: () => Promise<void>;
   addRule: (rule: NewFilterRule) => Promise<void>;
   updateRule: (id: number, changes: Partial<NewFilterRule>) => Promise<void>;
@@ -14,18 +15,26 @@ interface FilterStoreState {
 
 const filterRuleRepository = new FilterRuleRepository();
 
+const initPromise: Promise<void> | null = null;
+
 export const useFilterStore = create<FilterStoreState>((set, get) => ({
   rules: [],
   isLoading: false,
+  isInitialized: false,
 
   loadRules: async () => {
+    if (get().isInitialized && get().rules.length > 0) {
+      return;
+    }
+
     set({ isLoading: true });
 
     try {
       const rules = await filterRuleRepository.findAll();
-      set({ rules });
+      set({ rules, isInitialized: true });
     } catch (error) {
       console.error('Failed to load filter rules:', error);
+      set({ isInitialized: true });
     } finally {
       set({ isLoading: false });
     }
@@ -36,7 +45,8 @@ export const useFilterStore = create<FilterStoreState>((set, get) => ({
 
     try {
       await filterRuleRepository.insert(rule);
-      await get().loadRules();
+      const rules = await filterRuleRepository.findAll();
+      set({ rules });
     } catch (error) {
       console.error('Failed to add filter rule:', error);
     } finally {
@@ -49,7 +59,8 @@ export const useFilterStore = create<FilterStoreState>((set, get) => ({
 
     try {
       await filterRuleRepository.update(id, changes);
-      await get().loadRules();
+      const rules = await filterRuleRepository.findAll();
+      set({ rules });
     } catch (error) {
       console.error(`Failed to update filter rule ${id}:`, error);
     } finally {
@@ -62,7 +73,8 @@ export const useFilterStore = create<FilterStoreState>((set, get) => ({
 
     try {
       await filterRuleRepository.deleteById(id);
-      await get().loadRules();
+      const rules = await filterRuleRepository.findAll();
+      set({ rules });
     } catch (error) {
       console.error(`Failed to delete filter rule ${id}:`, error);
     } finally {

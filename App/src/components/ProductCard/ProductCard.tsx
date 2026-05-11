@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, memo } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,7 @@ interface ProductCardProps {
   isFavorite: boolean;
 }
 
-export function ProductCard({
+export const ProductCard = memo(function ProductCard({
   product,
   onPress,
   onDelete,
@@ -176,7 +176,7 @@ export function ProductCard({
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

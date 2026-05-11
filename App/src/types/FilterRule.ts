@@ -6,6 +6,7 @@ export interface FilterRule {
   id: number;
   type: FilterRuleType;
   key: string;
+  category: string;
   threshold?: number | null;
   operator?: FilterRuleOperator | null;
   severity: FilterRuleSeverity;
@@ -13,3 +14,10 @@ export interface FilterRule {
 }
 
 export type NewFilterRule = Omit<FilterRule, 'id' | 'created_at'>;
+
+export interface FilterRuleSeed {
+  key: string;
+  category: string;
+  type: 'ingredient';
+  severity: 'red_flag';
+}

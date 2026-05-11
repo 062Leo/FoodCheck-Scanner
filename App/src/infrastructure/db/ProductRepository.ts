@@ -1,8 +1,6 @@
 import { db, initDatabase } from './DatabaseService';
 import type { ProductRecord } from '../../types/Product';
 
-type ProductRow = ProductRecord;
-
 export class ProductRepository {
   async insert(product: ProductRecord): Promise<void> {
     try {
@@ -19,7 +17,15 @@ export class ProductRepository {
             nutriscore,
             raw_json,
             scanned_at,
-            rating
+            rating,
+            data_version,
+            last_api_fetch,
+            image_url,
+            image_ingredients_url,
+            image_nutrition_url,
+            image_packaging_url,
+            visit_count,
+            last_seen_at
           ) VALUES (
             $ean,
             $name,
@@ -29,7 +35,15 @@ export class ProductRepository {
             $nutriscore,
             $raw_json,
             $scanned_at,
-            $rating
+            $rating,
+            $data_version,
+            $last_api_fetch,
+            $image_url,
+            $image_ingredients_url,
+            $image_nutrition_url,
+            $image_packaging_url,
+            $visit_count,
+            $last_seen_at
           )
           ON CONFLICT(ean) DO UPDATE SET
             name = excluded.name,
@@ -39,7 +53,15 @@ export class ProductRepository {
             nutriscore = excluded.nutriscore,
             raw_json = excluded.raw_json,
             scanned_at = excluded.scanned_at,
-            rating = excluded.rating;
+            rating = excluded.rating,
+            data_version = excluded.data_version,
+            last_api_fetch = excluded.last_api_fetch,
+            image_url = excluded.image_url,
+            image_ingredients_url = excluded.image_ingredients_url,
+            image_nutrition_url = excluded.image_nutrition_url,
+            image_packaging_url = excluded.image_packaging_url,
+            visit_count = products.visit_count + 1,
+            last_seen_at = excluded.last_seen_at;
         `,
         {
           $ean: product.ean,
@@ -51,6 +73,14 @@ export class ProductRepository {
           $raw_json: product.raw_json,
           $scanned_at: product.scanned_at,
           $rating: product.rating,
+          $data_version: product.data_version ?? null,
+          $last_api_fetch: product.last_api_fetch ?? null,
+          $image_url: product.image_url ?? null,
+          $image_ingredients_url: product.image_ingredients_url ?? null,
+          $image_nutrition_url: product.image_nutrition_url ?? null,
+          $image_packaging_url: product.image_packaging_url ?? null,
+          $visit_count: product.visit_count ?? 1,
+          $last_seen_at: product.last_seen_at ?? product.scanned_at,
         }
       );
     } catch (error) {
@@ -64,7 +94,7 @@ export class ProductRepository {
     try {
       const database = await this.getDatabase();
 
-      const product = await database.getFirstAsync<ProductRow>(
+      const product = await database.getFirstAsync<ProductRecord>(
         `
           SELECT
             id,
@@ -76,7 +106,15 @@ export class ProductRepository {
             nutriscore,
             raw_json,
             scanned_at,
-            rating
+            rating,
+            data_version,
+            last_api_fetch,
+            image_url,
+            image_ingredients_url,
+            image_nutrition_url,
+            image_packaging_url,
+            visit_count,
+            last_seen_at
           FROM products
           WHERE ean = $ean
           LIMIT 1;
@@ -96,7 +134,7 @@ export class ProductRepository {
     try {
       const database = await this.getDatabase();
 
-      return await database.getAllAsync<ProductRow>(
+      return await database.getAllAsync<ProductRecord>(
         `
           SELECT
             id,
@@ -108,7 +146,15 @@ export class ProductRepository {
             nutriscore,
             raw_json,
             scanned_at,
-            rating
+            rating,
+            data_version,
+            last_api_fetch,
+            image_url,
+            image_ingredients_url,
+            image_nutrition_url,
+            image_packaging_url,
+            visit_count,
+            last_seen_at
           FROM products
           ORDER BY scanned_at DESC, id DESC;
         `
@@ -363,6 +409,151 @@ export class ProductRepository {
       );
     } catch (error) {
       throw new Error(`Failed to update product by EAN ${product.ean}: ${getErrorMessage(error)}`);
+    }
+  }
+
+  async searchByName(query: string): Promise<ProductRecord[]> {
+    try {
+      const database = await this.getDatabase();
+      const like = `%${query}%`;
+
+      return await database.getAllAsync<ProductRecord>(
+        `
+          SELECT
+            id, ean, name, brands, ingredients, nova_score, nutriscore,
+            raw_json, scanned_at, rating, data_version, last_api_fetch,
+            image_url, image_ingredients_url, image_nutrition_url, image_packaging_url,
+            visit_count, last_seen_at
+          FROM products
+          WHERE name LIKE $query COLLATE NOCASE
+             OR brands LIKE $query COLLATE NOCASE
+             OR ean LIKE $query
+          ORDER BY scanned_at DESC
+          LIMIT 50;
+        `,
+        { $query: like }
+      );
+    } catch (error) {
+      throw new Error(`Failed to search products: ${getErrorMessage(error)}`);
+    }
+  }
+
+  async findMostScanned(limit = 10): Promise<ProductRecord[]> {
+    try {
+      const database = await this.getDatabase();
+
+      return await database.getAllAsync<ProductRecord>(
+        `
+          SELECT
+            id, ean, name, brands, ingredients, nova_score, nutriscore,
+            raw_json, scanned_at, rating, data_version, last_api_fetch,
+            image_url, image_ingredients_url, image_nutrition_url, image_packaging_url,
+            visit_count, last_seen_at
+          FROM products
+          ORDER BY visit_count DESC, scanned_at DESC
+          LIMIT $limit;
+        `,
+        { $limit: limit }
+      );
+    } catch (error) {
+      throw new Error(`Failed to load most scanned products: ${getErrorMessage(error)}`);
+    }
+  }
+
+  async findRecentlyScanned(limit = 20): Promise<ProductRecord[]> {
+    try {
+      const database = await this.getDatabase();
+
+      return await database.getAllAsync<ProductRecord>(
+        `
+          SELECT
+            id, ean, name, brands, ingredients, nova_score, nutriscore,
+            raw_json, scanned_at, rating, data_version, last_api_fetch,
+            image_url, image_ingredients_url, image_nutrition_url, image_packaging_url,
+            visit_count, last_seen_at
+          FROM products
+          ORDER BY COALESCE(last_seen_at, scanned_at) DESC
+          LIMIT $limit;
+        `,
+        { $limit: limit }
+      );
+    } catch (error) {
+      throw new Error(`Failed to load recently scanned products: ${getErrorMessage(error)}`);
+    }
+  }
+
+  async findHighestRisk(limit = 10): Promise<ProductRecord[]> {
+    try {
+      const database = await this.getDatabase();
+
+      return await database.getAllAsync<ProductRecord>(
+        `
+          SELECT
+            id, ean, name, brands, ingredients, nova_score, nutriscore,
+            raw_json, scanned_at, rating, data_version, last_api_fetch,
+            image_url, image_ingredients_url, image_nutrition_url, image_packaging_url,
+            visit_count, last_seen_at
+          FROM products
+          WHERE rating = 'Critical' OR nova_score = 4
+          ORDER BY scanned_at DESC
+          LIMIT $limit;
+        `,
+        { $limit: limit }
+      );
+    } catch (error) {
+      throw new Error(`Failed to load highest risk products: ${getErrorMessage(error)}`);
+    }
+  }
+
+  async getProductStats(): Promise<{
+    totalProducts: number;
+    totalScans: number;
+    ratingDistribution: Record<string, number>;
+    novaDistribution: Record<string, number>;
+  }> {
+    try {
+      const database = await this.getDatabase();
+
+      const counts = await database.getFirstAsync<{
+        total: number;
+        total_scans: number;
+      }>(`
+        SELECT
+          COUNT(*) as total,
+          COALESCE(SUM(visit_count), COUNT(*)) as total_scans
+        FROM products
+      `);
+
+      const ratingRows = await database.getAllAsync<{
+        rating: string;
+        cnt: number;
+      }>('SELECT rating, COUNT(*) as cnt FROM products GROUP BY rating');
+
+      const novaRows = await database.getAllAsync<{
+        nova_score: number;
+        cnt: number;
+      }>(
+        'SELECT nova_score, COUNT(*) as cnt FROM products WHERE nova_score IS NOT NULL GROUP BY nova_score'
+      );
+
+      const ratingDistribution: Record<string, number> = {};
+      for (const row of ratingRows) {
+        ratingDistribution[row.rating] = row.cnt;
+      }
+
+      const novaDistribution: Record<string, number> = {};
+      for (const row of novaRows) {
+        novaDistribution[String(row.nova_score)] = row.cnt;
+      }
+
+      return {
+        totalProducts: counts?.total ?? 0,
+        totalScans: counts?.total_scans ?? 0,
+        ratingDistribution,
+        novaDistribution,
+      };
+    } catch (error) {
+      throw new Error(`Failed to load product stats: ${getErrorMessage(error)}`);
     }
   }
 

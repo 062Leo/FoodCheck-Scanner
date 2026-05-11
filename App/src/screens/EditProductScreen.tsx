@@ -316,7 +316,8 @@ export default function EditProductScreen() {
 
   const handleOcrConfirm = (text: string) => {
     if (cameraTarget === 'ingredients') {
-      setIngredientsText(text);
+      const cleaned = OcrService.cleanIngredientsText(text);
+      setIngredientsText(cleaned || text);
     } else if (cameraTarget === 'nutriments') {
       const parsed = OcrService.parseNutriments(text);
       if (parsed.energyKcal100g !== undefined) setEnergy(parsed.energyKcal100g.toString());

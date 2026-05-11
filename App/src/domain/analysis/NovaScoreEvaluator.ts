@@ -1,13 +1,8 @@
 import type { NovaScore } from '../../types/Product';
-
-export interface NovaLabel {
-  score: NovaScore;
-  label: string;
-  color: string;
-}
+import type { NovaDetails } from '../../types/ScanResult';
 
 export class NovaScoreEvaluator {
-  evaluate(score: NovaScore | undefined): NovaLabel {
+  evaluate(score: NovaScore | undefined): NovaDetails {
     switch (score) {
       case 1:
         return {

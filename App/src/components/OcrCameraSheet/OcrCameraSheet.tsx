@@ -29,6 +29,10 @@ import { OcrService, OcrScriptSelection } from '../../infrastructure/ocr/OcrServ
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
 type OcrLanguageOption = {
   id: string;
   label: string;
@@ -75,9 +79,9 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
   const [phase, setPhase] = useState<Phase>('camera');
   const [cameraSessionKey, setCameraSessionKey] = useState(0);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  // FIX 1: focusPoint stays in state (only UI cosmetic), but we render it as
-  // a sibling overlay – not inside CameraView – to prevent re-mounting the camera.
   const [focusPoint, setFocusPoint] = useState<{ x: number; y: number } | null>(null);
+  const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
+  const [ocrQualityScore, setOcrQualityScore] = useState<number | null>(null);
   const focusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // FIX 3: Use refs for drag tracking so pan callbacks always see fresh values
@@ -298,91 +302,65 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
   ).current;
 
   const handleExtract = useCallback(async () => {
-    if (!photoUri || isBusy) return;
+    if (isBusy || !photoUri) return;
     setIsBusy(true);
+
+    let uriToOcr = photoUri;
     try {
-      let uriToOcr = photoUri;
+      const imgInfo = await ImageManipulator.manipulateAsync(photoUri, [], {
+        format: ImageManipulator.SaveFormat.JPEG,
+      });
+      const imgW = imgInfo.width;
+      const imgH = imgInfo.height;
 
-      if (cropRect && cropRect.w > 10 && cropRect.h > 10) {
-        const viewW = previewSize?.w ?? SCREEN_W;
-        const viewH = previewSize?.h ?? SCREEN_H;
+      if (cropRect && imgW > 0 && imgH > 0) {
+        const scaleX = imgW / (previewSize?.w || SCREEN_W);
+        const scaleY = imgH / (previewSize?.h || SCREEN_H);
 
-        const imgInfo = await ImageManipulator.manipulateAsync(photoUri, [], {
-          format: ImageManipulator.SaveFormat.JPEG,
-        });
+        let originX = clamp(Math.round(cropRect.x * scaleX), 0, imgW);
+        let originY = clamp(Math.round(cropRect.y * scaleY), 0, imgH);
+        const w = clamp(Math.round(cropRect.w * scaleX), 1, imgW - originX);
+        const h = clamp(Math.round(cropRect.h * scaleY), 1, imgH - originY);
 
-        const imgAspect = imgInfo.width / imgInfo.height;
-        const screenAspect = viewW / viewH;
+        if (originX + w > imgW) originX = Math.max(0, imgW - w);
+        if (originY + h > imgH) originY = Math.max(0, imgH - h);
 
-        let displayedW = viewW;
-        let displayedH = viewH;
-        let displayedX = 0;
-        let displayedY = 0;
-
-        if (imgAspect > screenAspect) {
-          displayedH = viewH;
-          displayedW = displayedH * imgAspect;
-          displayedX = (viewW - displayedW) / 2;
-        } else {
-          displayedW = viewW;
-          displayedH = displayedW / imgAspect;
-          displayedY = (viewH - displayedH) / 2;
-        }
-
-        const scale = imgInfo.width / displayedW;
-
-        const rectLeft = cropRect.x;
-        const rectTop = cropRect.y;
-        const rectRight = cropRect.x + cropRect.w;
-        const rectBottom = cropRect.y + cropRect.h;
-
-        const imgLeft = displayedX;
-        const imgTop = displayedY;
-        const imgRight = displayedX + displayedW;
-        const imgBottom = displayedY + displayedH;
-
-        const clampedLeft = Math.max(imgLeft, Math.min(rectLeft, imgRight));
-        const clampedTop = Math.max(imgTop, Math.min(rectTop, imgBottom));
-        const clampedRight = Math.max(imgLeft, Math.min(rectRight, imgRight));
-        const clampedBottom = Math.max(imgTop, Math.min(rectBottom, imgBottom));
-
-        const clampedW = Math.max(0, clampedRight - clampedLeft);
-        const clampedH = Math.max(0, clampedBottom - clampedTop);
-
-        const rectInDisplayedX = clampedLeft - displayedX;
-        const rectInDisplayedY = clampedTop - displayedY;
-
-        const cropX = Math.max(0, Math.round(rectInDisplayedX * scale));
-        const cropY = Math.max(0, Math.round(rectInDisplayedY * scale));
-        const cropW = Math.min(Math.round(clampedW * scale), imgInfo.width - cropX);
-        const cropH = Math.min(Math.round(clampedH * scale), imgInfo.height - cropY);
-
-        if (cropW > 10 && cropH > 10) {
+        // Use crop guidance for informational display
+        if (w > 10 && h > 10) {
           const cropped = await ImageManipulator.manipulateAsync(
             photoUri,
-            [{ crop: { originX: cropX, originY: cropY, width: cropW, height: cropH } }],
+            [{ crop: { originX, originY, width: w, height: h } }],
             { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
           );
           uriToOcr = cropped.uri;
         }
       }
+    } catch (err) {
+      console.error('Crop failed, using original photo:', err);
+    }
 
-      const text = await OcrService.recognizeText(uriToOcr, selectedLanguage.selection);
-      setExtractedText(text);
+    try {
+      setOcrConfidence(null);
+      setOcrQualityScore(null);
+      const result = await OcrService.recognizeWithConfidence(uriToOcr, selectedLanguage.selection);
+      setExtractedText(result.text);
+      setOcrConfidence(result.confidence);
+      setOcrQualityScore(result.qualityScore);
       setOcrError(null);
     } catch (e) {
-      // Surface the real error – do NOT silently swallow it
       const rawMsg = e instanceof Error ? e.message : String(e);
       const msg = /NoSuchMethodError|expoimagemanipulator\.manipulate/i.test(rawMsg)
         ? 'Bildverarbeitung fehlgeschlagen: inkompatible Version von expo-image-manipulator. Bitte `npm install` ausfuehren und den Development Build neu installieren.'
         : rawMsg;
       setOcrError(msg);
       setExtractedText('');
+      setOcrConfidence(null);
+      setOcrQualityScore(null);
     } finally {
       setIsBusy(false);
       setPhase('review');
     }
-  }, [photoUri, cropRect, isBusy, selectedLanguage.selection]);
+  }, [photoUri, cropRect, previewSize, isBusy, selectedLanguage.selection]);
 
   /* ── Phase 3: review ────────────────────────────────────── */
   const handleConfirm = useCallback(() => {
@@ -534,6 +512,55 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
                   ]}
                   pointerEvents="none"
                 />
+                {/* Grid overlay */}
+                {cropRect.w > 60 && cropRect.h > 60 && (
+                  <>
+                    <View
+                      style={[
+                        styles.gridLineH,
+                        {
+                          top: cropRect.y + cropRect.h / 3,
+                          left: cropRect.x,
+                          width: cropRect.w,
+                        },
+                      ]}
+                      pointerEvents="none"
+                    />
+                    <View
+                      style={[
+                        styles.gridLineH,
+                        {
+                          top: cropRect.y + (2 * cropRect.h) / 3,
+                          left: cropRect.x,
+                          width: cropRect.w,
+                        },
+                      ]}
+                      pointerEvents="none"
+                    />
+                    <View
+                      style={[
+                        styles.gridLineV,
+                        {
+                          left: cropRect.x + cropRect.w / 3,
+                          top: cropRect.y,
+                          height: cropRect.h,
+                        },
+                      ]}
+                      pointerEvents="none"
+                    />
+                    <View
+                      style={[
+                        styles.gridLineV,
+                        {
+                          left: cropRect.x + (2 * cropRect.w) / 3,
+                          top: cropRect.y,
+                          height: cropRect.h,
+                        },
+                      ]}
+                      pointerEvents="none"
+                    />
+                  </>
+                )}
                 {/* Corner handles */}
                 <View
                   style={[
@@ -627,7 +654,11 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
 
           <View style={styles.reviewPanel}>
             <Text style={styles.reviewTitle}>Extrahierter Text</Text>
-            <Text style={styles.reviewSubtitle}>OCR: {selectedLanguage.label}</Text>
+            <Text style={styles.reviewSubtitle}>
+              OCR: {selectedLanguage.label}
+              {ocrConfidence !== null && ` • Konfidenz: ${Math.round(ocrConfidence * 100)}%`}
+              {ocrQualityScore !== null && ocrQualityScore < 60 && ` • Qualität: niedrig`}
+            </Text>
 
             <ScrollView style={styles.reviewScroll} keyboardShouldPersistTaps="handled">
               {ocrError && (
@@ -891,6 +922,16 @@ const styles = StyleSheet.create({
   cornerTR: { borderTopWidth: 3, borderRightWidth: 3 },
   cornerBL: { borderBottomWidth: 3, borderLeftWidth: 3 },
   cornerBR: { borderBottomWidth: 3, borderRightWidth: 3 },
+  gridLineH: {
+    position: 'absolute',
+    height: 1,
+    backgroundColor: 'rgba(76,175,80,0.3)',
+  },
+  gridLineV: {
+    position: 'absolute',
+    width: 1,
+    backgroundColor: 'rgba(76,175,80,0.3)',
+  },
 
   // Review
   reviewBackdrop: {

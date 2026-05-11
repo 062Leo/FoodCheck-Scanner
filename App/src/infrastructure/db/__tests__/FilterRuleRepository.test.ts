@@ -60,6 +60,7 @@ describe('FilterRuleRepository', () => {
     const rule: NewFilterRule = {
       type: 'ingredient',
       key: 'Palmöl',
+      category: 'Kritische Öle',
       threshold: null,
       operator: null,
       severity: 'red_flag',
@@ -74,6 +75,7 @@ describe('FilterRuleRepository', () => {
     expect(rules[0]).toMatchObject({
       type: 'ingredient',
       key: 'Palmöl',
+      category: 'Kritische Öle',
       severity: 'red_flag',
     });
   });
@@ -82,6 +84,7 @@ describe('FilterRuleRepository', () => {
     const rule: NewFilterRule = {
       type: 'ingredient',
       key: 'Zucker',
+      category: 'Zucker & Sirupe',
       threshold: null,
       operator: null,
       severity: 'red_flag',
@@ -102,6 +105,7 @@ describe('FilterRuleRepository', () => {
     const rule: NewFilterRule = {
       type: 'nutrient',
       key: 'Natrium',
+      category: 'Nährwerte',
       threshold: 300,
       operator: 'gt',
       severity: 'red_flag',
@@ -119,11 +123,11 @@ describe('FilterRuleRepository', () => {
   });
 });
 
-function handleGetFirst(sql: string, params: unknown[], state: DbState): unknown {
+function handleGetFirst(sql: string, _params: unknown[], _state: DbState): unknown {
   const normalizedSql = normalizeSql(sql);
 
   if (normalizedSql.includes('FROM meta')) {
-    return { value: '2' };
+    return { value: '5' };
   }
 
   return null;
@@ -164,6 +168,7 @@ function handleRun(
       id: state.nextId++,
       type: type as 'ingredient' | 'nutrient',
       key,
+      category: getStringValue(values['$category'], 'category'),
       threshold: values['$threshold'] === null ? null : (values['$threshold'] as number | null),
       operator: values['$operator'] === null ? null : (values['$operator'] as string | null),
       severity: severity as 'red_flag' | 'ok',
@@ -194,6 +199,8 @@ function handleRun(
       id: existing.id,
       type: values['$type'] !== undefined ? (values['$type'] as FilterRule['type']) : existing.type,
       key: values['$key'] !== undefined ? (values['$key'] as string) : existing.key,
+      category:
+        values['$category'] !== undefined ? (values['$category'] as string) : existing.category,
       threshold:
         values['$threshold'] !== undefined
           ? (values['$threshold'] as number | null)

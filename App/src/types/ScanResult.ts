@@ -1,4 +1,5 @@
 import type { NovaScore } from './Product';
+import type { AIInsightFinding } from './Robotoff';
 
 export type ScanStatus = 'OK' | 'Warning' | 'Critical';
 
@@ -13,10 +14,12 @@ export interface RedFlagFinding {
 export interface NovaDetails {
   score: NovaScore;
   label?: string;
+  color?: string;
 }
 
 export interface ScanResult {
   status: ScanStatus;
   redFlags: RedFlagFinding[];
   nova: NovaDetails;
+  aiInsights?: AIInsightFinding[];
 }

@@ -2,11 +2,19 @@ import type { FilterRule } from '../../types/FilterRule';
 import type { RedFlagFinding, RedFlagSeverity } from '../../types/ScanResult';
 import type { RedFlagRule } from '../rules/defaultRules';
 import { defaultRedFlagRules } from './defaultRedFlagRules';
+import { IngredientParser } from './IngredientParser';
+import { IngredientTaxonomy } from './IngredientTaxonomy';
 
 type AnalyzerRule = RedFlagRule | FilterRule;
 
 export class RedFlagAnalyzer {
-  constructor(private readonly defaultRules: AnalyzerRule[] = defaultRedFlagRules) {}
+  private readonly parser: IngredientParser;
+  private readonly taxonomy: IngredientTaxonomy;
+
+  constructor(private readonly defaultRules: AnalyzerRule[] = defaultRedFlagRules) {
+    this.parser = new IngredientParser();
+    this.taxonomy = new IngredientTaxonomy();
+  }
 
   analyze(ingredientsText: string, rules?: AnalyzerRule[]): RedFlagFinding[] {
     if (!ingredientsText || ingredientsText.trim().length === 0) {
@@ -48,7 +56,7 @@ export class RedFlagAnalyzer {
           found.push({
             position: index,
             ingredient: this.extractIngredient(ingredientsText, rule.key),
-            category: rule.key,
+            category: rule.category,
             severity: 'critical',
           });
           continue;
@@ -66,7 +74,7 @@ export class RedFlagAnalyzer {
         found.push({
           position: lowerText.indexOf(rule.key.toLowerCase()),
           ingredient: rule.key,
-          category: rule.key,
+          category: rule.category,
           severity: 'critical',
         });
         continue;
@@ -92,6 +100,44 @@ export class RedFlagAnalyzer {
 
     found.sort((a, b) => a.position - b.position);
     return found.map(({ position, ...rest }) => rest);
+  }
+
+  analyzeTaxonomy(ingredientsText: string): RedFlagFinding[] {
+    if (!ingredientsText || ingredientsText.trim().length === 0) {
+      return [];
+    }
+
+    const tokens = this.parser.parse(ingredientsText);
+    const findings: RedFlagFinding[] = [];
+    const seenENumbers = new Set<string>();
+
+    for (const token of tokens) {
+      const additive = token.eNumber
+        ? this.taxonomy.findByENumber(token.eNumber)
+        : this.taxonomy.findByText(token.normalized);
+
+      if (!additive || additive.riskLevel === 'none' || additive.riskLevel === 'low') {
+        continue;
+      }
+
+      if (token.eNumber && seenENumbers.has(token.eNumber)) {
+        continue;
+      }
+
+      if (token.eNumber) {
+        seenENumbers.add(token.eNumber);
+      }
+
+      const severity: RedFlagSeverity = additive.riskLevel === 'high' ? 'critical' : 'warning';
+
+      findings.push({
+        ingredient: token.eNumber ? `${additive.name} (${token.eNumber})` : token.text,
+        category: additive.functionClass,
+        severity,
+      });
+    }
+
+    return findings;
   }
 
   private isFilterRule(rule: AnalyzerRule): rule is FilterRule {

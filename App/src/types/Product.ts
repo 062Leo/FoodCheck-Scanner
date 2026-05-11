@@ -13,6 +13,14 @@ export interface ProductRecord {
   raw_json: string | null;
   scanned_at: string;
   rating: ScanStatus;
+  data_version?: number | null;
+  last_api_fetch?: string | null;
+  image_url?: string | null;
+  image_ingredients_url?: string | null;
+  image_nutrition_url?: string | null;
+  image_packaging_url?: string | null;
+  visit_count?: number | null;
+  last_seen_at?: string | null;
 }
 
 export interface ProductNutriments {

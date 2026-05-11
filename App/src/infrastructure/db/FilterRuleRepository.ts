@@ -1,8 +1,6 @@
 import { db, initDatabase } from './DatabaseService';
 import type { FilterRule, NewFilterRule } from '../../types/FilterRule';
 
-type FilterRuleRow = FilterRule;
-
 export class FilterRuleRepository {
   async insert(rule: NewFilterRule): Promise<void> {
     try {
@@ -10,12 +8,13 @@ export class FilterRuleRepository {
 
       await database.runAsync(
         `
-          INSERT INTO filter_rules (type, key, threshold, operator, severity, created_at)
-          VALUES ($type, $key, $threshold, $operator, $severity, $created_at);
+          INSERT INTO filter_rules (type, key, category, threshold, operator, severity, created_at)
+          VALUES ($type, $key, $category, $threshold, $operator, $severity, $created_at);
         `,
         {
           $type: rule.type,
           $key: rule.key,
+          $category: rule.category,
           $threshold: rule.threshold ?? null,
           $operator: rule.operator ?? null,
           $severity: rule.severity,
@@ -33,18 +32,19 @@ export class FilterRuleRepository {
     try {
       const database = await this.getDatabase();
 
-      return await database.getAllAsync<FilterRuleRow>(
+      return await database.getAllAsync<FilterRule>(
         `
           SELECT
             id,
             type,
             key,
+            category,
             threshold,
             operator,
             severity,
             created_at
           FROM filter_rules
-          ORDER BY created_at ASC, id ASC;
+          ORDER BY category ASC, created_at ASC, id ASC;
         `
       );
     } catch (error) {
@@ -67,6 +67,11 @@ export class FilterRuleRepository {
       if (changes.key !== undefined) {
         setClauses.push('key = $key');
         params.$key = changes.key;
+      }
+
+      if (changes.category !== undefined) {
+        setClauses.push('category = $category');
+        params.$category = changes.category;
       }
 
       if (changes.threshold !== undefined) {
