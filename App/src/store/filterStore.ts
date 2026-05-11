@@ -15,8 +15,6 @@ interface FilterStoreState {
 
 const filterRuleRepository = new FilterRuleRepository();
 
-const initPromise: Promise<void> | null = null;
-
 export const useFilterStore = create<FilterStoreState>((set, get) => ({
   rules: [],
   isLoading: false,

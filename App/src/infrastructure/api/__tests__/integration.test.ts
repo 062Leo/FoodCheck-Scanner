@@ -71,7 +71,6 @@ describe('integration: write flow (staging)', () => {
   it('8.4 should update and read back a product on staging', async () => {
     const credentials = await writeClient.loadCredentials();
     if (!credentials) {
-      // eslint-disable-next-line jest/no-disabled-tests
       return;
     }
 

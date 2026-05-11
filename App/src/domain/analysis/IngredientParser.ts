@@ -77,7 +77,8 @@ export class IngredientParser {
       tokens.push(this.createToken(cleanMain, false, undefined, percentage));
     }
 
-    const parentheticals = segment.match(/[\(\[]([^\)\]]+)[\)\]]/g);
+    // eslint-disable-next-line no-useless-escape
+    const parentheticals = segment.match(/[(\[][^)\]]+[)\]]/g);
     if (parentheticals) {
       for (const p of parentheticals) {
         const inner = p.slice(1, -1).trim();
@@ -124,7 +125,7 @@ export class IngredientParser {
     return text
       .toLowerCase()
       .replace(/\s+/g, ' ')
-      .replace(/[\*•·]/g, '')
+      .replace(/[*•·]/g, '')
       .replace(/^\d+[\s.)-]*/, '')
       .trim();
   }

@@ -85,7 +85,8 @@ export class ProductRepository {
       );
     } catch (error) {
       throw new Error(
-        `Failed to insert product with EAN ${product.ean}: ${getErrorMessage(error)}`
+        `Failed to insert product with EAN ${product.ean}: ${getErrorMessage(error)}`,
+        { cause: error }
       );
     }
   }
@@ -126,7 +127,9 @@ export class ProductRepository {
 
       return product ?? null;
     } catch (error) {
-      throw new Error(`Failed to find product by EAN ${ean}: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to find product by EAN ${ean}: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
     }
   }
 
@@ -160,7 +163,7 @@ export class ProductRepository {
         `
       );
     } catch (error) {
-      throw new Error(`Failed to load products: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to load products: ${getErrorMessage(error)}`, { cause: error });
     }
   }
 
@@ -178,7 +181,9 @@ export class ProductRepository {
         }
       );
     } catch (error) {
-      throw new Error(`Failed to delete product by EAN ${ean}: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to delete product by EAN ${ean}: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
     }
   }
 
@@ -408,7 +413,9 @@ export class ProductRepository {
         }
       );
     } catch (error) {
-      throw new Error(`Failed to update product by EAN ${product.ean}: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to update product by EAN ${product.ean}: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
     }
   }
 
@@ -434,7 +441,7 @@ export class ProductRepository {
         { $query: like }
       );
     } catch (error) {
-      throw new Error(`Failed to search products: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to search products: ${getErrorMessage(error)}`, { cause: error });
     }
   }
 
@@ -456,7 +463,9 @@ export class ProductRepository {
         { $limit: limit }
       );
     } catch (error) {
-      throw new Error(`Failed to load most scanned products: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to load most scanned products: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
     }
   }
 
@@ -478,7 +487,9 @@ export class ProductRepository {
         { $limit: limit }
       );
     } catch (error) {
-      throw new Error(`Failed to load recently scanned products: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to load recently scanned products: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
     }
   }
 
@@ -501,7 +512,9 @@ export class ProductRepository {
         { $limit: limit }
       );
     } catch (error) {
-      throw new Error(`Failed to load highest risk products: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to load highest risk products: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
     }
   }
 
@@ -553,7 +566,7 @@ export class ProductRepository {
         novaDistribution,
       };
     } catch (error) {
-      throw new Error(`Failed to load product stats: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to load product stats: ${getErrorMessage(error)}`, { cause: error });
     }
   }
 

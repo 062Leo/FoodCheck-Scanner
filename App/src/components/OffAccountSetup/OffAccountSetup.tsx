@@ -35,7 +35,7 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
       const client = new OpenFoodFactsWriteClient();
       await client.saveCredentials(username.trim(), password);
       onSuccess();
-    } catch (err) {
+    } catch {
       setError('Failed to save credentials');
     } finally {
       setIsSaving(false);

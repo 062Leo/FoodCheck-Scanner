@@ -19,8 +19,8 @@ describe('ResultScreen cached override merge flow', () => {
       ...mockOFFProduct,
       ...mockCachedOverrides,
       ean: mockOFFProduct.ean,
-      name: (mockCachedOverrides as any).name?.trim() || mockOFFProduct.name,
-      brand: (mockCachedOverrides as any).brand?.trim() || mockOFFProduct.brand,
+      name: (mockCachedOverrides as Record<string, string>).name?.trim() || mockOFFProduct.name,
+      brand: (mockCachedOverrides as Record<string, string>).brand?.trim() || mockOFFProduct.brand,
       ingredientsText:
         mockCachedOverrides.ingredientsText?.trim() || mockOFFProduct.ingredientsText,
     };
@@ -78,7 +78,7 @@ describe('ResultScreen cached override merge flow', () => {
       ean: mockEan,
       name: 'Unbekanntes Produkt',
       ingredientsText: mockCachedOverrides.ingredientsText,
-      brand: (mockCachedOverrides as any).brand,
+      brand: (mockCachedOverrides as Record<string, string>).brand,
     };
 
     expect(placeholder.name).toBe('Unbekanntes Produkt');

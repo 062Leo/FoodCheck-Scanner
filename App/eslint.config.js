@@ -1,9 +1,9 @@
-const js = require('@eslint/js');
-const tsEslint = require('typescript-eslint');
-const prettierConfig = require('eslint-config-prettier');
-const eslintPluginPrettier = require('eslint-plugin-prettier');
+import js from '@eslint/js';
+import tsEslint from 'typescript-eslint';
+import prettierConfig from 'eslint-config-prettier';
+import eslintPluginPrettier from 'eslint-plugin-prettier';
 
-module.exports = [
+export default [
   {
     ignores: ['node_modules', 'dist', 'build', 'coverage', '*.expo', '.expo'],
   },

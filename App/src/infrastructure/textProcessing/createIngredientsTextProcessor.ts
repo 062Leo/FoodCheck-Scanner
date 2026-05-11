@@ -6,6 +6,7 @@ import { AssetDictionaryProvider } from './AssetDictionaryProvider';
 
 export async function createIngredientsTextProcessor(): Promise<TextProcessor> {
   const dictionary = await AssetDictionaryProvider.fromAsset(
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     require('../../../assets/dictionaries/ingredients_symspell.json')
   );
 

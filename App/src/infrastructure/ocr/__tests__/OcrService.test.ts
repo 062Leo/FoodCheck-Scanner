@@ -162,11 +162,11 @@ describe('OcrService', () => {
       }).not.toThrow();
 
       expect(() => {
-        OcrService.parseNutriments(null as any);
+        OcrService.parseNutriments(null as unknown as string);
       }).not.toThrow();
 
       expect(() => {
-        OcrService.parseNutriments(undefined as any);
+        OcrService.parseNutriments(undefined as unknown as string);
       }).not.toThrow();
     });
 

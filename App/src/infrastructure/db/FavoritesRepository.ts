@@ -1,12 +1,6 @@
 import { db, initDatabase } from './DatabaseService';
 import type { ProductRecord } from '../../types/Product';
 
-type FavoriteRow = {
-  id: number;
-  product_id: number;
-  added_at: string;
-};
-
 export class FavoritesRepository {
   async add(productId: number): Promise<void> {
     try {
@@ -23,7 +17,10 @@ export class FavoritesRepository {
         }
       );
     } catch (error) {
-      throw new Error(`Failed to add product ${productId} to favorites: ${getErrorMessage(error)}`);
+      throw new Error(
+        `Failed to add product ${productId} to favorites: ${getErrorMessage(error)}`,
+        { cause: error }
+      );
     }
   }
 
@@ -42,7 +39,8 @@ export class FavoritesRepository {
       );
     } catch (error) {
       throw new Error(
-        `Failed to remove product ${productId} from favorites: ${getErrorMessage(error)}`
+        `Failed to remove product ${productId} from favorites: ${getErrorMessage(error)}`,
+        { cause: error }
       );
     }
   }
@@ -70,7 +68,9 @@ export class FavoritesRepository {
         `
       );
     } catch (error) {
-      throw new Error(`Failed to load favorite products: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to load favorite products: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
     }
   }
 
@@ -93,7 +93,8 @@ export class FavoritesRepository {
       return favorite !== null;
     } catch (error) {
       throw new Error(
-        `Failed to check favorite state for product ${productId}: ${getErrorMessage(error)}`
+        `Failed to check favorite state for product ${productId}: ${getErrorMessage(error)}`,
+        { cause: error }
       );
     }
   }

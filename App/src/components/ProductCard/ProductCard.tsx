@@ -1,13 +1,5 @@
 import { useRef, useState, memo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  PanResponder,
-  Animated,
-  Alert,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, PanResponder, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

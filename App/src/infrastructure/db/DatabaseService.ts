@@ -44,7 +44,7 @@ async function initializeDatabase(): Promise<SQLite.SQLiteDatabase> {
     return database;
   } catch (error) {
     initializationPromise = null;
-    throw new Error(`Database initialization failed: ${getErrorMessage(error)}`);
+    throw new Error(`Database initialization failed: ${getErrorMessage(error)}`, { cause: error });
   }
 }
 
@@ -55,7 +55,7 @@ async function enablePragmas(database: SQLite.SQLiteDatabase): Promise<void> {
       PRAGMA journal_mode = WAL;
     `);
   } catch (error) {
-    throw new Error(`Failed to enable SQLite pragmas: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to enable SQLite pragmas: ${getErrorMessage(error)}`, { cause: error });
   }
 }
 
@@ -68,7 +68,7 @@ async function ensureMetaTable(database: SQLite.SQLiteDatabase): Promise<void> {
       );
     `);
   } catch (error) {
-    throw new Error(`Failed to create meta table: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to create meta table: ${getErrorMessage(error)}`, { cause: error });
   }
 }
 
@@ -122,7 +122,9 @@ async function migrateSchema(database: SQLite.SQLiteDatabase): Promise<void> {
 
     await migrate(database);
   } catch (error) {
-    throw new Error(`Failed to migrate database schema: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to migrate database schema: ${getErrorMessage(error)}`, {
+      cause: error,
+    });
   }
 }
 
@@ -140,7 +142,7 @@ async function getSchemaVersion(database: SQLite.SQLiteDatabase): Promise<number
     const parsedVersion = Number.parseInt(row.value, 10);
     return Number.isNaN(parsedVersion) ? 0 : parsedVersion;
   } catch (error) {
-    throw new Error(`Failed to read schema version: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to read schema version: ${getErrorMessage(error)}`, { cause: error });
   }
 }
 
@@ -158,7 +160,7 @@ async function setSchemaVersion(database: SQLite.SQLiteDatabase, version: number
       }
     );
   } catch (error) {
-    throw new Error(`Failed to store schema version: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to store schema version: ${getErrorMessage(error)}`, { cause: error });
   }
 }
 
@@ -204,7 +206,7 @@ async function createInitialSchema(database: SQLite.SQLiteDatabase): Promise<voi
       );
     `);
   } catch (error) {
-    throw new Error(`Failed to create initial schema: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to create initial schema: ${getErrorMessage(error)}`, { cause: error });
   }
 }
 
@@ -247,7 +249,9 @@ async function seedDefaultFilterRules(database: SQLite.SQLiteDatabase): Promise<
       );
     }
   } catch (error) {
-    throw new Error(`Failed to seed default filter rules: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to seed default filter rules: ${getErrorMessage(error)}`, {
+      cause: error,
+    });
   }
 }
 
@@ -268,7 +272,7 @@ async function addProductStorageColumns(database: SQLite.SQLiteDatabase): Promis
     } catch (error) {
       const msg = getErrorMessage(error);
       if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
-        throw new Error(`Failed to add column ${colName}: ${msg}`);
+        throw new Error(`Failed to add column ${colName}: ${msg}`, { cause: error });
       }
     }
   }
@@ -284,7 +288,7 @@ async function addVisitTrackingColumns(database: SQLite.SQLiteDatabase): Promise
     } catch (error) {
       const msg = getErrorMessage(error);
       if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
-        throw new Error(`Failed to add column ${colName}: ${msg}`);
+        throw new Error(`Failed to add column ${colName}: ${msg}`, { cause: error });
       }
     }
   }
@@ -298,7 +302,7 @@ async function addCategoryColumn(database: SQLite.SQLiteDatabase): Promise<void>
   } catch (error) {
     const message = getErrorMessage(error);
     if (!message.includes('duplicate column name') && !message.includes('already exists')) {
-      throw new Error(`Failed to add category column: ${message}`);
+      throw new Error(`Failed to add category column: ${message}`, { cause: error });
     }
   }
 
@@ -343,7 +347,9 @@ async function addCategoryColumn(database: SQLite.SQLiteDatabase): Promise<void>
       );
     }
   } catch (error) {
-    throw new Error(`Failed to seed missing filter rules: ${getErrorMessage(error)}`);
+    throw new Error(`Failed to seed missing filter rules: ${getErrorMessage(error)}`, {
+      cause: error,
+    });
   }
 }
 

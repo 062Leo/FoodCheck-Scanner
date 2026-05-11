@@ -170,9 +170,9 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
   useEffect(() => {
     if (!visible) {
       try {
-        const anyRef = cameraRef.current as any;
-        if (anyRef && typeof anyRef.pausePreview === 'function') {
-          anyRef.pausePreview();
+        const cameraView = cameraRef.current as { pausePreview?: () => void } | null;
+        if (cameraView && typeof cameraView.pausePreview === 'function') {
+          cameraView.pausePreview();
         }
       } catch (err) {
         // Non-fatal: best-effort cleanup
@@ -181,7 +181,6 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
         // clear ref so native camera resources can be reclaimed
         // (best-effort; component unmount should also free resources)
         if (cameraRef.current) {
-          // @ts-ignore
           cameraRef.current = null;
         }
         // Bump session key to force a fresh camera when reopened

@@ -99,7 +99,7 @@ export class RedFlagAnalyzer {
     }
 
     found.sort((a, b) => a.position - b.position);
-    return found.map(({ position, ...rest }) => rest);
+    return found.map(({ position: _position, ...rest }) => rest);
   }
 
   analyzeTaxonomy(ingredientsText: string): RedFlagFinding[] {
@@ -182,8 +182,8 @@ export class RedFlagAnalyzer {
 
     const escapedKey = this.escapeRegExp(key);
     const patterns = [
-      new RegExp(`"${escapedKey}"\s*[:=]\s*(-?\\d+(?:[.,]\\d+)?)`, 'i'),
-      new RegExp(`\\b${escapedKey}\\b\s*[:=]\s*(-?\\d+(?:[.,]\\d+)?)`, 'i'),
+      new RegExp(`"${escapedKey}"\\s*[:=]\\s*(-?\\d+(?:[.,]\\d+)?)`, 'i'),
+      new RegExp(`\\b${escapedKey}\\b\\s*[:=]\\s*(-?\\d+(?:[.,]\\d+)?)`, 'i'),
       new RegExp(`\\b${escapedKey}\\b[^\\d-]*(-?\\d+(?:[.,]\\d+)?)`, 'i'),
     ];
 

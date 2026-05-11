@@ -23,7 +23,8 @@ export class FilterRuleRepository {
       );
     } catch (error) {
       throw new Error(
-        `Failed to insert filter rule for key ${rule.key}: ${getErrorMessage(error)}`
+        `Failed to insert filter rule for key ${rule.key}: ${getErrorMessage(error)}`,
+        { cause: error }
       );
     }
   }
@@ -48,7 +49,7 @@ export class FilterRuleRepository {
         `
       );
     } catch (error) {
-      throw new Error(`Failed to load filter rules: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to load filter rules: ${getErrorMessage(error)}`, { cause: error });
     }
   }
 
@@ -102,7 +103,9 @@ export class FilterRuleRepository {
         params
       );
     } catch (error) {
-      throw new Error(`Failed to update filter rule with id ${id}: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to update filter rule with id ${id}: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
     }
   }
 
@@ -120,7 +123,9 @@ export class FilterRuleRepository {
         }
       );
     } catch (error) {
-      throw new Error(`Failed to delete filter rule with id ${id}: ${getErrorMessage(error)}`);
+      throw new Error(`Failed to delete filter rule with id ${id}: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
     }
   }
 
