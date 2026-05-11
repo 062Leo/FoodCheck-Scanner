@@ -1,1 +1,1 @@
-export { default } from '../../src/screens/ApiKeyScreen/ApiKeyScreen';
+export { default } from '../../src/screens/ApiKeyScreen';

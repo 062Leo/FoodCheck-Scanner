@@ -10,13 +10,13 @@ import {
   SectionList,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCatalogStore } from '../../store/catalogStore';
-import { ProductCard } from '../../components/ProductCard/ProductCard';
-import { ProductRepository } from '../../infrastructure/db/ProductRepository';
-import { ProductStatistics } from '../../domain/analysis/ProductStatistics';
-import type { ProductRecord } from '../../types/Product';
-import type { ScanStatus } from '../../types/ScanResult';
-import type { ProductStats } from '../../domain/analysis/ProductStatistics';
+import { useCatalogStore } from '../store/catalogStore';
+import { ProductCard } from '../components/ProductCard/ProductCard';
+import { ProductRepository } from '../infrastructure/db/ProductRepository';
+import { ProductStatistics } from '../domain/analysis/ProductStatistics';
+import type { ProductRecord } from '../types/Product';
+import type { ScanStatus } from '../types/ScanResult';
+import type { ProductStats } from '../domain/analysis/ProductStatistics';
 
 type FilterStatus = 'All' | ScanStatus;
 type SortField = 'scanned_at' | 'name' | 'rating' | 'nova_score' | 'visit_count';

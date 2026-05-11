@@ -8,8 +8,8 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { useSettingsStore } from '../../store/settingsStore';
-import type { TranslationProvider } from '../../infrastructure/translation/TranslationRouter';
+import { useSettingsStore } from '../store/settingsStore';
+import type { TranslationProvider } from '../infrastructure/translation/TranslationRouter';
 
 export default function ApiKeyScreen() {
   const {

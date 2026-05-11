@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
-import { ProductResolutionService } from '../../infrastructure/resolution/ProductResolutionService';
+import { ProductResolutionService } from '../infrastructure/resolution/ProductResolutionService';
 
 export default function ScannerScreen() {
   const router = useRouter();

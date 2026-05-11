@@ -1,1 +1,1 @@
-export { default } from '../../src/screens/FilterScreen/FilterScreen';
+export { default } from '../../src/screens/FilterScreen';

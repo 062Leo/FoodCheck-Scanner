@@ -13,14 +13,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useFilterStore } from '../../store/filterStore';
+import { useFilterStore } from '../store/filterStore';
 import type {
   FilterRule,
   FilterRuleOperator,
   FilterRuleSeverity,
   FilterRuleType,
   NewFilterRule,
-} from '../../types/FilterRule';
+} from '../types/FilterRule';
 
 const NUTRIENT_OPTIONS = [
   'sugars_100g',
