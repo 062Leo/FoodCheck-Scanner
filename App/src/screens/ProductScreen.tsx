@@ -628,11 +628,6 @@ export default function ProductScreen() {
           >
             <Ionicons name="pencil" size={20} color="#bbb" />
           </TouchableOpacity>
-          {isCached && (
-            <View style={styles.cachedBadge}>
-              <Text style={styles.cachedBadgeText}>Cache</Text>
-            </View>
-          )}
           {isStale && (
             <View style={styles.staleBadge}>
               <Text style={styles.staleBadgeText}>Veraltet</Text>

@@ -10,15 +10,14 @@ import { ProductResolutionService } from '../infrastructure/resolution/ProductRe
 export default function ScannerScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
   const [scanned, setScanned] = useState(false);
-  const [cameraReady, setCameraReady] = useState(true);
-  const [cameraKey, setCameraKey] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [torchEnabled, setTorchEnabled] = useState(false);
   const frameAnimation = useRef(new Animated.Value(0)).current;
   const flashAnimation = useRef(new Animated.Value(0)).current;
-  const resolutionService = new ProductResolutionService();
+  const resolutionService = useRef(new ProductResolutionService()).current;
 
   useEffect(() => {
     Animated.loop(
@@ -40,15 +39,13 @@ export default function ScannerScreen() {
   useFocusEffect(
     useCallback(() => {
       setScanned(false);
-      const timeoutId = setTimeout(() => {
-        setCameraReady(true);
-        setCameraKey((k) => k + 1);
-      }, 300);
-
+      requestAnimationFrame(() => {
+        cameraRef.current?.resumePreview();
+      });
       return () => {
-        clearTimeout(timeoutId);
-        setCameraReady(false);
+        cameraRef.current?.pausePreview();
         flashAnimation.setValue(0);
+        setTorchEnabled(false);
       };
     }, [flashAnimation])
   );
@@ -56,15 +53,14 @@ export default function ScannerScreen() {
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        setCameraReady(true);
-        setCameraKey((k) => k + 1);
+        cameraRef.current?.resumePreview();
         flashAnimation.setValue(0);
       } else {
-        setCameraReady(false);
+        cameraRef.current?.pausePreview();
       }
     });
     return () => subscription.remove();
-  }, []);
+  }, [flashAnimation]);
 
   useEffect(() => {
     if (!permission?.granted && permission?.canAskAgain) {
@@ -72,7 +68,6 @@ export default function ScannerScreen() {
     }
   }, [permission]);
 
-  // Check network on mount
   useEffect(() => {
     NetInfo.fetch().then((state) => {
       setIsOffline(!state.isConnected);
@@ -108,7 +103,6 @@ export default function ScannerScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     triggerScanFlash();
 
-    // Offline-first: check local DB before API call
     try {
       const cachedProduct = await resolutionService.checkCache(ean);
       if (cachedProduct) {
@@ -126,7 +120,6 @@ export default function ScannerScreen() {
       console.error('Error checking local cache:', err);
     }
 
-    // Not in cache, pass EAN to result screen for API fetch
     router.push({
       pathname: '/result',
       params: { ean },
@@ -183,70 +176,59 @@ export default function ScannerScreen() {
 
   return (
     <View style={styles.container}>
-      {cameraReady ? (
-        <CameraView
-          key={cameraKey}
-          facing={facing}
-          enableTorch={torchEnabled}
-          style={styles.camera}
-          barcodeScannerSettings={{
-            barcodeTypes: ['ean8', 'ean13'],
-          }}
-          onBarcodeScanned={handleBarCodeScanned}
-        />
-      ) : (
-        <View style={styles.camera} />
-      )}
+      <CameraView
+        ref={cameraRef}
+        facing={facing}
+        enableTorch={torchEnabled}
+        style={styles.camera}
+        barcodeScannerSettings={{
+          barcodeTypes: ['ean8', 'ean13'],
+        }}
+        onBarcodeScanned={handleBarCodeScanned}
+      />
 
-      {cameraReady && (
-        <>
-          <Animated.View
-            style={[styles.scanFlash, { opacity: flashOpacity }]}
-            pointerEvents="none"
-          />
+      <Animated.View style={[styles.scanFlash, { opacity: flashOpacity }]} pointerEvents="none" />
 
-          <View style={styles.overlay}>
-            <Animated.View
-              style={[
-                styles.scanFrame,
-                {
-                  transform: [{ scale: frameScale }],
-                  opacity: frameOpacity,
-                },
-              ]}
-            >
-              <View style={styles.corner} />
-              <View style={[styles.corner, styles.cornerTR]} />
-              <View style={[styles.corner, styles.cornerBL]} />
-              <View style={[styles.corner, styles.cornerBR]} />
-            </Animated.View>
+      <View style={styles.overlay}>
+        <Animated.View
+          style={[
+            styles.scanFrame,
+            {
+              transform: [{ scale: frameScale }],
+              opacity: frameOpacity,
+            },
+          ]}
+        >
+          <View style={styles.corner} />
+          <View style={[styles.corner, styles.cornerTR]} />
+          <View style={[styles.corner, styles.cornerBL]} />
+          <View style={[styles.corner, styles.cornerBR]} />
+        </Animated.View>
 
-            <Text style={styles.hintText}>Halte den Barcode rein</Text>
+        <Text style={styles.hintText}>Halte den Barcode rein</Text>
 
-            <View style={styles.controls}>
-              <TouchableOpacity style={styles.controlBtn} onPress={toggleFacing}>
-                <Ionicons name="camera-reverse-outline" size={28} color="#FFFFFF" />
-              </TouchableOpacity>
+        <View style={styles.controls}>
+          <TouchableOpacity style={styles.controlBtn} onPress={toggleFacing}>
+            <Ionicons name="camera-reverse-outline" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
 
-              {facing === 'back' && (
-                <TouchableOpacity style={styles.controlBtn} onPress={toggleTorch}>
-                  <Ionicons
-                    name={torchEnabled ? 'flashlight' : 'flashlight-outline'}
-                    size={28}
-                    color={torchEnabled ? '#FFD700' : '#FFFFFF'}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
+          {facing === 'back' && (
+            <TouchableOpacity style={styles.controlBtn} onPress={toggleTorch}>
+              <Ionicons
+                name={torchEnabled ? 'flashlight' : 'flashlight-outline'}
+                size={28}
+                color={torchEnabled ? '#FFD700' : '#FFFFFF'}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
 
-            {isOffline && (
-              <View style={styles.offlineBadge}>
-                <Text style={styles.offlineBadgeText}>Offline</Text>
-              </View>
-            )}
+        {isOffline && (
+          <View style={styles.offlineBadge}>
+            <Text style={styles.offlineBadgeText}>Offline</Text>
           </View>
-        </>
-      )}
+        )}
+      </View>
     </View>
   );
 }
