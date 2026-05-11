@@ -26,7 +26,7 @@ export default function FavoritesScreen() {
 
   const handleSelectProduct = useCallback(
     (product: ProductRecord) => {
-      // Navigate to ResultScreen with cached raw_json
+      // Navigate to ProductScreen with cached raw_json
       if (product.raw_json) {
         try {
           const parsedJson = JSON.parse(product.raw_json);

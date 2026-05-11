@@ -49,7 +49,7 @@ Screens commonly instantiate domain classes and infrastructure repositories **di
 
 ## Known Issues
 - `npx tsc --noEmit` fails with 4 errors: `FilterRuleRepository.ts` references `created_at` on `NewFilterRule` (which omits it), and the `update` method uses `Record<string, unknown>` instead of the typed SQLite bind params. `FilterScreen.tsx` also references `created_at` on `NewFilterRule`. Lint and tests pass; type-check is the safety gap.
-- `App/src/screens/ResultScreen.tsx` is an older dead version — the active one is `App/src/screens/ResultScreen/ResultScreen.tsx`.
+- `App/src/screens/ResultScreen.tsx` was the older dead version — the active one is `App/src/screens/ProductScreen.tsx`.
 
 ## Project Conventions
 - TypeScript strict (`tsconfig.json` extends `expo/tsconfig.base` with `"strict": true`).

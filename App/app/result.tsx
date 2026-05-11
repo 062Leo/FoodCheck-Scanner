@@ -1,3 +1,3 @@
-import ResultScreen from '../src/screens/ResultScreen';
+import ProductScreen from '../src/screens/ProductScreen';
 
-export default ResultScreen;
+export default ProductScreen;

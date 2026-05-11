@@ -45,7 +45,7 @@ App/
 ├── src/
 │   ├── screens/
 │   │   ├── ScannerScreen/    # Camera + EAN detection
-│   │   ├── ResultScreen/     # Traffic light banner + product details
+│   │   ├── ProductScreen     # Traffic light banner + product details
 │   │   ├── CatalogScreen/    # Scanned product list with filters
 │   │   ├── FavoritesScreen/  # Favorite product list
 │   │   ├── FilterScreen/     # Custom filter rules management
@@ -125,13 +125,13 @@ App/
 User scans barcode
     → ScannerScreen (expo-camera / onBarcodeScanned)
     → ProductRepository.findByEan(ean) [local cache check]
-        → Found? Navigate to ResultScreen with cached data
+        → Found? Navigate to ProductScreen with cached data
         → Not found + offline? Toast warning
         → Not found + online? OpenFoodFactsClient.getProductByEan(ean)
             → Status 1: parse response → RedFlagAnalyzer + NovaScoreEvaluator → ProductRating
-            → Status 0: ResultScreen shows "not found" + contribute button
+            → Status 0: ProductScreen shows "not found" + contribute button
     → Save to ProductRepository in background
-    → Navigate to ResultScreen
+    → Navigate to ProductScreen
 ```
 
 ### 5.2 OCR & Contribution Flow
@@ -146,7 +146,7 @@ Product not found (OFF status=0)
         1. OpenFoodFactsWriteClient.uploadProduct(formData)
         2. RedFlagAnalyzer.analyze(ingredients, rules) + ProductRating.rate()
         3. ProductRepository.insert(product)
-        4. Navigate to ResultScreen
+        4. Navigate to ProductScreen
 ```
 
 ## 6. Database Schema
@@ -346,7 +346,7 @@ Expo Router file-based routing in `App/app/`:
    - `FilterRuleRepository.ts`: references `created_at` on `NewFilterRule` (which omits it)
    - `FilterRuleRepository.ts` `update` method uses `Record<string, unknown>` instead of typed SQLite bind params
    - `FilterScreen.tsx`: references `created_at` on `NewFilterRule`
-2. `src/screens/ResultScreen.tsx` is a dead file — the active version is at `src/screens/ResultScreen/ResultScreen.tsx`.
+2. `src/screens/ProductScreen.tsx` is the active product detail screen.
 
 ## 16. Non-Functional Requirements
 

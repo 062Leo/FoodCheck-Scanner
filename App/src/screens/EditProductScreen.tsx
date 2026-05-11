@@ -33,6 +33,8 @@ const translationRouter = new TranslationRouter();
 
 const OFF_INGREDIENTS_LANGS = ['de', 'en', 'fr', 'it', 'es', 'nl', 'pt', 'pl'] as const;
 
+const ALL_LANGS_SENTINEL = '__all__';
+
 export default function EditProductScreen() {
   const router = useRouter();
   const { ean } = useLocalSearchParams<{ ean: string }>();
@@ -198,6 +200,13 @@ export default function EditProductScreen() {
     return OFF_INGREDIENTS_LANGS.filter((lang) => !existing.has(lang));
   }, [ingredientsTextByLang]);
 
+  const modalLangOptions = useMemo(() => {
+    if (translateSourceLang && availableLangs.length > 1) {
+      return [...availableLangs, ALL_LANGS_SENTINEL];
+    }
+    return availableLangs;
+  }, [availableLangs, translateSourceLang]);
+
   const ingredientsAccordionContent = useMemo(() => {
     const langMap = getIngredientsByLang();
     const knownLangs = Object.entries(langMap);
@@ -264,6 +273,10 @@ export default function EditProductScreen() {
   }, [ingredientsTextByLang, availableLangs]);
 
   const handleAddLanguage = (lang: string) => {
+    if (lang === ALL_LANGS_SENTINEL) {
+      handleTranslateAllLanguages(translateSourceLang!);
+      return;
+    }
     if (translateSourceLang) {
       handleTranslateTo(translateSourceLang, lang);
     } else {
@@ -303,6 +316,57 @@ export default function EditProductScreen() {
       Alert.alert('Fehler', 'Übersetzung fehlgeschlagen.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleTranslateAllLanguages = async (sourceLang: string) => {
+    const sourceText = ingredientsTextByLang[sourceLang];
+    if (!sourceText?.trim()) {
+      Alert.alert('Kein Text', 'Die Quellsprache enthält keinen Text zum Übersetzen.');
+      return;
+    }
+
+    const provider = await translationRouter.getProvider();
+    if (provider === 'deepl') {
+      const apiKey = await deepLClient.getApiKey();
+      if (!apiKey) {
+        Alert.alert(
+          'Kein API Key',
+          'Bitte hinterlege zuerst einen DeepL API Key in den Einstellungen.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+    }
+
+    const targets = [...availableLangs];
+    if (targets.length === 0) {
+      Alert.alert('Bereits vollständig', 'Alle Sprachen sind bereits vorhanden.');
+      return;
+    }
+
+    setShowLangPicker(false);
+    setTranslateSourceLang(null);
+    setIsLoading(true);
+
+    let failedCount = 0;
+
+    for (const targetLang of targets) {
+      try {
+        const translated = await translationRouter.translate(sourceText, targetLang);
+        setIngredientsTextByLang((prev) => ({ ...prev, [targetLang]: translated }));
+      } catch {
+        failedCount++;
+      }
+    }
+
+    setIsLoading(false);
+
+    if (failedCount > 0) {
+      Alert.alert(
+        'Teilweise fehlgeschlagen',
+        `${failedCount} von ${targets.length} Übersetzungen fehlgeschlagen.`
+      );
     }
   };
 
@@ -574,27 +638,37 @@ export default function EditProductScreen() {
                     : 'Sprache wählen'}
                 </Text>
                 <FlatList
-                  data={availableLangs}
+                  data={modalLangOptions}
                   keyExtractor={(lang) => lang}
                   renderItem={({ item: lang }) => (
                     <TouchableOpacity
-                      style={styles.langOption}
+                      style={[
+                        styles.langOption,
+                        lang === ALL_LANGS_SENTINEL && styles.langOptionAll,
+                      ]}
                       onPress={() => handleAddLanguage(lang)}
                     >
-                      <Text style={styles.langOptionText}>
-                        {(() => {
-                          const labels: Record<string, string> = {
-                            de: 'Deutsch',
-                            en: 'English',
-                            fr: 'Français',
-                            it: 'Italiano',
-                            es: 'Español',
-                            nl: 'Nederlands',
-                            pt: 'Português',
-                            pl: 'Polski',
-                          };
-                          return `${labels[lang] || lang.toUpperCase()} (${lang})`;
-                        })()}
+                      <Text
+                        style={[
+                          styles.langOptionText,
+                          lang === ALL_LANGS_SENTINEL && styles.langOptionTextAll,
+                        ]}
+                      >
+                        {lang === ALL_LANGS_SENTINEL
+                          ? 'Alle Sprachen'
+                          : (() => {
+                              const labels: Record<string, string> = {
+                                de: 'Deutsch',
+                                en: 'English',
+                                fr: 'Français',
+                                it: 'Italiano',
+                                es: 'Español',
+                                nl: 'Nederlands',
+                                pt: 'Português',
+                                pl: 'Polski',
+                              };
+                              return `${labels[lang] || lang.toUpperCase()} (${lang})`;
+                            })()}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -818,6 +892,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#2A2A2A',
   },
   langOptionText: { color: '#CFCFCF', fontSize: 16 },
+  langOptionAll: {
+    backgroundColor: '#1A3A1A',
+    borderTopWidth: 1,
+    borderTopColor: '#4CAF50',
+  },
+  langOptionTextAll: { color: '#4CAF50', fontSize: 16, fontWeight: '700' },
 
   saveBtn: {
     backgroundColor: '#4CAF50',

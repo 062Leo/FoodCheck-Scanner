@@ -1,6 +1,6 @@
 import type { Product } from '../../types/Product';
 
-describe('ResultScreen cached override merge flow', () => {
+describe('ProductScreen cached override merge flow', () => {
   const mockEan = '1234567890123';
   const mockOFFProduct: Product = {
     ean: mockEan,

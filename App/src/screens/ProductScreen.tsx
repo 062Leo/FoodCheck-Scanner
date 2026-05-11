@@ -63,7 +63,7 @@ function buildProductFromRecord(record: ProductRecord): Product {
   });
 }
 
-export default function ResultScreen() {
+export default function ProductScreen() {
   const params = useLocalSearchParams<{ ean: string; fromCache?: string; cachedData?: string }>();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
