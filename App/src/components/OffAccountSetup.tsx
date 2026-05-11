@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Linking,
 } from 'react-native';
-import { OpenFoodFactsWriteClient } from '../../infrastructure/api/OpenFoodFactsWriteClient';
+import { OpenFoodFactsWriteClient } from '../infrastructure/api/OpenFoodFactsWriteClient';
 
 interface OffAccountSetupProps {
   visible: boolean;

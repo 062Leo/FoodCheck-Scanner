@@ -209,10 +209,7 @@ export default function FilterScreen() {
       if (editingRule) {
         await updateRule(editingRule.id, payload);
       } else {
-        await addRule({
-          ...payload,
-          created_at: new Date().toISOString(),
-        });
+        await addRule(payload);
       }
 
       closeModal();
@@ -237,10 +234,7 @@ export default function FilterScreen() {
     if (editingRule) {
       await updateRule(editingRule.id, payload);
     } else {
-      await addRule({
-        ...payload,
-        created_at: new Date().toISOString(),
-      });
+      await addRule(payload);
     }
 
     closeModal();

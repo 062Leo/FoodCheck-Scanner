@@ -15,7 +15,7 @@ import {
   UploadError,
   ProductWritePayload,
 } from '../OpenFoodFactsWriteClient';
-import { ContributeFormData } from '../../types/ContributeFormData';
+import { ContributeFormData } from '../../../types/ContributeFormData';
 import * as SecureStore from 'expo-secure-store';
 import { APP_NAME, APP_VERSION } from '../config';
 
@@ -178,7 +178,6 @@ describe('OpenFoodFactsWriteClient', () => {
         product_name: 'OnlyName',
         brands: '',
         categories: undefined,
-        labels: null,
       } as ProductWritePayload);
 
       const fd = (fetch as jest.Mock).mock.calls[0][1].body as FormData;

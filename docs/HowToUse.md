@@ -76,7 +76,18 @@ When a scanned product is not in Open Food Facts:
 - After upload: immediate local analysis + navigation to Result Screen.
 - If upload fails (offline, server error): local analysis still runs, product is saved locally.
 
-## 9. Development Commands
+## 9. Build Standalone APK (Android)
+
+```bash
+npx eas-cli build --platform android --profile preview
+```
+
+- Requires an **Expo account** and the **EAS CLI** configured (`eas-cli` is included as a dev dependency).
+- The **preview** profile produces a `.apk` file (installable on Android devices) without Play Store signing.
+- Find the download link in the Expo dashboard or terminal output after the build completes.
+- For a production `.aab` (Play Store): use `--profile production`.
+
+## 10. Development Commands
 
 ```bash
 cd App
@@ -88,7 +99,7 @@ npm run format:check     # Prettier check
 npx tsc --noEmit         # TypeScript type-check
 ```
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 - **expo-camera / native module errors**: ensure Expo SDK version matches installed packages.
 - **Peer dependency errors on `npm install`**: use `--legacy-peer-deps`.

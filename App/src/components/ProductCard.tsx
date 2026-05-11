@@ -3,8 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, PanResponder, Alert } from 'r
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { ProductRecord } from '../../types/Product';
-import type { ScanStatus } from '../../types/ScanResult';
+import type { ProductRecord } from '../types/Product';
+import type { ScanStatus } from '../types/ScanResult';
 
 const STATUS_COLORS: Record<ScanStatus, string> = {
   OK: '#4CAF50',

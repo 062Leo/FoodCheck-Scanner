@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCatalogStore } from '../store/catalogStore';
-import { ProductCard } from '../components/ProductCard/ProductCard';
+import { ProductCard } from '../components/ProductCard';
 import type { ProductRecord } from '../types/Product';
 
 export default function FavoritesScreen() {

@@ -25,7 +25,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as SecureStore from 'expo-secure-store';
 import { TextRecognitionScript } from '@react-native-ml-kit/text-recognition';
-import { OcrService, OcrScriptSelection } from '../../infrastructure/ocr/OcrService';
+import { OcrService, OcrScriptSelection } from '../infrastructure/ocr/OcrService';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 

@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 import { FilterRuleRepository } from '../FilterRuleRepository';
-import type { FilterRule, NewFilterRule } from '../../../types/FilterRule';
+import type { FilterRule, FilterRuleOperator, NewFilterRule } from '../../../types/FilterRule';
 
 jest.mock('expo-sqlite', () => ({
   openDatabaseAsync: jest.fn(),
@@ -38,7 +38,7 @@ describe('FilterRuleRepository', () => {
     };
 
     database = {
-      execAsync: jest.fn(async () => undefined),
+      execAsync: jest.fn(async (_sql: string) => {}),
       getFirstAsync: jest.fn(async (sql: string, ...params: unknown[]) =>
         handleGetFirst(sql, params, state)
       ),
@@ -64,7 +64,6 @@ describe('FilterRuleRepository', () => {
       threshold: null,
       operator: null,
       severity: 'red_flag',
-      created_at: '2026-05-09T10:00:00.000Z',
     };
 
     await repository.insert(rule);
@@ -88,7 +87,6 @@ describe('FilterRuleRepository', () => {
       threshold: null,
       operator: null,
       severity: 'red_flag',
-      created_at: '2026-05-09T10:00:00.000Z',
     };
 
     await repository.insert(rule);
@@ -109,7 +107,6 @@ describe('FilterRuleRepository', () => {
       threshold: 300,
       operator: 'gt',
       severity: 'red_flag',
-      created_at: '2026-05-09T10:00:00.000Z',
     };
 
     await repository.insert(rule);
@@ -170,7 +167,8 @@ function handleRun(
       key,
       category: getStringValue(values['$category'], 'category'),
       threshold: values['$threshold'] === null ? null : (values['$threshold'] as number | null),
-      operator: values['$operator'] === null ? null : (values['$operator'] as string | null),
+      operator:
+        values['$operator'] === null ? null : (values['$operator'] as FilterRuleOperator | null),
       severity: severity as 'red_flag' | 'ok',
       created_at: createdAt,
     };
@@ -207,7 +205,7 @@ function handleRun(
           : existing.threshold,
       operator:
         values['$operator'] !== undefined
-          ? (values['$operator'] as string | null)
+          ? (values['$operator'] as FilterRuleOperator | null)
           : existing.operator,
       severity:
         values['$severity'] !== undefined

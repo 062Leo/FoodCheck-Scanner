@@ -38,7 +38,7 @@ describe('ProductRepository', () => {
     };
 
     database = {
-      execAsync: jest.fn(async () => undefined),
+      execAsync: jest.fn(async (_sql: string) => {}),
       getFirstAsync: jest.fn(async (sql: string, ...params: unknown[]) =>
         handleGetFirst(sql, params, state)
       ),

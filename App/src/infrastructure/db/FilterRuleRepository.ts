@@ -1,5 +1,6 @@
 import { db, initDatabase } from './DatabaseService';
 import type { FilterRule, NewFilterRule } from '../../types/FilterRule';
+import type { SQLiteBindValue } from 'expo-sqlite';
 
 export class FilterRuleRepository {
   async insert(rule: NewFilterRule): Promise<void> {
@@ -18,7 +19,7 @@ export class FilterRuleRepository {
           $threshold: rule.threshold ?? null,
           $operator: rule.operator ?? null,
           $severity: rule.severity,
-          $created_at: rule.created_at,
+          $created_at: new Date().toISOString(),
         }
       );
     } catch (error) {
@@ -58,7 +59,7 @@ export class FilterRuleRepository {
       const database = await this.getDatabase();
 
       const setClauses: string[] = [];
-      const params: Record<string, unknown> = { $id: id };
+      const params: Record<string, SQLiteBindValue> = { $id: id };
 
       if (changes.type !== undefined) {
         setClauses.push('type = $type');

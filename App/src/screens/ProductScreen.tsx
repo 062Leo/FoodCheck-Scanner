@@ -470,7 +470,7 @@ export default function ProductScreen() {
     }
   };
 
-  const handleToggleDataSource = () => {
+  const _handleToggleDataSource = () => {
     if (dataSource === 'off' && localProduct) {
       setProduct(localProduct);
       setDataSource('local');
@@ -967,36 +967,6 @@ export default function ProductScreen() {
             />
           </View>
         ) : null}
-
-        {/* Data source toggle */}
-        {(offProduct || localProduct) && (
-          <View style={styles.dataSourceToggle}>
-            <TouchableOpacity
-              style={[styles.toggleOption, dataSource === 'off' && styles.toggleOptionActive]}
-              onPress={handleToggleDataSource}
-              disabled={dataSource === 'off'}
-            >
-              <Text style={[styles.toggleText, dataSource === 'off' && styles.toggleTextActive]}>
-                OFF Database
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleOption, dataSource === 'local' && styles.toggleOptionActive]}
-              onPress={handleToggleDataSource}
-              disabled={dataSource === 'local' || !localProduct}
-            >
-              <Text
-                style={[
-                  styles.toggleText,
-                  dataSource === 'local' && styles.toggleTextActive,
-                  !localProduct && styles.toggleTextDisabled,
-                ]}
-              >
-                Local Database
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         <View style={styles.spacer} />
         <Text style={styles.dataDisclaimer}>

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCatalogStore } from '../store/catalogStore';
-import { ProductCard } from '../components/ProductCard/ProductCard';
+import { ProductCard } from '../components/ProductCard';
 import { ProductRepository } from '../infrastructure/db/ProductRepository';
 import { ProductStatistics } from '../domain/analysis/ProductStatistics';
 import type { ProductRecord } from '../types/Product';

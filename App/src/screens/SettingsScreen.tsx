@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { OpenFoodFactsWriteClient } from '../infrastructure/api/OpenFoodFactsWriteClient';
-import { OffAccountSetup } from '../components/OffAccountSetup/OffAccountSetup';
+import { OffAccountSetup } from '../components/OffAccountSetup';
 
 const writeClient = new OpenFoodFactsWriteClient();
 
@@ -89,7 +89,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0d0d0d',
-    padding: 24,
+    paddingTop: 32,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
   },
   title: {
     fontSize: 24,
