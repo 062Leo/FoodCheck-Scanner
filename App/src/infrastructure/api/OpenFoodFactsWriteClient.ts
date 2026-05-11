@@ -85,6 +85,13 @@ export class OpenFoodFactsWriteClient {
     return null;
   }
 
+  async deleteCredentials(): Promise<void> {
+    await Promise.all([
+      SecureStore.deleteItemAsync('off_username'),
+      SecureStore.deleteItemAsync('off_password'),
+    ]);
+  }
+
   async updateProduct(barcode: string, payload: ProductWritePayload): Promise<void> {
     return retryWithBackoff(async () => {
       try {

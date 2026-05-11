@@ -4,14 +4,18 @@ import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
+import { Ionicons } from '@expo/vector-icons';
 import { ProductResolutionService } from '../infrastructure/resolution/ProductResolutionService';
 
 export default function ScannerScreen() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [cameraReady, setCameraReady] = useState(true);
   const [cameraKey, setCameraKey] = useState(0);
   const [isOffline, setIsOffline] = useState(false);
+  const [facing, setFacing] = useState<'back' | 'front'>('back');
+  const [torchEnabled, setTorchEnabled] = useState(false);
   const frameAnimation = useRef(new Animated.Value(0)).current;
   const flashAnimation = useRef(new Animated.Value(0)).current;
   const resolutionService = new ProductResolutionService();
@@ -33,17 +37,30 @@ export default function ScannerScreen() {
     ).start();
   }, [frameAnimation]);
 
-  const activateCamera = useCallback(() => {
-    setScanned(false);
-    setCameraKey((k) => k + 1);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setScanned(false);
+      const timeoutId = setTimeout(() => {
+        setCameraReady(true);
+        setCameraKey((k) => k + 1);
+      }, 300);
 
-  useFocusEffect(activateCamera);
+      return () => {
+        clearTimeout(timeoutId);
+        setCameraReady(false);
+        flashAnimation.setValue(0);
+      };
+    }, [flashAnimation])
+  );
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
+        setCameraReady(true);
         setCameraKey((k) => k + 1);
+        flashAnimation.setValue(0);
+      } else {
+        setCameraReady(false);
       }
     });
     return () => subscription.remove();
@@ -116,6 +133,20 @@ export default function ScannerScreen() {
     });
   };
 
+  const toggleFacing = () => {
+    setFacing((prev) => {
+      if (prev === 'front') {
+        setTorchEnabled(false);
+        return 'back';
+      }
+      return 'front';
+    });
+  };
+
+  const toggleTorch = () => {
+    setTorchEnabled((prev) => !prev);
+  };
+
   if (!permission) {
     return (
       <View style={styles.container}>
@@ -152,42 +183,70 @@ export default function ScannerScreen() {
 
   return (
     <View style={styles.container}>
-      <CameraView
-        key={cameraKey}
-        style={styles.camera}
-        barcodeScannerSettings={{
-          barcodeTypes: ['ean8', 'ean13'],
-        }}
-        onBarcodeScanned={handleBarCodeScanned}
-      />
+      {cameraReady ? (
+        <CameraView
+          key={cameraKey}
+          facing={facing}
+          enableTorch={torchEnabled}
+          style={styles.camera}
+          barcodeScannerSettings={{
+            barcodeTypes: ['ean8', 'ean13'],
+          }}
+          onBarcodeScanned={handleBarCodeScanned}
+        />
+      ) : (
+        <View style={styles.camera} />
+      )}
 
-      {/* Scan success flash */}
-      <Animated.View style={[styles.scanFlash, { opacity: flashOpacity }]} pointerEvents="none" />
+      {cameraReady && (
+        <>
+          <Animated.View
+            style={[styles.scanFlash, { opacity: flashOpacity }]}
+            pointerEvents="none"
+          />
 
-      <View style={styles.overlay}>
-        <Animated.View
-          style={[
-            styles.scanFrame,
-            {
-              transform: [{ scale: frameScale }],
-              opacity: frameOpacity,
-            },
-          ]}
-        >
-          <View style={styles.corner} />
-          <View style={[styles.corner, styles.cornerTR]} />
-          <View style={[styles.corner, styles.cornerBL]} />
-          <View style={[styles.corner, styles.cornerBR]} />
-        </Animated.View>
+          <View style={styles.overlay}>
+            <Animated.View
+              style={[
+                styles.scanFrame,
+                {
+                  transform: [{ scale: frameScale }],
+                  opacity: frameOpacity,
+                },
+              ]}
+            >
+              <View style={styles.corner} />
+              <View style={[styles.corner, styles.cornerTR]} />
+              <View style={[styles.corner, styles.cornerBL]} />
+              <View style={[styles.corner, styles.cornerBR]} />
+            </Animated.View>
 
-        <Text style={styles.hintText}>Halte den Barcode rein</Text>
+            <Text style={styles.hintText}>Halte den Barcode rein</Text>
 
-        {isOffline && (
-          <View style={styles.offlineBadge}>
-            <Text style={styles.offlineBadgeText}>Offline</Text>
+            <View style={styles.controls}>
+              <TouchableOpacity style={styles.controlBtn} onPress={toggleFacing}>
+                <Ionicons name="camera-reverse-outline" size={28} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              {facing === 'back' && (
+                <TouchableOpacity style={styles.controlBtn} onPress={toggleTorch}>
+                  <Ionicons
+                    name={torchEnabled ? 'flashlight' : 'flashlight-outline'}
+                    size={28}
+                    color={torchEnabled ? '#FFD700' : '#FFFFFF'}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {isOffline && (
+              <View style={styles.offlineBadge}>
+                <Text style={styles.offlineBadgeText}>Offline</Text>
+              </View>
+            )}
           </View>
-        )}
-      </View>
+        </>
+      )}
     </View>
   );
 }
@@ -300,5 +359,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontWeight: '700',
+  },
+  controls: {
+    position: 'absolute',
+    bottom: 110,
+    flexDirection: 'row',
+    gap: 24,
+  },
+  controlBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

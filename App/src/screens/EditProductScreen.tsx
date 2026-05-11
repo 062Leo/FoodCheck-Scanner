@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   FlatList,
   Alert,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
 import { ProductRepository } from '../infrastructure/db/ProductRepository';
 import { useCatalogStore } from '../store/catalogStore';
 import { OpenFoodFactsWriteClient } from '../infrastructure/api/OpenFoodFactsWriteClient';
@@ -73,6 +73,71 @@ export default function EditProductScreen() {
   const [showOffSetup, setShowOffSetup] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
   const [translateSourceLang, setTranslateSourceLang] = useState<string | null>(null);
+
+  const initialSnapshotRef = useRef<string | null>(null);
+  const didInitialLoadRef = useRef(false);
+
+  const currentSnapshot = [
+    name,
+    brand,
+    quantity,
+    category,
+    ingredientsText,
+    JSON.stringify(ingredientsTextByLang),
+    novaScore,
+    allergensTags,
+    traces,
+    origins,
+    manufacturingPlaces,
+    stores,
+    servingSize,
+    energyKcal100g,
+    fat100g,
+    saturatedFat100g,
+    carbohydrates100g,
+    sugars100g,
+    fiber100g,
+    proteins100g,
+    salt100g,
+  ].join('|');
+
+  const isDirty =
+    !isLoading &&
+    initialSnapshotRef.current !== null &&
+    currentSnapshot !== initialSnapshotRef.current;
+
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    if (!isDirty) return;
+
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      e.preventDefault();
+
+      Alert.alert('Ungespeicherte Änderungen', 'Bist du sicher? Deine Änderungen gehen verloren.', [
+        { text: 'Abbrechen', style: 'cancel' },
+        {
+          text: 'Verwerfen',
+          style: 'destructive',
+          onPress: () => navigation.dispatch(e.data.action),
+        },
+      ]);
+    });
+
+    return unsubscribe;
+  }, [isDirty, navigation]);
+
+  useEffect(() => {
+    if (!isLoading && !didInitialLoadRef.current && ean) {
+      didInitialLoadRef.current = true;
+      initialSnapshotRef.current = currentSnapshot;
+    }
+  }, [isLoading, ean, currentSnapshot]);
+
+  useEffect(() => {
+    didInitialLoadRef.current = false;
+    initialSnapshotRef.current = null;
+  }, [ean]);
 
   useEffect(() => {
     if (ean) {
@@ -435,6 +500,7 @@ export default function EditProductScreen() {
         salt100g: salt100g ? Number(salt100g) : undefined,
       },
     });
+    initialSnapshotRef.current = currentSnapshot;
     await catalogStore.loadAll();
     const updated = await repo.findByEan(ean);
     router.replace({
@@ -491,6 +557,8 @@ export default function EditProductScreen() {
           salt100g: salt100g ? Number(salt100g) : undefined,
         },
       });
+
+      initialSnapshotRef.current = currentSnapshot;
 
       const byLang: Record<string, string> = {};
       Object.entries(ingredientsTextByLang).forEach(([lang, text]) => {

@@ -590,8 +590,8 @@ export default function ProductScreen() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Daten fehlen</Text>
             <Text style={styles.modalBody}>
-              This product has no ingredients/nutrition data. Would you like to add them now via
-              photo?
+              Dieses Produkt hat zu wenige Daten zur Bewertung. Möchtest du die fehlenden
+              Informationen jetzt ergänzen?
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -607,7 +607,7 @@ export default function ProductScreen() {
                   handleContributePress();
                 }}
               >
-                <Text style={styles.primaryContributeButtonText}>Start OCR Contribution</Text>
+                <Text style={styles.primaryContributeButtonText}>Daten eintragen</Text>
               </TouchableOpacity>
             </View>
           </View>
