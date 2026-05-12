@@ -4051,16 +4051,15 @@ function parseTranslationJson(json: string): Record<string, string> {
 export const SEARCH_LANGUAGES: IngredientLocale[] = ['de', 'fr', 'it', 'es', 'nl', 'pt', 'pl'];
 
 /**
- * Reverse-lookup: given a user-entered term in any language, returns the
- * canonical English key if a matching translation is found.
+ * Resolves a user-entered term in any language to the canonical English key.
  *
- * Example: findEnglishKey("Palmöl") → "Palm Oil"
- *          findEnglishKey("Azúcar")  → "Sugar"
- *          findEnglishKey("UnbekanntesZeug") → "UnbekanntesZeug" (no match)
+ * Example: resolveIngredientKey("Palmöl") → "Palm Oil"
+ *          resolveIngredientKey("Azúcar")  → "Sugar"
+ *          resolveIngredientKey("Milch")   → "Milch" (not in dictionary, returns as-is)
  *
  * The match is case-insensitive.
  */
-export function findEnglishKey(userInput: string): string {
+export function resolveIngredientKey(userInput: string): string {
   const normalized = userInput.trim();
   if (!normalized) return normalized;
 

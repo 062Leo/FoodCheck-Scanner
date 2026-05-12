@@ -12,9 +12,10 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from '../i18n/useTranslation';
+import type { TranslationKey } from '../i18n/translations';
 import {
   getIngredientTranslation,
-  findEnglishKey,
+  resolveIngredientKey,
   SEARCH_LANGUAGES,
 } from '../domain/rules/ingredientTranslations';
 import { MyMemoryClient } from '../infrastructure/translation/MyMemoryClient';
@@ -61,6 +62,29 @@ const CATEGORY_PRESETS = [
 ] as const;
 
 const ALL_CATEGORIES: readonly string[] = CATEGORY_PRESETS;
+
+const CATEGORY_TRANSLATION_KEYS: Record<string, TranslationKey> = {
+  Süßungsmittel: 'filter.preset.sweeteners',
+  Farbstoffe: 'filter.preset.colors',
+  Konservierungsstoffe: 'filter.preset.preservatives',
+  'Geschmacksverstärker & Aromen': 'filter.preset.flavorEnhancers',
+  'Emulgatoren & Stabilisatoren': 'filter.preset.emulsifiers',
+  'Verdickungs- & Geliermittel': 'filter.preset.thickeners',
+  'Säuren & Säureregulatoren': 'filter.preset.acids',
+  Antioxidationsmittel: 'filter.preset.antioxidants',
+  'Gehärtete Fette & raffinierte Öle': 'filter.preset.hydrogenatedFats',
+  'Zucker & Sirupe': 'filter.preset.sugarSyrups',
+  'Modifizierte Stärken': 'filter.preset.modifiedStarches',
+  'Phosphate & Mineralstoffe': 'filter.preset.phosphates',
+  'Füll- & Trägerstoffe': 'filter.preset.fillers',
+  'Proteine & Fleischersatz': 'filter.preset.proteins',
+  'Trenn- & Überzugsmittel': 'filter.preset.releaseAgents',
+  'Treib- & Schutzgase': 'filter.preset.propellantGases',
+  Metalle: 'filter.preset.metals',
+  'E-Nummern': 'filter.preset.eNumbers',
+  'Sonstige Zusatzstoffe': 'filter.preset.other',
+  'Ohne Kategorie': 'filter.uncategorized',
+};
 
 type RuleFormState = {
   type: FilterRuleType;
@@ -145,7 +169,10 @@ export default function FilterScreen() {
 
     return rawEntries
       .map(([category, categoryRules]) => {
-        const catMatch = category.toLowerCase().includes(q);
+        const translatedCat = t(
+          CATEGORY_TRANSLATION_KEYS[category] ?? (category as TranslationKey)
+        ).toLowerCase();
+        const catMatch = category.toLowerCase().includes(q) || translatedCat.includes(q);
         const matchingRules = categoryRules.filter((rule) => {
           const displayKey =
             rule.type === 'ingredient'
@@ -219,15 +246,15 @@ export default function FilterScreen() {
     if (formState.type === 'ingredient') {
       const rawKey = formState.ingredientKey.trim();
       if (!rawKey) {
-        Alert.alert(t('filter.missing'), 'Bitte einen Zutatenbegriff eingeben.');
+        Alert.alert(t('filter.missing'), t('filter.validation.ingredient'));
         return;
       }
       if (!category) {
-        Alert.alert(t('filter.missing'), 'Bitte eine Kategorie auswählen.');
+        Alert.alert(t('filter.missing'), t('filter.validation.category'));
         return;
       }
 
-      const canonicalKey = findEnglishKey(rawKey);
+      const canonicalKey = resolveIngredientKey(rawKey);
       let translations: string | null = null;
 
       if (canonicalKey === rawKey && !editingRule) {
@@ -256,7 +283,7 @@ export default function FilterScreen() {
 
     const thresholdValue = Number.parseFloat(formState.threshold.replace(',', '.'));
     if (Number.isNaN(thresholdValue)) {
-      Alert.alert(t('filter.missing'), 'Bitte einen gültigen Grenzwert eingeben.');
+      Alert.alert(t('filter.missing'), t('filter.validation.threshold'));
       return;
     }
 
@@ -283,7 +310,7 @@ export default function FilterScreen() {
       rule.type === 'ingredient'
         ? getIngredientTranslation(rule.key, language, rule.translations)
         : rule.key;
-    Alert.alert(t('filter.deleteTitle'), `"${displayName}" wirklich entfernen?`, [
+    Alert.alert(t('filter.deleteTitle'), t('filter.deleteMsg', { key: displayName }), [
       { text: t('edit.cancel'), style: 'cancel' },
       {
         text: t('filter.delete'),
@@ -299,14 +326,14 @@ export default function FilterScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTextBlock}>
-          <Text style={styles.title}>Filter-Regeln</Text>
+          <Text style={styles.title}>{t('filter.title')}</Text>
           <Text style={styles.subtitle}>
-            {rules.length} Regeln in {groupedRules.length} Kategorien
+            {t('filter.subtitle', { n: rules.length, m: groupedRules.length })}
           </Text>
         </View>
         <TouchableOpacity style={styles.addButton} onPress={openCreateModal}>
           <Ionicons name="add" size={16} color="#0B0B0B" />
-          <Text style={styles.addButtonText}>Neu</Text>
+          <Text style={styles.addButtonText}>{t('filter.add')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -315,7 +342,7 @@ export default function FilterScreen() {
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Kategorie, Zutat oder Regel suchen…"
+          placeholder={t('filter.searchPlaceholder')}
           placeholderTextColor="#6B7280"
           style={styles.searchInput}
           autoCapitalize="none"
@@ -331,8 +358,8 @@ export default function FilterScreen() {
 
       {rules.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Noch keine Regeln</Text>
-          <Text style={styles.emptyText}>Füge eine Ingredient- oder Nutrient-Regel hinzu.</Text>
+          <Text style={styles.emptyTitle}>{t('filter.empty')}</Text>
+          <Text style={styles.emptyText}>{t('filter.emptyHint')}</Text>
         </View>
       ) : (
         <SectionList
@@ -352,7 +379,7 @@ export default function FilterScreen() {
                   color="#9CA3AF"
                 />
                 <Text style={styles.categoryTitle} numberOfLines={1}>
-                  {section.title}
+                  {t(CATEGORY_TRANSLATION_KEYS[section.title] ?? (section.title as TranslationKey))}
                 </Text>
                 <View style={styles.categoryCount}>
                   <Text style={styles.categoryCountText}>{section.count}</Text>
@@ -433,12 +460,12 @@ export default function FilterScreen() {
 
             <View style={styles.tabRow}>
               <TabButton
-                label="Zutaten-Regel"
+                label={t('filter.tab.ingredient')}
                 active={formState.type === 'ingredient'}
                 onPress={() => setFormState((current) => ({ ...current, type: 'ingredient' }))}
               />
               <TabButton
-                label="Nährwert-Regel"
+                label={t('filter.tab.nutrient')}
                 active={formState.type === 'nutrient'}
                 onPress={() => setFormState((current) => ({ ...current, type: 'nutrient' }))}
               />
@@ -451,13 +478,13 @@ export default function FilterScreen() {
               {formState.type === 'ingredient' ? (
                 <>
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Zutat (Keyword)</Text>
+                    <Text style={styles.fieldLabel}>{t('filter.field.keyword')}</Text>
                     <TextInput
                       value={formState.ingredientKey}
                       onChangeText={(value) =>
                         setFormState((current) => ({ ...current, ingredientKey: value }))
                       }
-                      placeholder="z. B. Palmöl"
+                      placeholder={t('filter.field.keywordPlaceholder')}
                       placeholderTextColor="#6B7280"
                       style={styles.input}
                       autoCapitalize="none"
@@ -465,7 +492,7 @@ export default function FilterScreen() {
                   </View>
 
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Kategorie</Text>
+                    <Text style={styles.fieldLabel}>{t('filter.field.category')}</Text>
                     <TouchableOpacity
                       style={styles.selectButton}
                       onPress={() => setIsCategoryPickerVisible(true)}
@@ -476,7 +503,9 @@ export default function FilterScreen() {
                           !formState.category && styles.selectButtonPlaceholder,
                         ]}
                       >
-                        {formState.category || t('filter.field.categoryPlaceholder')}
+                        {formState.category
+                          ? t(CATEGORY_TRANSLATION_KEYS[formState.category] ?? formState.category)
+                          : t('filter.field.categoryPlaceholder')}
                       </Text>
                       <Ionicons name="chevron-down" size={18} color="#D1D5DB" />
                     </TouchableOpacity>
@@ -485,7 +514,7 @@ export default function FilterScreen() {
               ) : (
                 <>
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Nährwert</Text>
+                    <Text style={styles.fieldLabel}>{t('filter.field.nutrient')}</Text>
                     <TouchableOpacity
                       style={styles.selectButton}
                       onPress={() => setIsNutrientPickerVisible(true)}
@@ -496,7 +525,7 @@ export default function FilterScreen() {
                   </View>
 
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Operator</Text>
+                    <Text style={styles.fieldLabel}>{t('filter.field.operator')}</Text>
                     <View style={styles.segmentRow}>
                       {OPERATOR_OPTIONS.map((operator) => (
                         <SegmentButton
@@ -510,13 +539,13 @@ export default function FilterScreen() {
                   </View>
 
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Grenzwert</Text>
+                    <Text style={styles.fieldLabel}>{t('filter.field.threshold')}</Text>
                     <TextInput
                       value={formState.threshold}
                       onChangeText={(value) =>
                         setFormState((current) => ({ ...current, threshold: value }))
                       }
-                      placeholder="z. B. 3"
+                      placeholder={t('filter.field.thresholdPlaceholder')}
                       placeholderTextColor="#6B7280"
                       style={styles.input}
                       keyboardType="decimal-pad"
@@ -524,13 +553,13 @@ export default function FilterScreen() {
                   </View>
 
                   <View style={styles.fieldGroup}>
-                    <Text style={styles.fieldLabel}>Kategorie</Text>
+                    <Text style={styles.fieldLabel}>{t('filter.field.categoryNutrient')}</Text>
                     <TextInput
                       value={formState.category}
                       onChangeText={(value) =>
                         setFormState((current) => ({ ...current, category: value }))
                       }
-                      placeholder="z. B. Nährwerte"
+                      placeholder={t('filter.field.categoryNutrientPlaceholder')}
                       placeholderTextColor="#6B7280"
                       style={styles.input}
                       autoCapitalize="none"
@@ -540,17 +569,17 @@ export default function FilterScreen() {
               )}
 
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Bewertung</Text>
+                <Text style={styles.fieldLabel}>{t('filter.field.severity')}</Text>
                 <View style={styles.segmentRow}>
                   <SegmentButton
-                    label="RED FLAG"
+                    label={t('filter.severity.flag')}
                     active={formState.severity === 'red_flag'}
                     onPress={() =>
                       setFormState((current) => ({ ...current, severity: 'red_flag' }))
                     }
                   />
                   <SegmentButton
-                    label="OK"
+                    label={t('filter.severity.ok')}
                     active={formState.severity === 'ok'}
                     onPress={() => setFormState((current) => ({ ...current, severity: 'ok' }))}
                   />
@@ -558,7 +587,7 @@ export default function FilterScreen() {
               </View>
 
               <TouchableOpacity style={styles.saveButton} onPress={() => void handleSave()}>
-                <Text style={styles.saveButtonText}>Speichern</Text>
+                <Text style={styles.saveButtonText}>{t('filter.save')}</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -573,7 +602,7 @@ export default function FilterScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.pickerCard}>
-            <Text style={styles.pickerTitle}>Kategorie auswählen</Text>
+            <Text style={styles.pickerTitle}>{t('filter.picker.category')}</Text>
             <ScrollView style={styles.pickerScroll}>
               {CATEGORY_PRESETS.map((option) => (
                 <TouchableOpacity
@@ -593,7 +622,7 @@ export default function FilterScreen() {
                       formState.category === option && styles.pickerOptionTextActive,
                     ]}
                   >
-                    {option}
+                    {t(CATEGORY_TRANSLATION_KEYS[option] ?? option)}
                   </Text>
                   {formState.category === option && (
                     <Ionicons name="checkmark" size={18} color="#A7F3D0" />
@@ -605,7 +634,7 @@ export default function FilterScreen() {
               style={styles.cancelButton}
               onPress={() => setIsCategoryPickerVisible(false)}
             >
-              <Text style={styles.cancelButtonText}>Abbrechen</Text>
+              <Text style={styles.cancelButtonText}>{t('edit.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -619,7 +648,7 @@ export default function FilterScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.pickerCard}>
-            <Text style={styles.pickerTitle}>Nährwert auswählen</Text>
+            <Text style={styles.pickerTitle}>{t('filter.picker.nutrient')}</Text>
             {NUTRIENT_OPTIONS.map((option) => (
               <TouchableOpacity
                 key={option}
@@ -636,13 +665,13 @@ export default function FilterScreen() {
               style={styles.cancelButton}
               onPress={() => setIsNutrientPickerVisible(false)}
             >
-              <Text style={styles.cancelButtonText}>Abbrechen</Text>
+              <Text style={styles.cancelButtonText}>{t('edit.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {isLoading ? <Text style={styles.loadingHint}>Lade Regeln…</Text> : null}
+      {isLoading ? <Text style={styles.loadingHint}>{t('filter.loading')}</Text> : null}
     </View>
   );
 }

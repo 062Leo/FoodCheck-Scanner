@@ -1,52 +1,52 @@
 import {
-  findEnglishKey,
+  resolveIngredientKey,
   getIngredientTranslation,
   getAllSearchTerms,
 } from '../ingredientTranslations';
 
 describe('ingredientTranslations', () => {
-  describe('findEnglishKey', () => {
+  describe('resolveIngredientKey', () => {
     it('should return English key for German input', () => {
-      expect(findEnglishKey('Palmöl')).toBe('Palm Oil');
+      expect(resolveIngredientKey('Palmöl')).toBe('Palm Oil');
     });
 
     it('should return English key for French input', () => {
-      expect(findEnglishKey('Huile de palme')).toBe('Palm Oil');
+      expect(resolveIngredientKey('Huile de palme')).toBe('Palm Oil');
     });
 
     it('should return English key for Spanish input', () => {
-      expect(findEnglishKey('Azúcar')).toBe('Sugar');
+      expect(resolveIngredientKey('Azúcar')).toBe('Sugar');
     });
 
     it('should return English key when input is already English', () => {
-      expect(findEnglishKey('Palm Oil')).toBe('Palm Oil');
+      expect(resolveIngredientKey('Palm Oil')).toBe('Palm Oil');
     });
 
     it('should be case-insensitive', () => {
-      expect(findEnglishKey('palmöl')).toBe('Palm Oil');
-      expect(findEnglishKey('PALMÖL')).toBe('Palm Oil');
+      expect(resolveIngredientKey('palmöl')).toBe('Palm Oil');
+      expect(resolveIngredientKey('PALMÖL')).toBe('Palm Oil');
     });
 
     it('should trim whitespace', () => {
-      expect(findEnglishKey('  Palmöl  ')).toBe('Palm Oil');
+      expect(resolveIngredientKey('  Palmöl  ')).toBe('Palm Oil');
     });
 
     it('should return original input for unknown terms', () => {
-      expect(findEnglishKey('UnbekanntesZeug')).toBe('UnbekanntesZeug');
+      expect(resolveIngredientKey('UnbekanntesZeug')).toBe('UnbekanntesZeug');
     });
 
     it('should return empty string for empty input', () => {
-      expect(findEnglishKey('')).toBe('');
-      expect(findEnglishKey('   ')).toBe('');
+      expect(resolveIngredientKey('')).toBe('');
+      expect(resolveIngredientKey('   ')).toBe('');
     });
 
     it('should match Polish translations', () => {
-      expect(findEnglishKey('Cukier')).toBe('Sugar');
-      expect(findEnglishKey('Olej palmowy')).toBe('Palm Oil');
+      expect(resolveIngredientKey('Cukier')).toBe('Sugar');
+      expect(resolveIngredientKey('Olej palmowy')).toBe('Palm Oil');
     });
 
     it('should match Italian translations', () => {
-      expect(findEnglishKey('Olio di palma')).toBe('Palm Oil');
+      expect(resolveIngredientKey('Olio di palma')).toBe('Palm Oil');
     });
   });
 
