@@ -30,7 +30,7 @@ export class RedFlagAnalyzer {
     for (const rule of activeRules) {
       if (this.isFilterRule(rule) && rule.severity === 'ok') {
         if (rule.type === 'ingredient') {
-          const terms = getAllSearchTerms(rule.key);
+          const terms = getAllSearchTerms(rule.key, rule.translations);
           for (const term of terms) {
             if (lowerText.includes(term.toLowerCase())) {
               blockedKeys.add(this.normalizeRuleKey(rule.key));
@@ -59,7 +59,7 @@ export class RedFlagAnalyzer {
             continue;
           }
 
-          const terms = getAllSearchTerms(rule.key);
+          const terms = getAllSearchTerms(rule.key, rule.translations);
           let bestIndex = -1;
           let matchedTerm = rule.key;
 

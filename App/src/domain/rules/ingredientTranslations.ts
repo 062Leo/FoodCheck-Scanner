@@ -3978,29 +3978,70 @@ const T: Record<string, Translations> = {
 /**
  * Returns the display name for an ingredient key in the given app language.
  * Falls back to the English key if no translation exists.
+ * If dbTranslations (JSON string) is provided, it is parsed and used as fallback
+ * before falling back to the English key.
  */
-export function getIngredientTranslation(key: string, language: string): string {
+export function getIngredientTranslation(
+  key: string,
+  language: string,
+  dbTranslations?: string | null
+): string {
   const entry = T[key];
-  if (!entry) return key;
-  return entry[language as IngredientLocale] ?? key;
+  if (entry) {
+    const translated = entry[language as IngredientLocale];
+    if (translated) return translated;
+  }
+  if (dbTranslations) {
+    const parsed = parseTranslationJson(dbTranslations);
+    const dbValue = parsed[language];
+    if (dbValue) return dbValue;
+  }
+  return key;
 }
 
 /**
  * Returns ALL search terms for a given ingredient key across all supported languages.
- * This is used by the RedFlagAnalyzer to match ingredient text in any language.
- * For keys with no translations, only the original key is returned.
+ * Searches both the static dictionary and optional DB-stored translations (JSON string).
  */
-export function getAllSearchTerms(key: string): string[] {
-  const entry = T[key];
-  if (!entry) return [key];
+export function getAllSearchTerms(key: string, dbTranslations?: string | null): string[] {
   const terms: string[] = [key];
-  for (const lang of SEARCH_LANGUAGES) {
-    const translation = entry[lang];
-    if (translation && !terms.includes(translation)) {
-      terms.push(translation);
+  const seen = new Set([key.toLowerCase()]);
+
+  const entry = T[key];
+  if (entry) {
+    for (const lang of SEARCH_LANGUAGES) {
+      const translation = entry[lang];
+      if (translation && !seen.has(translation.toLowerCase())) {
+        terms.push(translation);
+        seen.add(translation.toLowerCase());
+      }
     }
   }
+
+  if (dbTranslations) {
+    const parsed = parseTranslationJson(dbTranslations);
+    for (const lang of SEARCH_LANGUAGES) {
+      const dbValue = parsed[lang];
+      if (dbValue && !seen.has(dbValue.toLowerCase())) {
+        terms.push(dbValue);
+        seen.add(dbValue.toLowerCase());
+      }
+    }
+  }
+
   return terms;
+}
+
+function parseTranslationJson(json: string): Record<string, string> {
+  try {
+    const parsed = JSON.parse(json) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, string>;
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return {};
 }
 
 /**
@@ -4008,3 +4049,34 @@ export function getAllSearchTerms(key: string): string[] {
  * Note: The app UI only supports 'de' and 'en' currently.
  */
 export const SEARCH_LANGUAGES: IngredientLocale[] = ['de', 'fr', 'it', 'es', 'nl', 'pt', 'pl'];
+
+/**
+ * Reverse-lookup: given a user-entered term in any language, returns the
+ * canonical English key if a matching translation is found.
+ *
+ * Example: findEnglishKey("Palmöl") → "Palm Oil"
+ *          findEnglishKey("Azúcar")  → "Sugar"
+ *          findEnglishKey("UnbekanntesZeug") → "UnbekanntesZeug" (no match)
+ *
+ * The match is case-insensitive.
+ */
+export function findEnglishKey(userInput: string): string {
+  const normalized = userInput.trim();
+  if (!normalized) return normalized;
+
+  const lower = normalized.toLowerCase();
+
+  for (const [englishKey, translations] of Object.entries(T)) {
+    if (englishKey.toLowerCase() === lower) {
+      return englishKey;
+    }
+    for (const lang of SEARCH_LANGUAGES) {
+      const translation = translations[lang];
+      if (translation && translation.toLowerCase() === lower) {
+        return englishKey;
+      }
+    }
+  }
+
+  return userInput;
+}

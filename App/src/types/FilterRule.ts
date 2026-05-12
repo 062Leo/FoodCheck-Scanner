@@ -10,6 +10,7 @@ export interface FilterRule {
   threshold?: number | null;
   operator?: FilterRuleOperator | null;
   severity: FilterRuleSeverity;
+  translations?: string | null;
   created_at: string;
 }
 

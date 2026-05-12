@@ -9,8 +9,8 @@ export class FilterRuleRepository {
 
       await database.runAsync(
         `
-          INSERT INTO filter_rules (type, key, category, threshold, operator, severity, created_at)
-          VALUES ($type, $key, $category, $threshold, $operator, $severity, $created_at);
+          INSERT INTO filter_rules (type, key, category, threshold, operator, severity, translations, created_at)
+          VALUES ($type, $key, $category, $threshold, $operator, $severity, $translations, $created_at);
         `,
         {
           $type: rule.type,
@@ -19,6 +19,7 @@ export class FilterRuleRepository {
           $threshold: rule.threshold ?? null,
           $operator: rule.operator ?? null,
           $severity: rule.severity,
+          $translations: rule.translations ?? null,
           $created_at: new Date().toISOString(),
         }
       );
@@ -44,6 +45,7 @@ export class FilterRuleRepository {
             threshold,
             operator,
             severity,
+            translations,
             created_at
           FROM filter_rules
           ORDER BY category ASC, created_at ASC, id ASC;
@@ -89,6 +91,11 @@ export class FilterRuleRepository {
       if (changes.severity !== undefined) {
         setClauses.push('severity = $severity');
         params.$severity = changes.severity;
+      }
+
+      if (changes.translations !== undefined) {
+        setClauses.push('translations = $translations');
+        params.$translations = changes.translations ?? null;
       }
 
       if (setClauses.length === 0) {

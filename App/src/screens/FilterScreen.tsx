@@ -12,7 +12,12 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from '../i18n/useTranslation';
-import { getIngredientTranslation } from '../domain/rules/ingredientTranslations';
+import {
+  getIngredientTranslation,
+  findEnglishKey,
+  SEARCH_LANGUAGES,
+} from '../domain/rules/ingredientTranslations';
+import { MyMemoryClient } from '../infrastructure/translation/MyMemoryClient';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useFilterStore } from '../store/filterStore';
@@ -77,6 +82,22 @@ const emptyFormState: RuleFormState = {
   severity: 'red_flag',
 };
 
+async function translateIngredient(text: string): Promise<string | null> {
+  const client = new MyMemoryClient();
+  const result: Record<string, string> = {};
+  for (const lang of SEARCH_LANGUAGES) {
+    try {
+      const translated = await client.translate(text, lang.toUpperCase());
+      if (translated && translated !== text) {
+        result[lang] = translated;
+      }
+    } catch {
+      // skip individual failures
+    }
+  }
+  return Object.keys(result).length > 0 ? JSON.stringify(result) : null;
+}
+
 export default function FilterScreen() {
   const { t, language } = useTranslation();
   const rules = useFilterStore((state) => state.rules);
@@ -127,7 +148,9 @@ export default function FilterScreen() {
         const catMatch = category.toLowerCase().includes(q);
         const matchingRules = categoryRules.filter((rule) => {
           const displayKey =
-            rule.type === 'ingredient' ? getIngredientTranslation(rule.key, language) : rule.key;
+            rule.type === 'ingredient'
+              ? getIngredientTranslation(rule.key, language, rule.translations)
+              : rule.key;
           return (
             rule.key.toLowerCase().includes(q) ||
             displayKey.toLowerCase().includes(q) ||
@@ -194,8 +217,8 @@ export default function FilterScreen() {
     const category = formState.category.trim();
 
     if (formState.type === 'ingredient') {
-      const key = formState.ingredientKey.trim();
-      if (!key) {
+      const rawKey = formState.ingredientKey.trim();
+      if (!rawKey) {
         Alert.alert(t('filter.missing'), 'Bitte einen Zutatenbegriff eingeben.');
         return;
       }
@@ -204,13 +227,21 @@ export default function FilterScreen() {
         return;
       }
 
+      const canonicalKey = findEnglishKey(rawKey);
+      let translations: string | null = null;
+
+      if (canonicalKey === rawKey && !editingRule) {
+        translations = await translateIngredient(rawKey);
+      }
+
       const payload: NewFilterRule = {
         type: 'ingredient',
-        key,
+        key: canonicalKey,
         category,
         threshold: null,
         operator: null,
         severity: formState.severity,
+        translations,
       };
 
       if (editingRule) {
@@ -249,7 +280,9 @@ export default function FilterScreen() {
 
   const confirmDelete = (rule: FilterRule) => {
     const displayName =
-      rule.type === 'ingredient' ? getIngredientTranslation(rule.key, language) : rule.key;
+      rule.type === 'ingredient'
+        ? getIngredientTranslation(rule.key, language, rule.translations)
+        : rule.key;
     Alert.alert(t('filter.deleteTitle'), `"${displayName}" wirklich entfernen?`, [
       { text: t('edit.cancel'), style: 'cancel' },
       {
@@ -332,7 +365,7 @@ export default function FilterScreen() {
               <Pressable onPress={() => openEditModal(rule)} style={styles.ruleContent}>
                 <Text style={styles.ruleKey} numberOfLines={1}>
                   {rule.type === 'ingredient'
-                    ? getIngredientTranslation(rule.key, language)
+                    ? getIngredientTranslation(rule.key, language, rule.translations)
                     : rule.key}
                 </Text>
                 <View style={styles.ruleBadges}>

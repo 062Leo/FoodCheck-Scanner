@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { seedRules } from '../../domain/rules/seedRules';
 
 const DATABASE_NAME = 'foodscanner.db';
-const DATABASE_VERSION = 5;
+const DATABASE_VERSION = 6;
 const META_SCHEMA_VERSION_KEY = 'schema_version';
 
 type Migration = (database: SQLite.SQLiteDatabase) => Promise<void>;
@@ -17,6 +17,7 @@ const migrations: Record<number, Migration> = {
   3: addProductStorageColumns,
   4: addVisitTrackingColumns,
   5: addCategoryColumn,
+  6: addTranslationsColumn,
 };
 
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -202,6 +203,7 @@ async function createInitialSchema(database: SQLite.SQLiteDatabase): Promise<voi
         threshold REAL,
         operator TEXT,
         severity TEXT NOT NULL,
+        translations TEXT,
         created_at TEXT NOT NULL
       );
     `);
@@ -350,6 +352,19 @@ async function addCategoryColumn(database: SQLite.SQLiteDatabase): Promise<void>
     throw new Error(`Failed to seed missing filter rules: ${getErrorMessage(error)}`, {
       cause: error,
     });
+  }
+}
+
+async function addTranslationsColumn(database: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    await database.execAsync(`
+      ALTER TABLE filter_rules ADD COLUMN translations TEXT;
+    `);
+  } catch (error) {
+    const message = getErrorMessage(error);
+    if (!message.includes('duplicate column name') && !message.includes('already exists')) {
+      throw new Error(`Failed to add translations column: ${message}`, { cause: error });
+    }
   }
 }
 
