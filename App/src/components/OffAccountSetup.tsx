@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Linking,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { OpenFoodFactsWriteClient } from '../infrastructure/api/OpenFoodFactsWriteClient';
 
 interface OffAccountSetupProps {
@@ -20,6 +21,7 @@ interface OffAccountSetupProps {
 export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetupProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,8 +37,8 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
       const client = new OpenFoodFactsWriteClient();
       await client.saveCredentials(username.trim(), password);
       onSuccess();
-    } catch {
-      setError('Failed to save credentials');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save credentials');
     } finally {
       setIsSaving(false);
     }
@@ -72,16 +74,28 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
             />
 
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Password"
-              placeholderTextColor="#757575"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Password"
+                placeholderTextColor="#757575"
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={20}
+                  color="#757575"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -149,6 +163,24 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
     fontSize: 16,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    color: '#FFF',
+    padding: 12,
+    fontSize: 16,
+  },
+  eyeButton: {
+    padding: 12,
   },
   errorText: { color: '#F44336', marginBottom: 16, fontSize: 14 },
   buttonRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },

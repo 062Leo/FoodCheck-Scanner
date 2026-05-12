@@ -30,11 +30,77 @@ describe('OpenFoodFactsWriteClient', () => {
   });
 
   describe('saveCredentials', () => {
-    it('should store username and password', async () => {
+    it('should store username and password after verification', async () => {
+      (fetch as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: async () => '',
+      });
+
       await client.saveCredentials('testuser', 'testpass');
 
+      expect(fetch).toHaveBeenCalledTimes(1);
       expect(SecureStore.setItemAsync).toHaveBeenCalledWith('off_username', 'testuser');
       expect(SecureStore.setItemAsync).toHaveBeenCalledWith('off_password', 'testpass');
+    });
+
+    it('should reject with invalid credentials', async () => {
+      (fetch as jest.Mock).mockResolvedValue({
+        status: 403,
+        text: async () => 'Invalid user or password',
+      });
+
+      await expect(client.saveCredentials('baduser', 'badpass')).rejects.toThrow(
+        'Invalid username or password'
+      );
+      expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('verifyCredentials', () => {
+    it('should resolve for valid credentials', async () => {
+      (fetch as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: async () => '',
+      });
+
+      await expect(client.verifyCredentials('testuser', 'testpass')).resolves.toBeUndefined();
+    });
+
+    it('should reject on HTTP 403', async () => {
+      (fetch as jest.Mock).mockResolvedValue({
+        status: 403,
+        text: async () => '',
+      });
+
+      await expect(client.verifyCredentials('baduser', 'badpass')).rejects.toThrow(
+        'Invalid username or password'
+      );
+    });
+
+    it('should reject when body contains auth error text', async () => {
+      (fetch as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: async () => 'Invalid user or password',
+      });
+
+      await expect(client.verifyCredentials('baduser', 'badpass')).rejects.toThrow(
+        'Invalid username or password'
+      );
+    });
+
+    it('should post credentials to product_jqm2 endpoint', async () => {
+      (fetch as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: async () => '',
+      });
+
+      await client.verifyCredentials('testuser', 'testpass');
+
+      const url = (fetch as jest.Mock).mock.calls[0][0] as string;
+      expect(url).toContain('/cgi/product_jqm2.pl');
+      const body = (fetch as jest.Mock).mock.calls[0][1].body as FormData;
+      expect(body.get('user_id')).toBe('testuser');
+      expect(body.get('password')).toBe('testpass');
     });
   });
 

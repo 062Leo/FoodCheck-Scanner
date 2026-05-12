@@ -68,7 +68,40 @@ export type NutrimentPayload = Pick<
 export class OpenFoodFactsWriteClient {
   private readonly uploadUrl = `${BASE_URL}/cgi/product_jqm2.pl`;
 
+  async verifyCredentials(username: string, password: string): Promise<void> {
+    const formData = new FormData();
+    formData.append('user_id', username);
+    formData.append('password', password);
+
+    const headers: Record<string, string> = {
+      'User-Agent': USER_AGENT,
+    };
+    if (USE_STAGING) {
+      headers['Authorization'] = STAGING_AUTH;
+    }
+
+    const response = await fetch(this.uploadUrl, {
+      method: 'POST',
+      body: formData,
+      headers,
+    });
+
+    // OFF returns HTTP 403 for invalid credentials (before checking product fields)
+    if (response.status === 403) {
+      throw new Error('Invalid username or password');
+    }
+
+    const text = await response.text();
+    if (
+      text.includes('Invalid user') ||
+      text.includes('Invalid password')
+    ) {
+      throw new Error('Invalid username or password');
+    }
+  }
+
   async saveCredentials(username: string, password: string): Promise<void> {
+    await this.verifyCredentials(username, password);
     await SecureStore.setItemAsync('off_username', username);
     await SecureStore.setItemAsync('off_password', password);
   }
