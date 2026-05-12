@@ -8,10 +8,12 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from '../i18n/useTranslation';
 import { useSettingsStore } from '../store/settingsStore';
 import type { TranslationProvider } from '../infrastructure/translation/TranslationRouter';
 
 export default function ApiKeyScreen() {
+  const { t } = useTranslation();
   const {
     provider,
     hasDeepLKey,
@@ -43,15 +45,15 @@ export default function ApiKeyScreen() {
       await saveMyMemoryKey(input.trim());
     }
     setInput('');
-    Alert.alert('Gespeichert', 'API Key wurde sicher gespeichert.');
+    Alert.alert(t('api.saved'), 'API Key wurde sicher gespeichert.');
   };
 
   const handleDelete = async () => {
     const label = selected === 'deepl' ? 'DeepL' : 'MyMemory';
-    Alert.alert('Key entfernen', `Möchtest du den ${label} API Key wirklich löschen?`, [
-      { text: 'Abbrechen', style: 'cancel' },
+    Alert.alert(t('api.removeKey'), `Möchtest du den ${label} API Key wirklich löschen?`, [
+      { text: t('edit.cancel'), style: 'cancel' },
       {
-        text: 'Löschen',
+        text: t('filter.delete'),
         style: 'destructive',
         onPress: async () => {
           if (selected === 'deepl') {
@@ -59,7 +61,7 @@ export default function ApiKeyScreen() {
           } else {
             await deleteMyMemoryKey();
           }
-          Alert.alert('Gelöscht', 'API Key wurde entfernt.');
+          Alert.alert(t('api.removed'), 'API Key wurde entfernt.');
         },
       },
     ]);

@@ -138,6 +138,114 @@ describe('RedFlagAnalyzer', () => {
     });
   });
 
+  describe('multi-language ingredient matching', () => {
+    const multiLangRules: FilterRule[] = [
+      {
+        id: 100,
+        type: 'ingredient',
+        key: 'Palm Oil',
+        category: 'Kritische Öle',
+        threshold: null,
+        operator: null,
+        severity: 'red_flag',
+        created_at: '2026-05-13T10:00:00.000Z',
+      },
+      {
+        id: 101,
+        type: 'ingredient',
+        key: 'Sugar',
+        category: 'Zucker & Sirupe',
+        threshold: null,
+        operator: null,
+        severity: 'red_flag',
+        created_at: '2026-05-13T10:00:00.000Z',
+      },
+    ];
+
+    it('should match German translation of Palm Oil (Palmöl)', () => {
+      const result = analyzer.analyze('Wasser, Palmöl, Salz', multiLangRules);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        ingredient: 'Palmöl',
+        category: 'Kritische Öle',
+        severity: 'critical',
+      });
+    });
+
+    it('should match French translation of Palm Oil (Huile de palme)', () => {
+      const result = analyzer.analyze('Eau, Huile de palme, Sel', multiLangRules);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        ingredient: 'Huile de palme',
+        category: 'Kritische Öle',
+        severity: 'critical',
+      });
+    });
+
+    it('should match Italian translation of Palm Oil (Olio di palma)', () => {
+      const result = analyzer.analyze('Acqua, Olio di palma, Sale', multiLangRules);
+      expect(result).toHaveLength(1);
+      expect(result[0].ingredient).toBe('Olio di palma');
+    });
+
+    it('should match Spanish translation of Sugar (Azúcar)', () => {
+      const result = analyzer.analyze('Agua, Azúcar, Sal', multiLangRules);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        ingredient: 'Azúcar',
+        category: 'Zucker & Sirupe',
+        severity: 'critical',
+      });
+    });
+
+    it('should match Dutch translation of Palm Oil (Palmolie)', () => {
+      const result = analyzer.analyze('Water, Palmolie, Zout', multiLangRules);
+      expect(result).toHaveLength(1);
+      expect(result[0].ingredient).toBe('Palmolie');
+    });
+
+    it('should match Polish translation of Sugar (Cukier)', () => {
+      const result = analyzer.analyze('Woda, Cukier, Sól', multiLangRules);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        ingredient: 'Cukier',
+        category: 'Zucker & Sirupe',
+      });
+    });
+
+    it('should block all translations when an ok rule is present', () => {
+      const okRule: FilterRule = {
+        id: 200,
+        type: 'ingredient',
+        key: 'Palm Oil',
+        category: 'Kritische Öle',
+        threshold: null,
+        operator: null,
+        severity: 'ok',
+        created_at: '2026-05-13T10:00:00.000Z',
+      };
+      const allRules = [...multiLangRules, okRule];
+      const result = analyzer.analyze('Wasser, Palmöl, Salz', allRules);
+      expect(result).toHaveLength(0);
+    });
+
+    it('should match E-numbers without translations (universal)', () => {
+      const eNumberRule: FilterRule = {
+        id: 300,
+        type: 'ingredient',
+        key: 'E102',
+        category: 'Farbstoffe',
+        threshold: null,
+        operator: null,
+        severity: 'red_flag',
+        created_at: '2026-05-13T10:00:00.000Z',
+      };
+      const result = analyzer.analyze('Wasser, Farbstoff E102, Salz', [eNumberRule]);
+      expect(result).toHaveLength(1);
+      expect(result[0].ingredient).toBe('E102');
+    });
+  });
+
   describe('analyzeTaxonomy', () => {
     it('should detect high-risk additives like Natriumnitrit (E250)', () => {
       const result = analyzer.analyzeTaxonomy('Schweinefleisch, Speck, Natriumnitrit, Gewürze');

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { OpenFoodFactsWriteClient } from '../infrastructure/api/OpenFoodFactsWriteClient';
+import { useTranslation } from '../i18n/useTranslation';
 
 interface OffAccountSetupProps {
   visible: boolean;
@@ -19,6 +20,7 @@ interface OffAccountSetupProps {
 }
 
 export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetupProps) {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -27,7 +29,7 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
 
   const handleSave = async () => {
     if (!username.trim() || !password.trim()) {
-      setError('Username and password are required');
+      setError(t('off.required'));
       return;
     }
 
@@ -38,7 +40,7 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
       await client.saveCredentials(username.trim(), password);
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save credentials');
+      setError(err instanceof Error ? err.message : t('off.saveError'));
     } finally {
       setIsSaving(false);
     }
@@ -52,34 +54,32 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
     <Modal visible={visible} animationType="fade" transparent>
       <View style={styles.overlay}>
         <View style={styles.container}>
-          <Text style={styles.title}>Set up Open Food Facts account</Text>
-          <Text style={styles.description}>
-            To contribute products, you need a free Open Food Facts account.
-          </Text>
+          <Text style={styles.title}>{t('off.title')}</Text>
+          <Text style={styles.description}>{t('off.description')}</Text>
 
           <TouchableOpacity onPress={openRegisterLink} style={styles.linkButton}>
-            <Text style={styles.linkText}>Register at openfoodfacts.org</Text>
+            <Text style={styles.linkText}>{t('off.register')}</Text>
           </TouchableOpacity>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Username</Text>
+            <Text style={styles.label}>{t('off.username')}</Text>
             <TextInput
               style={styles.input}
               value={username}
               onChangeText={setUsername}
-              placeholder="Username"
+              placeholder={t('off.usernamePlaceholder')}
               placeholderTextColor="#757575"
               autoCapitalize="none"
               autoCorrect={false}
             />
 
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>{t('off.password')}</Text>
             <View style={styles.passwordContainer}>
               <TextInput
                 style={styles.passwordInput}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Password"
+                placeholder={t('off.passwordPlaceholder')}
                 placeholderTextColor="#757575"
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
@@ -89,11 +89,7 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
                 style={styles.eyeButton}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Ionicons
-                  name={showPassword ? 'eye-off' : 'eye'}
-                  size={20}
-                  color="#757575"
-                />
+                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#757575" />
               </TouchableOpacity>
             </View>
           </View>
@@ -106,7 +102,7 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
               onPress={onCancel}
               disabled={isSaving}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('edit.cancel')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -121,7 +117,7 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
               {isSaving ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={styles.saveButtonText}>Save & Continue</Text>
+                <Text style={styles.saveButtonText}>{t('off.save')}</Text>
               )}
             </TouchableOpacity>
           </View>

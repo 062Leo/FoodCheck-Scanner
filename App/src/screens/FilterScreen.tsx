@@ -11,6 +11,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTranslation } from '../i18n/useTranslation';
+import { getIngredientTranslation } from '../domain/rules/ingredientTranslations';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useFilterStore } from '../store/filterStore';
@@ -76,6 +78,7 @@ const emptyFormState: RuleFormState = {
 };
 
 export default function FilterScreen() {
+  const { t, language } = useTranslation();
   const rules = useFilterStore((state) => state.rules);
   const isLoading = useFilterStore((state) => state.isLoading);
   const loadRules = useFilterStore((state) => state.loadRules);
@@ -105,7 +108,7 @@ export default function FilterScreen() {
     }
 
     for (const rule of rules) {
-      const cat = rule.category || 'Ohne Kategorie';
+      const cat = rule.category || t('filter.uncategorized');
       if (!groups[cat]) {
         groups[cat] = [];
       }
@@ -122,17 +125,21 @@ export default function FilterScreen() {
     return rawEntries
       .map(([category, categoryRules]) => {
         const catMatch = category.toLowerCase().includes(q);
-        const matchingRules = categoryRules.filter(
-          (rule) =>
+        const matchingRules = categoryRules.filter((rule) => {
+          const displayKey =
+            rule.type === 'ingredient' ? getIngredientTranslation(rule.key, language) : rule.key;
+          return (
             rule.key.toLowerCase().includes(q) ||
+            displayKey.toLowerCase().includes(q) ||
             rule.category.toLowerCase().includes(q) ||
             rule.type.toLowerCase().includes(q) ||
             rule.severity.toLowerCase().includes(q)
-        );
+          );
+        });
         return [category, catMatch ? categoryRules : matchingRules] as [string, FilterRule[]];
       })
       .filter(([, categoryRules]) => categoryRules.length > 0);
-  }, [rules, searchQuery]);
+  }, [rules, searchQuery, language]);
 
   const sections = useMemo(
     () =>
@@ -189,11 +196,11 @@ export default function FilterScreen() {
     if (formState.type === 'ingredient') {
       const key = formState.ingredientKey.trim();
       if (!key) {
-        Alert.alert('Fehlt', 'Bitte einen Zutatenbegriff eingeben.');
+        Alert.alert(t('filter.missing'), 'Bitte einen Zutatenbegriff eingeben.');
         return;
       }
       if (!category) {
-        Alert.alert('Fehlt', 'Bitte eine Kategorie auswählen.');
+        Alert.alert(t('filter.missing'), 'Bitte eine Kategorie auswählen.');
         return;
       }
 
@@ -218,14 +225,14 @@ export default function FilterScreen() {
 
     const thresholdValue = Number.parseFloat(formState.threshold.replace(',', '.'));
     if (Number.isNaN(thresholdValue)) {
-      Alert.alert('Fehlt', 'Bitte einen gültigen Grenzwert eingeben.');
+      Alert.alert(t('filter.missing'), 'Bitte einen gültigen Grenzwert eingeben.');
       return;
     }
 
     const payload: NewFilterRule = {
       type: 'nutrient',
       key: formState.nutrientKey,
-      category: category || 'Nährwerte',
+      category: category || t('filter.defaultNutrientCategory'),
       threshold: thresholdValue,
       operator: formState.operator,
       severity: formState.severity,
@@ -241,10 +248,12 @@ export default function FilterScreen() {
   };
 
   const confirmDelete = (rule: FilterRule) => {
-    Alert.alert('Regel löschen?', `"${rule.key}" wirklich entfernen?`, [
-      { text: 'Abbrechen', style: 'cancel' },
+    const displayName =
+      rule.type === 'ingredient' ? getIngredientTranslation(rule.key, language) : rule.key;
+    Alert.alert(t('filter.deleteTitle'), `"${displayName}" wirklich entfernen?`, [
+      { text: t('edit.cancel'), style: 'cancel' },
       {
-        text: 'Löschen',
+        text: t('filter.delete'),
         style: 'destructive',
         onPress: () => {
           void deleteRule(rule.id);
@@ -322,7 +331,9 @@ export default function FilterScreen() {
             <View style={styles.ruleRow}>
               <Pressable onPress={() => openEditModal(rule)} style={styles.ruleContent}>
                 <Text style={styles.ruleKey} numberOfLines={1}>
-                  {rule.key}
+                  {rule.type === 'ingredient'
+                    ? getIngredientTranslation(rule.key, language)
+                    : rule.key}
                 </Text>
                 <View style={styles.ruleBadges}>
                   <View
@@ -332,7 +343,9 @@ export default function FilterScreen() {
                     ]}
                   >
                     <Text style={styles.ruleBadgeText}>
-                      {rule.type === 'ingredient' ? 'ZUTAT' : 'NÄHRWERT'}
+                      {rule.type === 'ingredient'
+                        ? t('filter.type.ingredient')
+                        : t('filter.type.nutrient')}
                     </Text>
                   </View>
                   <View
@@ -342,7 +355,9 @@ export default function FilterScreen() {
                     ]}
                   >
                     <Text style={styles.ruleBadgeText}>
-                      {rule.severity === 'red_flag' ? 'FLAG' : 'OK'}
+                      {rule.severity === 'red_flag'
+                        ? t('filter.type.flag')
+                        : t('filter.severity.ok')}
                     </Text>
                   </View>
                 </View>
@@ -376,7 +391,7 @@ export default function FilterScreen() {
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {editingRule ? 'Regel bearbeiten' : 'Regel hinzufügen'}
+                {editingRule ? t('filter.editRule') : t('filter.addRule')}
               </Text>
               <TouchableOpacity onPress={closeModal}>
                 <Ionicons name="close" size={22} color="#FFFFFF" />
@@ -428,7 +443,7 @@ export default function FilterScreen() {
                           !formState.category && styles.selectButtonPlaceholder,
                         ]}
                       >
-                        {formState.category || 'Kategorie wählen…'}
+                        {formState.category || t('filter.field.categoryPlaceholder')}
                       </Text>
                       <Ionicons name="chevron-down" size={18} color="#D1D5DB" />
                     </TouchableOpacity>

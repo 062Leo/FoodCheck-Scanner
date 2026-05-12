@@ -6,8 +6,10 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import { Ionicons } from '@expo/vector-icons';
 import { ProductResolutionService } from '../infrastructure/resolution/ProductResolutionService';
+import { useTranslation } from '../i18n/useTranslation';
 
 export default function ScannerScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -143,7 +145,7 @@ export default function ScannerScreen() {
   if (!permission) {
     return (
       <View style={styles.container}>
-        <Text style={styles.permissionText}>Laden...</Text>
+        <Text style={styles.permissionText}>{t('scanner.loading')}</Text>
       </View>
     );
   }
@@ -151,9 +153,9 @@ export default function ScannerScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Kamerazugriff erforderlich</Text>
+        <Text style={styles.errorText}>{t('scanner.permission')}</Text>
         <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>Erlauben</Text>
+          <Text style={styles.permissionButtonText}>{t('scanner.allow')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -205,7 +207,7 @@ export default function ScannerScreen() {
           <View style={[styles.corner, styles.cornerBR]} />
         </Animated.View>
 
-        <Text style={styles.hintText}>Halte den Barcode rein</Text>
+        <Text style={styles.hintText}>{t('scanner.hint')}</Text>
 
         <View style={styles.controls}>
           <TouchableOpacity style={styles.controlBtn} onPress={toggleFacing}>
@@ -225,7 +227,7 @@ export default function ScannerScreen() {
 
         {isOffline && (
           <View style={styles.offlineBadge}>
-            <Text style={styles.offlineBadgeText}>Offline</Text>
+            <Text style={styles.offlineBadgeText}>{t('scanner.offline')}</Text>
           </View>
         )}
       </View>

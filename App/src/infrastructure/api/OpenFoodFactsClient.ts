@@ -163,6 +163,10 @@ export class OpenFoodFactsClient {
         const url = `${BASE_URL}/api/v2/product/${ean}?fields=${PRODUCT_FIELDS}`;
         const response = await fetch(url, { headers: buildHeaders() });
 
+        if (response.status === 404) {
+          return null;
+        }
+
         if (!response.ok) {
           throw ApiError.fromHttpStatus(response.status);
         }
@@ -176,7 +180,8 @@ export class OpenFoodFactsClient {
         return mapOffProduct(ean, data.product);
       } catch (_error) {
         if (_error instanceof ApiError && _error.retryable) throw _error;
-        throw new Error('Fehler beim Abrufen der Produktdaten', { cause: _error });
+        const detail = _error instanceof Error ? _error.message : String(_error);
+        throw new Error(`Fehler beim Abrufen der Produktdaten: ${detail}`, { cause: _error });
       }
     });
   }

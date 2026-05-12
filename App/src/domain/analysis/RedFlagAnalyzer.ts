@@ -4,6 +4,7 @@ import type { RedFlagRule } from '../rules/defaultRules';
 import { defaultRedFlagRules } from './defaultRedFlagRules';
 import { IngredientParser } from './IngredientParser';
 import { IngredientTaxonomy } from './IngredientTaxonomy';
+import { getAllSearchTerms } from '../rules/ingredientTranslations';
 
 type AnalyzerRule = RedFlagRule | FilterRule;
 
@@ -28,8 +29,14 @@ export class RedFlagAnalyzer {
 
     for (const rule of activeRules) {
       if (this.isFilterRule(rule) && rule.severity === 'ok') {
-        if (rule.type === 'ingredient' && lowerText.includes(rule.key.toLowerCase())) {
-          blockedKeys.add(this.normalizeRuleKey(rule.key));
+        if (rule.type === 'ingredient') {
+          const terms = getAllSearchTerms(rule.key);
+          for (const term of terms) {
+            if (lowerText.includes(term.toLowerCase())) {
+              blockedKeys.add(this.normalizeRuleKey(rule.key));
+              break;
+            }
+          }
         }
 
         if (
@@ -48,14 +55,29 @@ export class RedFlagAnalyzer {
         }
 
         if (rule.type === 'ingredient') {
-          const index = lowerText.indexOf(rule.key.toLowerCase());
-          if (index === -1 || blockedKeys.has(this.normalizeRuleKey(rule.key))) {
+          if (blockedKeys.has(this.normalizeRuleKey(rule.key))) {
+            continue;
+          }
+
+          const terms = getAllSearchTerms(rule.key);
+          let bestIndex = -1;
+          let matchedTerm = rule.key;
+
+          for (const term of terms) {
+            const index = lowerText.indexOf(term.toLowerCase());
+            if (index !== -1 && (bestIndex === -1 || index < bestIndex)) {
+              bestIndex = index;
+              matchedTerm = term;
+            }
+          }
+
+          if (bestIndex === -1) {
             continue;
           }
 
           found.push({
-            position: index,
-            ingredient: this.extractIngredient(ingredientsText, rule.key),
+            position: bestIndex,
+            ingredient: this.extractIngredient(ingredientsText, matchedTerm),
             category: rule.category,
             severity: 'critical',
           });

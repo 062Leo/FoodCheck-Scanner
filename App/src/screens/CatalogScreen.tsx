@@ -14,6 +14,7 @@ import { useCatalogStore } from '../store/catalogStore';
 import { ProductCard } from '../components/ProductCard';
 import { ProductRepository } from '../infrastructure/db/ProductRepository';
 import { ProductStatistics } from '../domain/analysis/ProductStatistics';
+import { useTranslation } from '../i18n/useTranslation';
 import type { ProductRecord } from '../types/Product';
 import type { ScanStatus } from '../types/ScanResult';
 import type { ProductStats } from '../domain/analysis/ProductStatistics';
@@ -23,12 +24,12 @@ type SortField = 'scanned_at' | 'name' | 'rating' | 'nova_score' | 'visit_count'
 type SortOrder = 'asc' | 'desc';
 
 const FILTER_OPTIONS: FilterStatus[] = ['All', 'OK', 'Warning', 'Critical'];
-const SORT_OPTIONS: { field: SortField; label: string }[] = [
-  { field: 'scanned_at', label: 'Datum' },
-  { field: 'name', label: 'Name' },
-  { field: 'rating', label: 'Bewertung' },
-  { field: 'nova_score', label: 'Nova' },
-  { field: 'visit_count', label: 'Häufigkeit' },
+const SORT_OPTIONS: { field: SortField; key: string }[] = [
+  { field: 'scanned_at', key: 'catalog.sort.date' },
+  { field: 'name', key: 'catalog.sort.name' },
+  { field: 'rating', key: 'catalog.sort.rating' },
+  { field: 'nova_score', key: 'catalog.sort.nova' },
+  { field: 'visit_count', key: 'catalog.sort.frequency' },
 ];
 
 interface CollectionSection {
@@ -39,6 +40,7 @@ interface CollectionSection {
 const repository = new ProductRepository();
 
 export default function CatalogScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const catalogStore = useCatalogStore();
 
@@ -52,6 +54,7 @@ export default function CatalogScreen() {
   const [searchResults, setSearchResults] = useState<ProductRecord[]>([]);
 
   const [showCollections, setShowCollections] = useState(false);
+  const [missingIngredientsOnly, setMissingIngredientsOnly] = useState(false);
 
   const stats = useMemo<ProductStats | null>(() => {
     const products = catalogStore.products;
@@ -153,13 +156,21 @@ export default function CatalogScreen() {
     [sortField, sortOrder]
   );
 
+  const missingIngredientsCount = useMemo(
+    () => catalogStore.products.filter((p) => !p.ingredients).length,
+    [catalogStore.products]
+  );
+
   const filteredProducts = useMemo(() => {
     let products = catalogStore.products;
     if (filter !== 'All') {
       products = products.filter((p) => p.rating === filter);
     }
+    if (missingIngredientsOnly) {
+      products = products.filter((p) => !p.ingredients);
+    }
     return sortProducts(products);
-  }, [filter, catalogStore.products, sortProducts]);
+  }, [filter, missingIngredientsOnly, catalogStore.products, sortProducts]);
 
   const isFavorite = useCallback(
     (productId: number | undefined) => {
@@ -197,11 +208,23 @@ export default function CatalogScreen() {
   };
 
   const collections: CollectionSection[] = [];
-  if (showCollections && mostScanned.length > 0 && filter === 'All' && !searchQuery) {
-    collections.push({ title: 'Meist gescannt', data: mostScanned });
+  if (
+    showCollections &&
+    mostScanned.length > 0 &&
+    filter === 'All' &&
+    !searchQuery &&
+    !missingIngredientsOnly
+  ) {
+    collections.push({ title: t('catalog.collection.mostScanned'), data: mostScanned });
   }
-  if (showCollections && highestRisk.length > 0 && filter === 'All' && !searchQuery) {
-    collections.push({ title: 'Höchstes Risiko', data: highestRisk });
+  if (
+    showCollections &&
+    highestRisk.length > 0 &&
+    filter === 'All' &&
+    !searchQuery &&
+    !missingIngredientsOnly
+  ) {
+    collections.push({ title: t('catalog.collection.highestRisk'), data: highestRisk });
   }
 
   if (isLoading) {
@@ -218,7 +241,7 @@ export default function CatalogScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Mein Katalog</Text>
+        <Text style={styles.title}>{t('catalog.title')}</Text>
         <TouchableOpacity onPress={() => setShowSearch(!showSearch)}>
           <Text style={styles.searchToggle}>{showSearch ? '✕' : '🔍'}</Text>
         </TouchableOpacity>
@@ -229,7 +252,7 @@ export default function CatalogScreen() {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Name, Marke oder EAN..."
+            placeholder={t('catalog.searchPlaceholder')}
             placeholderTextColor="#666"
             value={searchQuery}
             onChangeText={handleSearch}
@@ -247,11 +270,11 @@ export default function CatalogScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{stats.totalProducts}</Text>
-            <Text style={styles.statLabel}>Produkte</Text>
+            <Text style={styles.statLabel}>{t('catalog.products')}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{stats.totalScans}</Text>
-            <Text style={styles.statLabel}>Scans</Text>
+            <Text style={styles.statLabel}>{t('catalog.scans')}</Text>
           </View>
           <TouchableOpacity
             style={styles.statCard}
@@ -262,11 +285,11 @@ export default function CatalogScreen() {
                 ? `${Math.round(stats.ultraProcessedRatio * 100)}%`
                 : '–'}
             </Text>
-            <Text style={styles.statLabel}>Nova 4</Text>
+            <Text style={styles.statLabel}>{t('catalog.nova4')}</Text>
           </TouchableOpacity>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{stats.ratingDistribution['Critical'] || 0}</Text>
-            <Text style={styles.statLabel}>Kritisch</Text>
+            <Text style={styles.statLabel}>{t('catalog.critical')}</Text>
           </View>
         </View>
       )}
@@ -294,7 +317,7 @@ export default function CatalogScreen() {
                     sortField === opt.field && styles.sortChipTextActive,
                   ]}
                 >
-                  {opt.label}
+                  {t(opt.key)}
                   {sortField === opt.field ? (sortOrder === 'desc' ? ' ↓' : ' ↑') : ''}
                 </Text>
               </TouchableOpacity>
@@ -312,10 +335,32 @@ export default function CatalogScreen() {
             style={[styles.filterChip, filter === option && styles.filterChipActive]}
           >
             <Text style={[styles.filterChipText, filter === option && styles.filterChipTextActive]}>
-              {option === 'All' ? 'Alle' : option === 'Warning' ? 'Warnung' : option}
+              {option === 'All'
+                ? t('catalog.filter.all')
+                : option === 'Warning'
+                  ? t('catalog.filter.warning')
+                  : option}
             </Text>
           </TouchableOpacity>
         ))}
+
+        <TouchableOpacity
+          onPress={() => {
+            setMissingIngredientsOnly(!missingIngredientsOnly);
+            if (!missingIngredientsOnly) setFilter('All');
+          }}
+          style={[
+            styles.filterChip,
+            styles.needsIngredientsChip,
+            missingIngredientsOnly && styles.needsIngredientsChipActive,
+          ]}
+        >
+          <Text
+            style={[styles.filterChipText, missingIngredientsOnly && styles.filterChipTextActive]}
+          >
+            {t('catalog.filter.missingIngredients')} ({missingIngredientsCount})
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -343,7 +388,9 @@ export default function CatalogScreen() {
         ) : (
           !isSearching && (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Keine Ergebnisse für "{searchQuery}"</Text>
+              <Text style={styles.emptyText}>
+                {t('catalog.empty.noResults', { query: searchQuery })}
+              </Text>
             </View>
           )
         )
@@ -352,7 +399,7 @@ export default function CatalogScreen() {
         <SectionList
           sections={[
             ...collections.map((c) => ({ title: c.title, data: c.data })),
-            { title: 'Alle Produkte', data: filteredProducts },
+            { title: t('catalog.section.allProducts'), data: filteredProducts },
           ]}
           keyExtractor={(item) => item.ean}
           extraData={catalogStore.favorites}
@@ -401,9 +448,13 @@ export default function CatalogScreen() {
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {filter === 'All'
-              ? 'Noch keine Produkte gescannt'
-              : `Keine Produkte mit Status "${filter === 'Warning' ? 'Warnung' : filter}"`}
+            {missingIngredientsOnly
+              ? t('catalog.empty.noMissingIngredients')
+              : filter === 'All'
+                ? t('catalog.empty.noProducts')
+                : t('catalog.empty.statusFilter', {
+                    status: filter === 'Warning' ? t('catalog.filter.warning') : filter,
+                  })}
           </Text>
         </View>
       )}
@@ -496,6 +547,15 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
   filterChipText: { fontSize: 12, fontWeight: '600', color: '#bbb' },
   filterChipTextActive: { color: '#fff' },
+  needsIngredientsChip: {
+    borderColor: '#FF9800',
+    borderStyle: 'dashed',
+  },
+  needsIngredientsChipActive: {
+    backgroundColor: '#FF9800',
+    borderColor: '#FF9800',
+    borderStyle: 'solid',
+  },
 
   // Section
   sectionTitle: {

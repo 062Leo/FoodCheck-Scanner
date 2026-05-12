@@ -25,6 +25,7 @@ import { Accordion } from '../components/Accordion';
 import type { NovaScore, ProductRecord } from '../types/Product';
 import { DeepLClient } from '../infrastructure/translation/DeepLClient';
 import { TranslationRouter } from '../infrastructure/translation/TranslationRouter';
+import { useTranslation } from '../i18n/useTranslation';
 
 const repo = new ProductRepository();
 const writeClient = new OpenFoodFactsWriteClient();
@@ -39,8 +40,12 @@ export default function EditProductScreen() {
   const router = useRouter();
   const { ean } = useLocalSearchParams<{ ean: string }>();
   const catalogStore = useCatalogStore();
+  const { t } = useTranslation();
 
-  const [cameraTarget, setCameraTarget] = useState<'ingredients' | 'nutriments' | null>(null);
+  const [cameraTarget, setCameraTarget] = useState<{
+    mode: 'ingredients' | 'nutriments';
+    lang?: string;
+  } | null>(null);
 
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -114,10 +119,10 @@ export default function EditProductScreen() {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
       e.preventDefault();
 
-      Alert.alert('Ungespeicherte Änderungen', 'Bist du sicher? Deine Änderungen gehen verloren.', [
-        { text: 'Abbrechen', style: 'cancel' },
+      Alert.alert(t('edit.unsavedTitle'), t('edit.unsavedMsg'), [
+        { text: t('edit.cancel'), style: 'cancel' },
         {
-          text: 'Verwerfen',
+          text: t('edit.discard'),
           style: 'destructive',
           onPress: () => navigation.dispatch(e.data.action),
         },
@@ -288,20 +293,27 @@ export default function EditProductScreen() {
                 <View style={styles.langActions}>
                   <TouchableOpacity
                     style={styles.langActionBtn}
+                    onPress={() => setCameraTarget({ mode: 'ingredients', lang })}
+                  >
+                    <Ionicons name="camera" size={16} color="#FF9800" />
+                    <Text style={styles.scanBtnText}>{t('edit.scan')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.langActionBtn}
                     onPress={() => {
                       setTranslateSourceLang(lang);
                       setShowLangPicker(true);
                     }}
                   >
                     <Ionicons name="language-outline" size={16} color="#4CAF50" />
-                    <Text style={styles.translateBtnText}>Translate</Text>
+                    <Text style={styles.translateBtnText}>{t('edit.translate')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.langActionBtn}
                     onPress={() => handleRemoveLanguage(lang)}
                   >
                     <Ionicons name="trash-outline" size={16} color="#F44336" />
-                    <Text style={styles.removeLangBtnText}>Entfernen</Text>
+                    <Text style={styles.removeLangBtnText}>{t('edit.remove')}</Text>
                   </TouchableOpacity>
                 </View>
                 <TextInput
@@ -309,7 +321,7 @@ export default function EditProductScreen() {
                   value={text}
                   onChangeText={(v) => handleIngredientsLangChange(lang, v)}
                   multiline
-                  placeholder={`Zutaten (${getLangLabel(lang)})...`}
+                  placeholder={t('edit.ingredients.placeholder', { lang: getLangLabel(lang) })}
                   placeholderTextColor="#555"
                 />
               </View>
@@ -330,7 +342,7 @@ export default function EditProductScreen() {
             }}
           >
             <Ionicons name="add-circle-outline" size={18} color="#4CAF50" />
-            <Text style={styles.addLangBtnText}>Sprache hinzufügen</Text>
+            <Text style={styles.addLangBtnText}>{t('edit.addLanguage')}</Text>
           </TouchableOpacity>
         )}
       </>
@@ -353,7 +365,7 @@ export default function EditProductScreen() {
   const handleTranslateTo = async (sourceLang: string, targetLang: string) => {
     const sourceText = ingredientsTextByLang[sourceLang];
     if (!sourceText?.trim()) {
-      Alert.alert('Kein Text', 'Die Quellsprache enthält keinen Text zum Übersetzen.');
+      Alert.alert(t('edit.translate.noText'), t('edit.translate.noTextMsg'));
       return;
     }
 
@@ -361,11 +373,7 @@ export default function EditProductScreen() {
     if (provider === 'deepl') {
       const apiKey = await deepLClient.getApiKey();
       if (!apiKey) {
-        Alert.alert(
-          'Kein API Key',
-          'Bitte hinterlege zuerst einen DeepL API Key in den Einstellungen.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert(t('edit.translate.noKey'), t('edit.translate.noKeyMsg'), [{ text: 'OK' }]);
         return;
       }
     }
@@ -378,7 +386,7 @@ export default function EditProductScreen() {
       const translated = await translationRouter.translate(sourceText, targetLang);
       setIngredientsTextByLang((prev) => ({ ...prev, [targetLang]: translated }));
     } catch {
-      Alert.alert('Fehler', 'Übersetzung fehlgeschlagen.');
+      Alert.alert(t('edit.translate.failed'), t('edit.translate.failedMsg'));
     } finally {
       setIsLoading(false);
     }
@@ -387,7 +395,7 @@ export default function EditProductScreen() {
   const handleTranslateAllLanguages = async (sourceLang: string) => {
     const sourceText = ingredientsTextByLang[sourceLang];
     if (!sourceText?.trim()) {
-      Alert.alert('Kein Text', 'Die Quellsprache enthält keinen Text zum Übersetzen.');
+      Alert.alert(t('edit.translate.noText'), t('edit.translate.noTextMsg'));
       return;
     }
 
@@ -395,18 +403,14 @@ export default function EditProductScreen() {
     if (provider === 'deepl') {
       const apiKey = await deepLClient.getApiKey();
       if (!apiKey) {
-        Alert.alert(
-          'Kein API Key',
-          'Bitte hinterlege zuerst einen DeepL API Key in den Einstellungen.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert(t('edit.translate.noKey'), t('edit.translate.noKeyMsg'), [{ text: 'OK' }]);
         return;
       }
     }
 
     const targets = [...availableLangs];
     if (targets.length === 0) {
-      Alert.alert('Bereits vollständig', 'Alle Sprachen sind bereits vorhanden.');
+      Alert.alert(t('edit.translate.complete'), t('edit.translate.completeMsg'));
       return;
     }
 
@@ -429,8 +433,8 @@ export default function EditProductScreen() {
 
     if (failedCount > 0) {
       Alert.alert(
-        'Teilweise fehlgeschlagen',
-        `${failedCount} von ${targets.length} Übersetzungen fehlgeschlagen.`
+        t('edit.translate.partial'),
+        t('edit.translate.partialMsg', { n: failedCount, m: targets.length })
       );
     }
   };
@@ -444,10 +448,10 @@ export default function EditProductScreen() {
   };
 
   const handleOcrConfirm = (text: string) => {
-    if (cameraTarget === 'ingredients') {
-      const cleaned = OcrService.cleanIngredientsText(text);
-      setIngredientsText(cleaned || text);
-    } else if (cameraTarget === 'nutriments') {
+    const target = cameraTarget;
+    if (!target) return;
+
+    if (target.mode === 'nutriments') {
       const parsed = OcrService.parseNutriments(text);
       if (parsed.energyKcal100g !== undefined) setEnergy(parsed.energyKcal100g.toString());
       if (parsed.fat100g !== undefined) setFat(parsed.fat100g.toString());
@@ -457,6 +461,10 @@ export default function EditProductScreen() {
       if (parsed.fiber100g !== undefined) setFiber(parsed.fiber100g.toString());
       if (parsed.proteins100g !== undefined) setProteins(parsed.proteins100g.toString());
       if (parsed.salt100g !== undefined) setSalt(parsed.salt100g.toString());
+    } else if (target.lang) {
+      setIngredientsTextByLang((prev) => ({ ...prev, [target.lang!]: text }));
+    } else {
+      setIngredientsText(text);
     }
     setCameraTarget(null);
   };
@@ -593,7 +601,7 @@ export default function EditProductScreen() {
       });
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
-      setToastMessage(`Upload fehlgeschlagen:\n${errorMessage}`);
+      setToastMessage(t('edit.uploadFailed', { error: errorMessage }));
       setToastType('error');
     } finally {
       setIsUploading(false);
@@ -612,19 +620,34 @@ export default function EditProductScreen() {
 
   const nutritionContent = (
     <View>
-      <FieldRow label="Energie (kcal)" value={energyKcal100g} onChange={setEnergy} numeric />
-      <FieldRow label="Fett (g)" value={fat100g} onChange={setFat} numeric />
       <FieldRow
-        label="Gesättigte Fettsäuren (g)"
+        label={t('edit.field.energy')}
+        value={energyKcal100g}
+        onChange={setEnergy}
+        numeric
+      />
+      <FieldRow label={t('edit.field.fat')} value={fat100g} onChange={setFat} numeric />
+      <FieldRow
+        label={t('edit.field.saturatedFat')}
         value={saturatedFat100g}
         onChange={setSatFat}
         numeric
       />
-      <FieldRow label="Kohlenhydrate (g)" value={carbohydrates100g} onChange={setCarbs} numeric />
-      <FieldRow label="Zucker (g)" value={sugars100g} onChange={setSugars} numeric />
-      <FieldRow label="Ballaststoffe (g)" value={fiber100g} onChange={setFiber} numeric />
-      <FieldRow label="Protein (g)" value={proteins100g} onChange={setProteins} numeric />
-      <FieldRow label="Salz (g)" value={salt100g} onChange={setSalt} numeric />
+      <FieldRow
+        label={t('edit.field.carbs')}
+        value={carbohydrates100g}
+        onChange={setCarbs}
+        numeric
+      />
+      <FieldRow label={t('edit.field.sugar')} value={sugars100g} onChange={setSugars} numeric />
+      <FieldRow label={t('edit.field.fiber')} value={fiber100g} onChange={setFiber} numeric />
+      <FieldRow
+        label={t('edit.field.protein')}
+        value={proteins100g}
+        onChange={setProteins}
+        numeric
+      />
+      <FieldRow label={t('edit.field.salt')} value={salt100g} onChange={setSalt} numeric />
     </View>
   );
 
@@ -632,7 +655,9 @@ export default function EditProductScreen() {
     <View style={styles.container}>
       <OcrCameraSheet
         visible={cameraTarget !== null}
-        mode={cameraTarget ?? 'ingredients'}
+        mode={cameraTarget?.mode ?? 'ingredients'}
+        barcode={ean ?? ''}
+        lang={cameraTarget?.lang}
         onConfirm={handleOcrConfirm}
         onCancel={() => setCameraTarget(null)}
       />
@@ -640,9 +665,9 @@ export default function EditProductScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>← Zurück</Text>
+          <Text style={styles.backText}>{t('edit.back')}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Produkt bearbeiten</Text>
+        <Text style={styles.headerTitle}>{t('edit.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -653,31 +678,38 @@ export default function EditProductScreen() {
       >
         {/* Product identity */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Produktinformationen</Text>
-          <FieldRow label="Name" value={name} onChange={setName} />
-          <FieldRow label="Marke" value={brand} onChange={setBrand} />
-          <FieldRow label="Menge" value={quantity} onChange={setQuantity} />
+          <Text style={styles.sectionTitle}>{t('edit.section.product')}</Text>
+          <FieldRow label={t('edit.field.name')} value={name} onChange={setName} />
+          <FieldRow label={t('edit.field.brand')} value={brand} onChange={setBrand} />
+          <FieldRow label={t('edit.field.quantity')} value={quantity} onChange={setQuantity} />
         </View>
 
         {/* Category & NOVA */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bewertung</Text>
-          <FieldRow label="Kategorie" value={category} onChange={setCategory} />
-          <FieldRow label="NOVA (1–4)" value={novaScore} onChange={setNovaScore} numeric />
+          <Text style={styles.sectionTitle}>{t('edit.section.rating')}</Text>
+          <FieldRow label={t('edit.field.category')} value={category} onChange={setCategory} />
+          <FieldRow
+            label={t('edit.field.nova')}
+            value={novaScore}
+            onChange={setNovaScore}
+            numeric
+          />
         </View>
 
         {/* Ingredients */}
         <View style={styles.section}>
           <View style={styles.labelRow}>
-            <Text style={styles.sectionTitle}>Zutaten</Text>
-            <TouchableOpacity onPress={() => setCameraTarget('ingredients')}>
-              <Ionicons name="camera" size={22} color="#4CAF50" />
-            </TouchableOpacity>
+            <Text style={styles.sectionTitle}>{t('edit.section.ingredients')}</Text>
           </View>
           {ingredientsAccordionContent && (
             <View style={{ paddingBottom: 16 }}>
               <Accordion
-                items={[{ title: 'Zutatenliste', content: ingredientsAccordionContent }]}
+                items={[
+                  {
+                    title: t('edit.section.ingredientsList'),
+                    content: ingredientsAccordionContent,
+                  },
+                ]}
               />
             </View>
           )}
@@ -702,8 +734,10 @@ export default function EditProductScreen() {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>
                   {translateSourceLang
-                    ? `Übersetzen von ${getLangLabel(translateSourceLang)}`
-                    : 'Sprache wählen'}
+                    ? t('edit.langPicker.translateFrom', {
+                        lang: getLangLabel(translateSourceLang),
+                      })
+                    : t('edit.langPicker.choose')}
                 </Text>
                 <FlatList
                   data={modalLangOptions}
@@ -723,7 +757,7 @@ export default function EditProductScreen() {
                         ]}
                       >
                         {lang === ALL_LANGS_SENTINEL
-                          ? 'Alle Sprachen'
+                          ? t('edit.langPicker.all')
                           : (() => {
                               const labels: Record<string, string> = {
                                 de: 'Deutsch',
@@ -750,41 +784,47 @@ export default function EditProductScreen() {
         {/* Nutrition */}
         <View style={styles.section}>
           <View style={styles.labelRow}>
-            <Text style={styles.sectionTitle}>Nährwerte pro 100 g</Text>
-            <TouchableOpacity onPress={() => setCameraTarget('nutriments')}>
+            <Text style={styles.sectionTitle}>{t('edit.section.nutrition')}</Text>
+            <TouchableOpacity onPress={() => setCameraTarget({ mode: 'nutriments' })}>
               <Ionicons name="camera" size={22} color="#4CAF50" />
             </TouchableOpacity>
           </View>
-          <Accordion items={[{ title: 'Nährwerte bearbeiten', content: nutritionContent }]} />
+          <Accordion
+            items={[{ title: t('edit.section.nutritionEdit'), content: nutritionContent }]}
+          />
         </View>
 
         {/* Allergens */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Allergene</Text>
+          <Text style={styles.sectionTitle}>{t('edit.section.allergens')}</Text>
           <FieldRow
-            label="Enthält (durch Komma getrennt)"
+            label={t('edit.field.contains')}
             value={allergensTags}
             onChange={setAllergensTags}
           />
-          <FieldRow label="Kann Spuren enthalten von" value={traces} onChange={setTraces} />
+          <FieldRow label={t('edit.field.traces')} value={traces} onChange={setTraces} />
         </View>
 
         {/* Additional info */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Weitere Informationen</Text>
-          <FieldRow label="Herkunft" value={origins} onChange={setOrigins} />
+          <Text style={styles.sectionTitle}>{t('edit.section.more')}</Text>
+          <FieldRow label={t('edit.field.origin')} value={origins} onChange={setOrigins} />
           <FieldRow
-            label="Herstellungsort"
+            label={t('edit.field.manufacturingPlace')}
             value={manufacturingPlaces}
             onChange={setManufacturingPlaces}
           />
-          <FieldRow label="Geschäfte" value={stores} onChange={setStores} />
-          <FieldRow label="Portionsgröße" value={servingSize} onChange={setServingSize} />
+          <FieldRow label={t('edit.field.stores')} value={stores} onChange={setStores} />
+          <FieldRow
+            label={t('edit.field.servingSize')}
+            value={servingSize}
+            onChange={setServingSize}
+          />
         </View>
 
         {/* Buttons */}
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-          <Text style={styles.saveBtnText}>Speichern</Text>
+          <Text style={styles.saveBtnText}>{t('edit.save')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -795,12 +835,12 @@ export default function EditProductScreen() {
           {isUploading ? (
             <ActivityIndicator color="#000" />
           ) : (
-            <Text style={styles.uploadBtnText}>Upload to Open Food Facts</Text>
+            <Text style={styles.uploadBtnText}>{t('edit.uploadOff')}</Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
-          <Text style={styles.cancelBtnText}>Abbrechen</Text>
+          <Text style={styles.cancelBtnText}>{t('edit.cancel')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -927,6 +967,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   translateBtnText: { color: '#4CAF50', fontSize: 13, marginLeft: 4 },
+  scanBtnText: { color: '#FF9800', fontSize: 13, marginLeft: 4 },
   removeLangBtnText: { color: '#F44336', fontSize: 13, marginLeft: 4 },
 
   modalOverlay: {

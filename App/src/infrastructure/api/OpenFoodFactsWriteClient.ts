@@ -92,10 +92,7 @@ export class OpenFoodFactsWriteClient {
     }
 
     const text = await response.text();
-    if (
-      text.includes('Invalid user') ||
-      text.includes('Invalid password')
-    ) {
+    if (text.includes('Invalid user') || text.includes('Invalid password')) {
       throw new Error('Invalid username or password');
     }
   }
@@ -166,7 +163,8 @@ export class OpenFoodFactsWriteClient {
 
         const text = await response.text();
         if (!text.includes('1')) {
-          throw new UploadError('Upload failed: OFF did not return success');
+          const snippet = text.replace(/\s+/g, ' ').trim().substring(0, 200);
+          throw new UploadError(`Upload failed: ${snippet || 'empty response'}`);
         }
       } catch (error) {
         if (error instanceof ApiError && error.retryable) throw error;

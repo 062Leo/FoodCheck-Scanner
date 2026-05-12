@@ -7,7 +7,7 @@
  *   Phase 3 – OCR text shown in a review panel (edit / re-crop / confirm)
  */
 
-import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,37 +23,14 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as SecureStore from 'expo-secure-store';
-import { TextRecognitionScript } from '@react-native-ml-kit/text-recognition';
-import { OcrService, OcrScriptSelection } from '../infrastructure/ocr/OcrService';
+import { useTranslation } from '../i18n/useTranslation';
+import { OffOcrClient } from '../infrastructure/api/OffOcrClient';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
-
-type OcrLanguageOption = {
-  id: string;
-  label: string;
-  selection: OcrScriptSelection;
-};
-
-const OCR_LANGUAGE_OPTIONS: OcrLanguageOption[] = [
-  { id: 'auto', label: 'Auto (Latein)', selection: 'auto' },
-  { id: 'latin', label: 'Latein', selection: TextRecognitionScript.LATIN },
-  { id: 'japanese', label: 'Japanisch', selection: TextRecognitionScript.JAPANESE },
-  { id: 'korean', label: 'Koreanisch', selection: TextRecognitionScript.KOREAN },
-  { id: 'chinese', label: 'Chinesisch', selection: TextRecognitionScript.CHINESE },
-  { id: 'devanagari', label: 'Devanagari', selection: TextRecognitionScript.DEVANAGARI },
-];
-
-const DEFAULT_LANGUAGE_ID = 'auto';
-const DEFAULT_FAVORITE_LANGUAGE_IDS = ['auto', 'latin', 'japanese'];
-const OCR_DEFAULT_LANGUAGE_KEY = 'ocr_default_language';
-const OCR_FAVORITE_LANGUAGES_KEY = 'ocr_favorite_languages';
-
-const validIds = new Set(OCR_LANGUAGE_OPTIONS.map((opt) => opt.id));
 
 type Phase = 'camera' | 'crop' | 'review';
 
@@ -67,11 +44,14 @@ interface Rect {
 interface Props {
   visible: boolean;
   mode: 'ingredients' | 'nutriments';
+  barcode: string;
+  lang?: string;
   onConfirm: (text: string) => void;
   onCancel: () => void;
 }
 
-export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
+export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCancel }: Props) {
+  const { t } = useTranslation();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const wasVisibleRef = useRef(false);
@@ -80,8 +60,6 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
   const [cameraSessionKey, setCameraSessionKey] = useState(0);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [focusPoint, setFocusPoint] = useState<{ x: number; y: number } | null>(null);
-  const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
-  const [ocrQualityScore, setOcrQualityScore] = useState<number | null>(null);
   const focusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // FIX 3: Use refs for drag tracking so pan callbacks always see fresh values
@@ -92,68 +70,8 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
   const [extractedText, setExtractedText] = useState('');
   const [ocrError, setOcrError] = useState<string | null>(null);
   const [previewSize, setPreviewSize] = useState<{ w: number; h: number } | null>(null);
-  const [settingsVisible, setSettingsVisible] = useState(false);
-  const [defaultLanguageId, setDefaultLanguageId] = useState(DEFAULT_LANGUAGE_ID);
-  const [selectedLanguageId, setSelectedLanguageId] = useState(DEFAULT_LANGUAGE_ID);
-  const [favoriteLanguageIds, setFavoriteLanguageIds] = useState<string[]>(
-    DEFAULT_FAVORITE_LANGUAGE_IDS
-  );
 
-  const modeLabel = mode === 'ingredients' ? 'Zutatenliste scannen' : 'Nährwerttabelle scannen';
-  const selectedLanguage = useMemo(
-    () =>
-      OCR_LANGUAGE_OPTIONS.find((option) => option.id === selectedLanguageId) ??
-      OCR_LANGUAGE_OPTIONS[0],
-    [selectedLanguageId]
-  );
-  const favoriteLanguages = useMemo(() => {
-    const favoriteSet = new Set(favoriteLanguageIds);
-    return OCR_LANGUAGE_OPTIONS.filter((option) => favoriteSet.has(option.id));
-  }, [favoriteLanguageIds]);
-
-  useEffect(() => {
-    if (!visible) {
-      return;
-    }
-
-    let isActive = true;
-
-    const loadPreferences = async () => {
-      try {
-        const storedDefault = await SecureStore.getItemAsync('ocr_default_language');
-        const resolvedDefault =
-          storedDefault && validIds.has(storedDefault) ? storedDefault : DEFAULT_LANGUAGE_ID;
-
-        const storedFavorites = await SecureStore.getItemAsync('ocr_favorite_languages');
-        let resolvedFavorites = DEFAULT_FAVORITE_LANGUAGE_IDS;
-        if (storedFavorites) {
-          const parsed = JSON.parse(storedFavorites) as unknown;
-          if (Array.isArray(parsed)) {
-            const filtered = parsed.filter(
-              (entry): entry is string => typeof entry === 'string' && validIds.has(entry)
-            );
-            if (filtered.length > 0) {
-              resolvedFavorites = Array.from(new Set(filtered));
-            }
-          }
-        }
-
-        if (isActive) {
-          setDefaultLanguageId(resolvedDefault);
-          setSelectedLanguageId(resolvedDefault);
-          setFavoriteLanguageIds(resolvedFavorites);
-        }
-      } catch (err) {
-        console.error('Failed to load OCR preferences:', err);
-      }
-    };
-
-    void loadPreferences();
-
-    return () => {
-      isActive = false;
-    };
-  }, [visible]);
+  const modeLabel = mode === 'ingredients' ? t('ocr.mode.ingredients') : t('ocr.mode.nutrition');
 
   /* ── Remount camera when modal becomes visible ─────────────── */
   useEffect(() => {
@@ -195,31 +113,10 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
     setPhotoUri(null);
     setFocusPoint(null);
     setCropRect(null);
-    setSettingsVisible(false);
-    setSelectedLanguageId(defaultLanguageId);
     dragStartRef.current = null;
     setIsBusy(false);
     setExtractedText('');
     setOcrError(null);
-  }, [defaultLanguageId]);
-
-  const toggleFavoriteLanguage = useCallback(
-    async (id: string) => {
-      const nextFavorites = favoriteLanguageIds.includes(id)
-        ? favoriteLanguageIds.filter((item) => item !== id)
-        : [...favoriteLanguageIds, id];
-
-      const deduped = Array.from(new Set(nextFavorites));
-      setFavoriteLanguageIds(deduped);
-      await SecureStore.setItemAsync(OCR_FAVORITE_LANGUAGES_KEY, JSON.stringify(deduped));
-    },
-    [favoriteLanguageIds]
-  );
-
-  const updateDefaultLanguage = useCallback(async (id: string) => {
-    setDefaultLanguageId(id);
-    setSelectedLanguageId(id);
-    await SecureStore.setItemAsync(OCR_DEFAULT_LANGUAGE_KEY, id);
   }, []);
 
   const handleCancel = useCallback(() => {
@@ -304,34 +201,35 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
     if (isBusy || !photoUri) return;
     setIsBusy(true);
 
-    let uriToOcr = photoUri;
+    let uriToUpload = photoUri;
     try {
-      const imgInfo = await ImageManipulator.manipulateAsync(photoUri, [], {
-        format: ImageManipulator.SaveFormat.JPEG,
-      });
-      const imgW = imgInfo.width;
-      const imgH = imgInfo.height;
+      if (cropRect) {
+        const imgInfo = await ImageManipulator.manipulateAsync(photoUri, [], {
+          format: ImageManipulator.SaveFormat.JPEG,
+        });
+        const imgW = imgInfo.width;
+        const imgH = imgInfo.height;
 
-      if (cropRect && imgW > 0 && imgH > 0) {
-        const scaleX = imgW / (previewSize?.w || SCREEN_W);
-        const scaleY = imgH / (previewSize?.h || SCREEN_H);
+        if (imgW > 0 && imgH > 0) {
+          const scaleX = imgW / (previewSize?.w || SCREEN_W);
+          const scaleY = imgH / (previewSize?.h || SCREEN_H);
 
-        let originX = clamp(Math.round(cropRect.x * scaleX), 0, imgW);
-        let originY = clamp(Math.round(cropRect.y * scaleY), 0, imgH);
-        const w = clamp(Math.round(cropRect.w * scaleX), 1, imgW - originX);
-        const h = clamp(Math.round(cropRect.h * scaleY), 1, imgH - originY);
+          let originX = clamp(Math.round(cropRect.x * scaleX), 0, imgW);
+          let originY = clamp(Math.round(cropRect.y * scaleY), 0, imgH);
+          const w = clamp(Math.round(cropRect.w * scaleX), 1, imgW - originX);
+          const h = clamp(Math.round(cropRect.h * scaleY), 1, imgH - originY);
 
-        if (originX + w > imgW) originX = Math.max(0, imgW - w);
-        if (originY + h > imgH) originY = Math.max(0, imgH - h);
+          if (originX + w > imgW) originX = Math.max(0, imgW - w);
+          if (originY + h > imgH) originY = Math.max(0, imgH - h);
 
-        // Use crop guidance for informational display
-        if (w > 10 && h > 10) {
-          const cropped = await ImageManipulator.manipulateAsync(
-            photoUri,
-            [{ crop: { originX, originY, width: w, height: h } }],
-            { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
-          );
-          uriToOcr = cropped.uri;
+          if (w > 10 && h > 10) {
+            const cropped = await ImageManipulator.manipulateAsync(
+              photoUri,
+              [{ crop: { originX, originY, width: w, height: h } }],
+              { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
+            );
+            uriToUpload = cropped.uri;
+          }
         }
       }
     } catch (err) {
@@ -339,27 +237,20 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
     }
 
     try {
-      setOcrConfidence(null);
-      setOcrQualityScore(null);
-      const result = await OcrService.recognizeWithConfidence(uriToOcr, selectedLanguage.selection);
-      setExtractedText(result.text);
-      setOcrConfidence(result.confidence);
-      setOcrQualityScore(result.qualityScore);
+      const client = new OffOcrClient();
+      const imagefield = mode === 'ingredients' && lang ? `ingredients_${lang}` : mode;
+      const text = await client.extractText(barcode, uriToUpload, imagefield);
+      setExtractedText(text);
       setOcrError(null);
     } catch (e) {
-      const rawMsg = e instanceof Error ? e.message : String(e);
-      const msg = /NoSuchMethodError|expoimagemanipulator\.manipulate/i.test(rawMsg)
-        ? 'Bildverarbeitung fehlgeschlagen: inkompatible Version von expo-image-manipulator. Bitte `npm install` ausfuehren und den Development Build neu installieren.'
-        : rawMsg;
+      const msg = e instanceof Error ? e.message : String(e);
       setOcrError(msg);
       setExtractedText('');
-      setOcrConfidence(null);
-      setOcrQualityScore(null);
     } finally {
       setIsBusy(false);
       setPhase('review');
     }
-  }, [photoUri, cropRect, previewSize, isBusy, selectedLanguage.selection]);
+  }, [photoUri, cropRect, previewSize, isBusy, mode, barcode]);
 
   /* ── Phase 3: review ────────────────────────────────────── */
   const handleConfirm = useCallback(() => {
@@ -423,19 +314,12 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
               <Text style={styles.topBtnLabel}>✕</Text>
             </TouchableOpacity>
             <Text style={styles.phaseLabel}>{modeLabel}</Text>
-            <TouchableOpacity
-              onPress={() => setSettingsVisible(true)}
-              style={styles.topBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={styles.topBtnLabel}>Lang</Text>
-            </TouchableOpacity>
+            <View style={styles.topBtn} />
           </View>
 
           {/* Hint */}
           <View style={styles.hintWrap} pointerEvents="none">
             <Text style={styles.hint}>Zum Fokussieren tippen</Text>
-            <Text style={styles.langHint}>OCR: {selectedLanguage.label}</Text>
           </View>
 
           {/* Capture button */}
@@ -617,9 +501,7 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
           {/* Hint */}
           <View style={styles.hintWrap} pointerEvents="none">
             <Text style={styles.hint}>
-              {cropRect
-                ? 'Rechteck OK – oder neu ziehen'
-                : 'Rechteck ziehen oder direkt extrahieren'}
+              {cropRect ? t('ocr.crop.hint.ok') : t('ocr.crop.hint.empty')}
             </Text>
           </View>
 
@@ -653,11 +535,7 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
 
           <View style={styles.reviewPanel}>
             <Text style={styles.reviewTitle}>Extrahierter Text</Text>
-            <Text style={styles.reviewSubtitle}>
-              OCR: {selectedLanguage.label}
-              {ocrConfidence !== null && ` • Konfidenz: ${Math.round(ocrConfidence * 100)}%`}
-              {ocrQualityScore !== null && ocrQualityScore < 60 && ` • Qualität: niedrig`}
-            </Text>
+            <Text style={styles.reviewSubtitle}>Google Cloud Vision (Open Food Facts)</Text>
 
             <ScrollView style={styles.reviewScroll} keyboardShouldPersistTaps="handled">
               {ocrError && (
@@ -731,101 +609,6 @@ export function OcrCameraSheet({ visible, mode, onConfirm, onCancel }: Props) {
                 disabled={!extractedText.trim()}
               >
                 <Text style={styles.btnText}>✓ Bestätigen</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {settingsVisible && (
-        <View style={styles.settingsBackdrop} pointerEvents="box-none">
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={() => setSettingsVisible(false)}
-          />
-
-          <View style={styles.settingsSheet}>
-            <View style={styles.sheetHandle} />
-
-            <View style={styles.sheetHeaderRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.settingsTitle}>OCR Sprache</Text>
-                <Text style={styles.settingsSubTitle}>
-                  ML Kit lädt die passenden Modelle bei Bedarf. Auto nutzt Latein als sicheren
-                  Standard.
-                </Text>
-              </View>
-              <TouchableOpacity onPress={() => setSettingsVisible(false)} style={styles.closeChip}>
-                <Text style={styles.closeChipText}>Schliessen</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.selectedSummary}>
-              <Text style={styles.selectedSummaryLabel}>Aktuell</Text>
-              <Text style={styles.selectedSummaryValue}>{selectedLanguage.label}</Text>
-              <Text style={styles.selectedSummaryHint}>
-                Lange druecken = Favorit umschalten. Tippen = Script waehlen.
-              </Text>
-            </View>
-
-            <Text style={styles.settingsSectionTitle}>Favoriten</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.favoriteScroll}
-            >
-              {favoriteLanguages.map((option) => (
-                <TouchableOpacity
-                  key={option.id}
-                  style={[
-                    styles.favoriteChip,
-                    selectedLanguageId === option.id && styles.favoriteChipActive,
-                  ]}
-                  onPress={() => setSelectedLanguageId(option.id)}
-                  onLongPress={() => {
-                    void toggleFavoriteLanguage(option.id);
-                  }}
-                >
-                  <Text style={styles.favoriteChipText}>{option.label}</Text>
-                  <Text style={styles.favoriteChipSubText}>Tippen</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <Text style={styles.settingsSectionTitle}>Alle Sprachen</Text>
-            <View style={styles.languageGrid}>
-              {OCR_LANGUAGE_OPTIONS.map((option) => {
-                const isSelected = selectedLanguageId === option.id;
-                const isFavorite = favoriteLanguageIds.includes(option.id);
-
-                return (
-                  <TouchableOpacity
-                    key={option.id}
-                    style={[styles.languageChip, isSelected && styles.languageChipActive]}
-                    onPress={() => setSelectedLanguageId(option.id)}
-                    onLongPress={() => {
-                      void toggleFavoriteLanguage(option.id);
-                    }}
-                  >
-                    <Text style={styles.languageChipText}>{option.label}</Text>
-                    <Text style={styles.languageChipMeta}>
-                      {isFavorite ? '★ Favorit' : 'Lange druecken'}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <View style={styles.sheetActions}>
-              <TouchableOpacity
-                style={styles.secondaryBtn}
-                onPress={() => {
-                  void updateDefaultLanguage(selectedLanguageId);
-                  setSettingsVisible(false);
-                }}
-              >
-                <Text style={styles.secondaryBtnText}>Als Standard speichern</Text>
               </TouchableOpacity>
             </View>
           </View>

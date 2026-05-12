@@ -4,8 +4,10 @@ import { useRouter } from 'expo-router';
 import { useCatalogStore } from '../store/catalogStore';
 import { ProductCard } from '../components/ProductCard';
 import type { ProductRecord } from '../types/Product';
+import { useTranslation } from '../i18n/useTranslation';
 
 export default function FavoritesScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const catalogStore = useCatalogStore();
   const [isLoading, setIsLoading] = useState(true);
@@ -88,13 +90,13 @@ export default function FavoritesScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Meine Favoriten</Text>
+        <Text style={styles.title}>{t('favorites.title')}</Text>
       </View>
 
       {/* Empty State */}
       {catalogStore.favorites.length === 0 && (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Noch keine Favoriten – tippe im Scan-Ergebnis auf ★</Text>
+          <Text style={styles.emptyText}>{t('favorites.empty')}</Text>
         </View>
       )}
 

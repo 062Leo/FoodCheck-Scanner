@@ -30,6 +30,7 @@ import { ProductNormalizer, PRODUCT_DATA_VERSION } from '../domain/analysis/Prod
 import { RobotoffInsightAnalyzer } from '../domain/analysis/RobotoffInsightAnalyzer';
 import { TranslationRouter } from '../infrastructure/translation/TranslationRouter';
 import { defaultRules } from '../domain/rules/defaultRules';
+import { useTranslation } from '../i18n/useTranslation';
 import { SkeletonLoadingScreen } from '../components/SkeletonLoading';
 import { Accordion } from '../components/Accordion';
 import { NutritionTable } from '../components/NutritionTable';
@@ -64,6 +65,7 @@ function buildProductFromRecord(record: ProductRecord): Product {
 }
 
 export default function ProductScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ ean: string; fromCache?: string; cachedData?: string }>();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -93,7 +95,7 @@ export default function ProductScreen() {
   useEffect(() => {
     const fetchAndRate = async () => {
       if (!params.ean) {
-        setError({ type: 'generic', message: 'Ungültige EAN' });
+        setError({ type: 'generic', message: t('product.invalidEan') });
         setLoading(false);
         return;
       }
@@ -138,7 +140,7 @@ export default function ProductScreen() {
           } else if (cachedOverrides) {
             const offlinePlaceholder: Product = {
               ean: params.ean,
-              name: 'Unbekanntes Produkt',
+              name: t('product.unknown'),
               ingredientsText: cachedOverrides.ingredientsText,
               brand: cachedOverrides.brand,
             };
@@ -157,7 +159,7 @@ export default function ProductScreen() {
           }
           setError({
             type: 'offline',
-            message: 'Kein Internet – Produkt kann nicht abgerufen werden',
+            message: t('product.offline'),
           });
           setLoading(false);
           return;
@@ -182,7 +184,7 @@ export default function ProductScreen() {
 
           setError({
             type: 'not-found',
-            message: 'Produkt nicht in der Datenbank',
+            message: t('product.notFound'),
           });
           setLoading(false);
           return;
@@ -283,7 +285,7 @@ export default function ProductScreen() {
       } catch {
         setError({
           type: 'generic',
-          message: 'Fehler beim Abrufen der Produktdaten',
+          message: t('product.fetchError'),
         });
         setLoading(false);
       }
@@ -317,20 +319,9 @@ export default function ProductScreen() {
   useEffect(() => {
     if (product && !loading && !error) {
       const ingredientsText = bestIngredientsText;
-      const missingIngredients = ingredientsText === 'Keine Zutatenliste verfügbar';
-      const missingNova = !product.novaScore;
-      const hasNutritionData =
-        product.nutriments !== undefined &&
-        Object.values(product.nutriments).some((v) => v !== undefined);
-      const missingNutrition = missingNova && !hasNutritionData;
-      const missingImage = !product.imageUrl;
+      const missingIngredients = ingredientsText === t('product.noIngredients');
 
-      const hasLocalData = !!(
-        localProduct &&
-        (localProduct.ingredientsText || localProduct.nutriments)
-      );
-
-      if ((missingIngredients || missingNutrition || missingImage) && !hasLocalData) {
+      if (missingIngredients) {
         setShowMissingDataModal(true);
       }
     }
@@ -358,7 +349,7 @@ export default function ProductScreen() {
           nutriscore: null,
           raw_json: JSON.stringify({ product }),
           scanned_at: new Date().toISOString(),
-          rating: result?.status || 'OK',
+          rating: result?.status || t('product.status.ok'),
         };
         await catalogStore.addProduct(record);
         const savedProduct = await productRepository.findByEan(product.ean);
@@ -382,7 +373,7 @@ export default function ProductScreen() {
   // Pure helper functions (moved outside component to avoid re-creation)
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'OK':
+      case t('product.status.ok'):
         return '#4CAF50';
       case 'Warning':
         return '#FFC107';
@@ -395,14 +386,14 @@ export default function ProductScreen() {
 
   const getStatusLabel = (status: string): string => {
     switch (status) {
-      case 'OK':
-        return 'OK';
+      case t('product.status.ok'):
+        return t('product.status.ok');
       case 'Warning':
-        return 'WARNUNG';
+        return t('product.status.warning');
       case 'Critical':
-        return 'KRITISCH';
+        return t('product.status.critical');
       default:
-        return 'UNBEKANNT';
+        return t('product.status.unknown');
     }
   };
 
@@ -414,7 +405,7 @@ export default function ProductScreen() {
       if (firstAvailable) return firstAvailable;
     }
     if (prod.ingredientsText) return prod.ingredientsText;
-    return 'Keine Zutatenliste verfügbar';
+    return t('product.noIngredients');
   };
 
   const getIngredientsByLang = (prod: Product): Record<string, string> => {
@@ -494,10 +485,12 @@ export default function ProductScreen() {
 
   const buildGalleryImages = (prod: Product) => {
     const entries: { uri: string; label: string }[] = [];
-    if (prod.imageUrl) entries.push({ uri: prod.imageUrl, label: 'Vorderseite' });
+    if (prod.imageUrl) entries.push({ uri: prod.imageUrl, label: t('product.front') });
     if (prod.imageIngredientsUrl) entries.push({ uri: prod.imageIngredientsUrl, label: 'Zutaten' });
-    if (prod.imageNutritionUrl) entries.push({ uri: prod.imageNutritionUrl, label: 'Nährwerte' });
-    if (prod.imagePackagingUrl) entries.push({ uri: prod.imagePackagingUrl, label: 'Verpackung' });
+    if (prod.imageNutritionUrl)
+      entries.push({ uri: prod.imageNutritionUrl, label: t('product.nutrition') });
+    if (prod.imagePackagingUrl)
+      entries.push({ uri: prod.imagePackagingUrl, label: t('product.packaging') });
     return entries;
   };
 
@@ -516,7 +509,7 @@ export default function ProductScreen() {
   };
 
   const formatDate = (isoDate?: string): string => {
-    if (!isoDate) return 'Unbekannt';
+    if (!isoDate) return t('product.unknown');
     try {
       const date = new Date(isoDate);
       return date.toLocaleDateString('de-DE', {
@@ -530,7 +523,7 @@ export default function ProductScreen() {
   };
 
   const bestIngredientsText = useMemo(
-    () => (product ? getBestIngredientsText(product) : 'Keine Zutatenliste verfügbar'),
+    () => (product ? getBestIngredientsText(product) : t('product.noIngredients')),
     [product]
   );
 
@@ -558,7 +551,7 @@ export default function ProductScreen() {
 
         <ScrollView style={styles.content}>
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error?.message || 'Fehler'}</Text>
+            <Text style={styles.errorText}>{error?.message || t('product.rating.error')}</Text>
             {error?.type === 'not-found' && (
               <View style={styles.notFoundCard}>
                 <Text style={styles.notFoundSubtitle}>
@@ -588,10 +581,9 @@ export default function ProductScreen() {
       <Modal visible={showMissingDataModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Daten fehlen</Text>
+            <Text style={styles.modalTitle}>Zutaten fehlen</Text>
             <Text style={styles.modalBody}>
-              Dieses Produkt hat zu wenige Daten zur Bewertung. Möchtest du die fehlenden
-              Informationen jetzt ergänzen?
+              Für dieses Produkt ist keine Zutatenliste hinterlegt. Möchtest du sie jetzt ergänzen?
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -872,7 +864,7 @@ export default function ProductScreen() {
 
           if (unknown) {
             langAccordionItems.push({
-              title: 'Original',
+              title: t('product.original'),
               content: <Text style={styles.ingredientsText}>{unknown}</Text>,
             });
           }
@@ -881,7 +873,7 @@ export default function ProductScreen() {
 
           return (
             <View style={[styles.section, { paddingTop: 12 }]}>
-              <Accordion items={[{ title: 'Zutatenliste', content: accordionContent }]} />
+              <Accordion items={[{ title: t('product.ingredients'), content: accordionContent }]} />
             </View>
           );
         })()}
@@ -919,7 +911,7 @@ export default function ProductScreen() {
             <Accordion
               items={[
                 {
-                  title: 'Nährwerttabelle (pro 100 g)',
+                  title: t('product.nutritionTable'),
                   content: (
                     <NutritionTable
                       nutriments={product.nutriments}
@@ -946,7 +938,7 @@ export default function ProductScreen() {
             <Accordion
               items={[
                 {
-                  title: 'Weitere Informationen',
+                  title: t('product.moreInfo'),
                   content: (
                     <View>
                       {product.origins ? (

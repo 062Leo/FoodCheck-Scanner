@@ -1,7 +1,12 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguageStore } from '../../src/store/languageStore';
+import { getTranslations } from '../../src/i18n/translations';
 
 export default function TabLayout() {
+  const language = useLanguageStore((s) => s.language);
+  const t = (key: string) => getTranslations(language)[key as TranslationKey] || key;
+
   return (
     <Tabs
       screenOptions={{
@@ -19,40 +24,32 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Scanner',
-          tabBarLabel: 'Scanner',
+          title: t('tab.scanner'),
+          tabBarLabel: t('tab.scanner'),
           tabBarIcon: ({ color }) => <Ionicons name="camera" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="catalog"
         options={{
-          title: 'Katalog',
-          tabBarLabel: 'Katalog',
+          title: t('tab.catalog'),
+          tabBarLabel: t('tab.catalog'),
           tabBarIcon: ({ color }) => <Ionicons name="list" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="favorites"
         options={{
-          title: 'Favoriten',
-          tabBarLabel: 'Favoriten',
+          title: t('tab.favorites'),
+          tabBarLabel: t('tab.favorites'),
           tabBarIcon: ({ color }) => <Ionicons name="star" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profil',
-          tabBarLabel: 'Profil',
-          tabBarIcon: ({ color }) => <Ionicons name="person-circle-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Einstellungen',
-          tabBarLabel: 'Einstellungen',
+          title: t('tab.settings'),
+          tabBarLabel: t('tab.settings'),
           tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={24} color={color} />,
         }}
       />

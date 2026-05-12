@@ -3,13 +3,16 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 
 import { useFilterStore } from '../src/store/filterStore';
+import { useLanguageStore } from '../src/store/languageStore';
 
 export default function RootLayout() {
   const loadRules = useFilterStore((state) => state.loadRules);
+  const loadLanguage = useLanguageStore((state) => state.loadLanguage);
 
   useEffect(() => {
     void loadRules();
-  }, [loadRules]);
+    void loadLanguage();
+  }, [loadRules, loadLanguage]);
 
   return (
     <Stack

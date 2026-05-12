@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { OpenFoodFactsWriteClient } from '../infrastructure/api/OpenFoodFactsWriteClient';
 import { OffAccountSetup } from '../components/OffAccountSetup';
+import { useLanguageStore } from '../store/languageStore';
+import { useTranslation } from '../i18n/useTranslation';
+import { LANGUAGES } from '../i18n/translations';
+import type { SupportedLanguage } from '../i18n/translations';
 
 const writeClient = new OpenFoodFactsWriteClient();
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { t, language } = useTranslation();
+  const setLanguage = useLanguageStore((s) => s.setLanguage);
   const [offUsername, setOffUsername] = useState<string | null>(null);
   const [showOffSetup, setShowOffSetup] = useState(false);
 
@@ -25,10 +32,10 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Open Food Facts', 'Bist du sicher, dass du dich abmelden möchtest?', [
-      { text: 'Abbrechen', style: 'cancel' },
+    Alert.alert(t('settings.logoutConfirm'), t('settings.logoutConfirmMsg'), [
+      { text: t('settings.cancel'), style: 'cancel' },
       {
-        text: 'Abmelden',
+        text: t('settings.logout'),
         style: 'destructive',
         onPress: async () => {
           await writeClient.deleteCredentials();
@@ -38,42 +45,74 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const handleLanguageChange = (lang: SupportedLanguage) => {
+    setLanguage(lang);
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Einstellungen</Text>
+      <Text style={styles.title}>{t('settings.title')}</Text>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Open Food Facts Konto</Text>
+        <Text style={styles.sectionTitle}>{t('settings.offAccount')}</Text>
         {offUsername ? (
           <View style={styles.accountInfo}>
             <View style={styles.accountRow}>
               <View style={styles.statusDot} />
-              <Text style={styles.accountText}>Angemeldet als: {offUsername}</Text>
+              <Text style={styles.accountText}>
+                {t('settings.loggedInAs')} {offUsername}
+              </Text>
             </View>
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-              <Text style={styles.logoutBtnText}>Abmelden</Text>
+              <Text style={styles.logoutBtnText}>{t('settings.logout')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.accountInfo}>
-            <Text style={styles.accountHint}>
-              Melde dich an, um Produktdaten an Open Food Facts zu senden.
-            </Text>
+            <Text style={styles.accountHint}>{t('settings.loginPrompt')}</Text>
             <TouchableOpacity style={styles.loginBtn} onPress={() => setShowOffSetup(true)}>
-              <Text style={styles.loginBtnText}>Anmelden</Text>
+              <Text style={styles.loginBtnText}>{t('settings.login')}</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
+        <Text style={styles.accountHint}>{t('settings.languageHint')}</Text>
+        <View style={styles.languageRow}>
+          {LANGUAGES.map((lang) => (
+            <TouchableOpacity
+              key={lang.code}
+              style={[styles.languageChip, language === lang.code && styles.languageChipActive]}
+              onPress={() => handleLanguageChange(lang.code)}
+            >
+              <Ionicons
+                name={language === lang.code ? 'radio-button-on' : 'radio-button-off'}
+                size={18}
+                color={language === lang.code ? '#4CAF50' : '#757575'}
+              />
+              <Text
+                style={[
+                  styles.languageChipText,
+                  language === lang.code && styles.languageChipTextActive,
+                ]}
+              >
+                {lang.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       <TouchableOpacity style={styles.item} onPress={() => router.push('/settings/filters')}>
-        <Text style={styles.itemText}>Filter</Text>
-        <Text style={styles.itemHint}>Zutaten- und Nährwertregeln verwalten</Text>
+        <Text style={styles.itemText}>{t('settings.filter')}</Text>
+        <Text style={styles.itemHint}>{t('settings.filterHint')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.item} onPress={() => router.push('/settings/api-key')}>
-        <Text style={styles.itemText}>Übersetzung (DeepL API Key)</Text>
-        <Text style={styles.itemHint}>Eigenen DeepL Free API Key hinterlegen</Text>
+        <Text style={styles.itemText}>{t('settings.deepl')}</Text>
+        <Text style={styles.itemHint}>{t('settings.deeplHint')}</Text>
       </TouchableOpacity>
 
       <OffAccountSetup
@@ -135,6 +174,7 @@ const styles = StyleSheet.create({
     color: '#9E9E9E',
     fontSize: 13,
     lineHeight: 18,
+    marginBottom: 12,
   },
   loginBtn: {
     backgroundColor: '#4CAF50',
@@ -161,6 +201,33 @@ const styles = StyleSheet.create({
     color: '#F44336',
     fontSize: 14,
     fontWeight: '600',
+  },
+  languageRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  languageChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#121212',
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  languageChipActive: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#1a2e1a',
+  },
+  languageChipText: {
+    color: '#9E9E9E',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  languageChipTextActive: {
+    color: '#4CAF50',
   },
   item: {
     backgroundColor: '#1E1E1E',
