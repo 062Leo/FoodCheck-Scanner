@@ -194,7 +194,7 @@ describe('OpenFoodFactsWriteClient', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'User-Agent': 'TrueFoodScanner/1.0 (truefood-scanner@example.com)',
+            'User-Agent': 'FoodCheck/1.0 (foodcheck@example.com)',
           }),
         })
       );

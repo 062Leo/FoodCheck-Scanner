@@ -1,8 +1,8 @@
-# Technical Documentation — TrueFood-Scanner
+# Technical Documentation — FoodCheck
 
 ## 1. Project Overview
 
-**TrueFood-Scanner** is a React Native (Expo) mobile app for iOS and Android that scans food product barcodes and instantly evaluates them for unhealthy ingredients and processing levels. The app uses the Open Food Facts API for product data and on-device ML Kit for OCR.
+**FoodCheck** is a React Native (Expo) mobile app for iOS and Android that scans food product barcodes and instantly evaluates them for unhealthy ingredients and processing levels. The app uses the Open Food Facts API for product data and on-device ML Kit for OCR.
 
 - **Language:** TypeScript (strict mode)
 - **Framework:** Expo SDK 54 (managed workflow) with Expo Router

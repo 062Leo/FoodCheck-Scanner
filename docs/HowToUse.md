@@ -1,4 +1,4 @@
-# HowToUse — TrueFood-Scanner
+# HowToUse — FoodCheck
 
 ## 1. Prerequisites
 

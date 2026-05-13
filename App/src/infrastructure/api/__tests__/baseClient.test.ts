@@ -9,7 +9,7 @@ jest.mock('../config', () => ({
   ...jest.requireActual('../config'),
   USE_STAGING: false,
   BASE_URL: 'https://world.openfoodfacts.org',
-  USER_AGENT: 'TrueFoodScanner/1.0 (test@example.com)',
+  USER_AGENT: 'FoodCheck/1.0 (test@example.com)',
 }));
 
 describe('apiGet', () => {
@@ -30,7 +30,7 @@ describe('apiGet', () => {
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
-          'User-Agent': 'TrueFoodScanner/1.0 (test@example.com)',
+          'User-Agent': 'FoodCheck/1.0 (test@example.com)',
         }),
       })
     );
@@ -47,7 +47,7 @@ describe('apiGet', () => {
     });
 
     const headers = (fetch as jest.Mock).mock.calls[0][1].headers;
-    expect(headers['User-Agent']).toBe('TrueFoodScanner/1.0 (test@example.com)');
+    expect(headers['User-Agent']).toBe('FoodCheck/1.0 (test@example.com)');
     expect(headers['X-Custom']).toBe('value');
   });
 
@@ -97,7 +97,7 @@ describe('apiPost', () => {
         method: 'POST',
         body: formData,
         headers: expect.objectContaining({
-          'User-Agent': 'TrueFoodScanner/1.0 (test@example.com)',
+          'User-Agent': 'FoodCheck/1.0 (test@example.com)',
         }),
       })
     );

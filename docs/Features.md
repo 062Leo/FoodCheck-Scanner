@@ -1,4 +1,4 @@
-# TrueFood Scanner — Features & Capabilities
+# FoodCheck — Features & Capabilities
 
 ## Screens & Navigation
 

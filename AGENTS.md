@@ -1,4 +1,4 @@
-# TrueFood-Scanner Agent Guide
+# FoodCheck Agent Guide
 
 ## Scope
 - All source code lives in `App/`. Root `package-lock.json` is an empty workspace placeholder.
@@ -59,7 +59,7 @@ Screens commonly instantiate domain classes and infrastructure repositories **di
 - DI via constructor injection for domain classes, module-level singletons for repositories.
 - `app.json` has `"newArchEnabled": true` — Expo New Architecture is enabled.
 - No native Android/iOS directories in git (generated at build time).
-- OFF User-Agent header must be `FoodScanner/1.0 (private)`.
+- OFF User-Agent header must be `FoodCheck/1.0 (private)`.
 
 ## Reference Docs
 - [Features & Capabilities](docs/Features.md) — complete feature list, DB schema, API integrations

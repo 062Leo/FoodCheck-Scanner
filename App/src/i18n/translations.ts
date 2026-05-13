@@ -51,6 +51,39 @@ const de = {
   'settings.restoreConfirmMsg': 'Alle aktuellen Daten werden durch das Backup ersetzt. Fortfahren?',
   'settings.restoreSuccess': 'Backup erfolgreich wiederhergestellt.',
   'settings.restoreEmpty': 'Keine Backup-Dateien gefunden.',
+  'settings.howToUse': 'Anleitung',
+  'settings.howToUseHint': 'Lerne wie die App funktioniert',
+  'settings.about': 'Über FoodCheck',
+  'settings.aboutHint': 'App-Info, Version & Credits',
+
+  // HowToUse
+  'howToUse.scanner':
+    'Scanner: Richte die Kamera auf einen Barcode (EAN-8/EAN-13). Der Scan erfolgt automatisch.',
+  'howToUse.result':
+    'Ergebnis: Sieh dir Red Flags, NOVA-Score, Nährwerte und Zutaten an. Tippe auf ★ um das Produkt zu favorisieren.',
+  'howToUse.catalog':
+    'Katalog: Durchsuche alle gescannten Produkte. Filtere nach Status oder sortiere nach Datum, Name oder Bewertung.',
+  'howToUse.favorites':
+    'Favoriten: Hier erscheinen alle Produkte, die du mit ★ markiert hast. Zum Entfernen erneut auf ★ tippen.',
+  'howToUse.edit':
+    'Bearbeiten: Tippe auf ✎ im Ergebnis, um Zutaten & Nährwerte zu ergänzen und an Open Food Facts zu senden.',
+  'howToUse.backup':
+    'Backup: Sichere deine Daten regelmäßig über den Backup-Bereich. So bleiben sie bei einem Gerätewechsel erhalten.',
+
+  // About
+  'about.version': 'Version',
+  'about.description':
+    'FoodCheck scannt Lebensmittel-Barcodes und bewertet Inhaltsstoffe auf ungesunde Zusatzstoffe, Verarbeitungsgrad (NOVA) und Nährwerte — direkt auf deinem Gerät, ohne Cloud.',
+  'about.dataSource': 'Datenquelle',
+  'about.dataSourceText':
+    'Alle Produktdaten stammen von Open Food Facts, der freien Lebensmitteldatenbank. FoodCheck ist ein unabhängiger Client.',
+  'about.technology': 'Technologie',
+  'about.technologyText':
+    'Entwickelt mit React Native und Expo. Texterkennung via ML Kit. Übersetzungen via DeepL & MyMemory.',
+  'about.dataPrivacy': 'Datenschutz',
+  'about.dataPrivacyText':
+    'Alle Daten bleiben lokal auf deinem Gerät. Es werden keine personenbezogenen Daten gesammelt oder an Dritte weitergegeben.',
+  'about.footer': 'Gemacht mit ❤️ für bewusste Ernährung.',
 
   // Scanner
   'scanner.loading': 'Laden...',
@@ -373,6 +406,39 @@ const en: Translations = {
   'settings.restoreConfirmMsg': 'All current data will be replaced by the backup. Continue?',
   'settings.restoreSuccess': 'Backup restored successfully.',
   'settings.restoreEmpty': 'No backup files found.',
+  'settings.howToUse': 'How To Use',
+  'settings.howToUseHint': 'Learn how to use the app',
+  'settings.about': 'About FoodCheck',
+  'settings.aboutHint': 'App info, version & credits',
+
+  // HowToUse
+  'howToUse.scanner':
+    'Scanner: Point the camera at a barcode (EAN-8/EAN-13). Scanning is automatic.',
+  'howToUse.result':
+    'Result: View red flags, NOVA score, nutrition & ingredients. Tap ★ to favorite the product.',
+  'howToUse.catalog':
+    'Catalog: Browse all scanned products. Filter by status or sort by date, name or rating.',
+  'howToUse.favorites':
+    'Favorites: All products you marked with ★ appear here. Tap ★ again to remove them.',
+  'howToUse.edit':
+    'Edit: Tap ✎ on the result to add ingredients & nutrition and send to Open Food Facts.',
+  'howToUse.backup':
+    'Backup: Regularly save your data via the backup section. Keeps your data safe when switching devices.',
+
+  // About
+  'about.version': 'Version',
+  'about.description':
+    'FoodCheck scans food barcodes and evaluates ingredients for unhealthy additives, processing level (NOVA) and nutrition — directly on your device, no cloud.',
+  'about.dataSource': 'Data Source',
+  'about.dataSourceText':
+    'All product data comes from Open Food Facts, the free food database. FoodCheck is an independent client.',
+  'about.technology': 'Technology',
+  'about.technologyText':
+    'Built with React Native and Expo. Text recognition via ML Kit. Translations via DeepL & MyMemory.',
+  'about.dataPrivacy': 'Privacy',
+  'about.dataPrivacyText':
+    'All data stays locally on your device. No personal data is collected or shared with third parties.',
+  'about.footer': 'Made with ❤️ for conscious nutrition.',
 
   'scanner.loading': 'Loading...',
   'scanner.permission': 'Camera access required',

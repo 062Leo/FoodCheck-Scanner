@@ -1,4 +1,4 @@
-package com.anonymous.truefoodscanner
+package com.truefood.foodcheck
 
 import android.os.Build
 import android.os.Bundle

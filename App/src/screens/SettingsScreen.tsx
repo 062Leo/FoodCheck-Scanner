@@ -18,6 +18,7 @@ import { useTranslation } from '../i18n/useTranslation';
 import { LANGUAGES } from '../i18n/translations';
 import type { SupportedLanguage } from '../i18n/translations';
 import { BackupService } from '../infrastructure/db/BackupService';
+import { Accordion } from '../components/Accordion';
 
 const writeClient = new OpenFoodFactsWriteClient();
 
@@ -34,6 +35,7 @@ export default function SettingsScreen() {
   const [hasCustomPath, setHasCustomPath] = useState(false);
   const [pickingDir, setPickingDir] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [howToUseExpanded, setHowToUseExpanded] = useState(false);
 
   useEffect(() => {
     writeClient.loadCredentials().then((creds) => {
@@ -318,6 +320,58 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => setHowToUseExpanded(!howToUseExpanded)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.howToUseHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.itemText}>{t('settings.howToUse')}</Text>
+            <Text style={styles.itemHint}>{t('settings.howToUseHint')}</Text>
+          </View>
+          <Ionicons
+            name={howToUseExpanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color="#757575"
+          />
+        </View>
+      </TouchableOpacity>
+
+      {howToUseExpanded && (
+        <View style={styles.howToUseContent}>
+          <Accordion
+            items={[
+              {
+                title: t('tab.scanner'),
+                content: <Text style={styles.howToUseText}>{t('howToUse.scanner')}</Text>,
+              },
+              {
+                title: t('catalog.title'),
+                content: <Text style={styles.howToUseText}>{t('howToUse.catalog')}</Text>,
+              },
+              {
+                title: t('tab.favorites'),
+                content: <Text style={styles.howToUseText}>{t('howToUse.favorites')}</Text>,
+              },
+              {
+                title: t('edit.title'),
+                content: <Text style={styles.howToUseText}>{t('howToUse.edit')}</Text>,
+              },
+              {
+                title: t('settings.backup'),
+                content: <Text style={styles.howToUseText}>{t('howToUse.backup')}</Text>,
+              },
+            ]}
+          />
+        </View>
+      )}
+
+      <TouchableOpacity style={styles.item} onPress={() => router.push('/settings/about')}>
+        <Text style={styles.itemText}>{t('settings.about')}</Text>
+        <Text style={styles.itemHint}>{t('settings.aboutHint')}</Text>
+      </TouchableOpacity>
+
       <OffAccountSetup
         visible={showOffSetup}
         onSuccess={handleOffSetupSuccess}
@@ -585,5 +639,23 @@ const styles = StyleSheet.create({
     color: '#9E9E9E',
     fontSize: 12,
     marginTop: 2,
+  },
+  howToUseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  howToUseContent: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 8,
+    padding: 8,
+    marginTop: -6,
+    marginBottom: 12,
+    marginHorizontal: 4,
+  },
+  howToUseText: {
+    color: '#BDBDBD',
+    fontSize: 13,
+    lineHeight: 20,
   },
 });

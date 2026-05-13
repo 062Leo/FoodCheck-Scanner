@@ -5,7 +5,7 @@ jest.mock('../config', () => ({
   ...jest.requireActual('../config'),
   USE_STAGING: false,
   BASE_URL: 'https://world.openfoodfacts.org',
-  USER_AGENT: 'TrueFoodScanner/1.0 (test@example.com)',
+  USER_AGENT: 'FoodCheck/1.0 (test@example.com)',
 }));
 
 global.fetch = jest.fn();
@@ -44,7 +44,7 @@ describe('OpenFoodFactsClient', () => {
       await client.getProductByEan('123');
 
       const options = (fetch as jest.Mock).mock.calls[0][1] as { headers: Record<string, string> };
-      expect(options.headers['User-Agent']).toBe('TrueFoodScanner/1.0 (test@example.com)');
+      expect(options.headers['User-Agent']).toBe('FoodCheck/1.0 (test@example.com)');
     });
 
     it('should return null when status is 0', async () => {

@@ -1,6 +1,6 @@
-export const APP_NAME = 'TrueFoodScanner';
+export const APP_NAME = 'FoodCheck';
 export const APP_VERSION = '1.0';
-export const APP_EMAIL = 'truefood-scanner@example.com';
+export const APP_EMAIL = 'foodcheck@example.com';
 
 /**
  * Set to `true` during development/testing to use the OFF staging environment
@@ -28,7 +28,7 @@ export const STAGING_AUTH = 'Basic b2ZmOm9mZg==';
  * Offline-safe — uses only string hashing, no crypto APIs.
  */
 export function generateAppUUID(userId: string): string {
-  const key = `truefood-scanner:${userId}`;
+  const key = `foodcheck:${userId}`;
 
   function djb2(s: string, seed: number): number {
     let h = seed;
