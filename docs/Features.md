@@ -4,14 +4,14 @@
 
 | Route | Screen | Beschreibung |
 |-------|--------|-------------|
-| `(tabs)/` | **Scanner** | Live-Kamera mit Barcode-Erkennung (EAN-8/13), Scan-Frame-Animation, Cache-first-Lookup, Offline-Fallback |
+| `(tabs)/` | **Scanner** | Live-Kamera mit Barcode-Erkennung (EAN-8/13), Scan-Frame-Animation, Cache-first-Lookup, Offline-Fallback, Backup-Export/Import |
 | `(tabs)/catalog` | **Catalog** | Alle gescannten Produkte durchsuchen, filtern (OK/Warning/Critical/Ohne Zutaten), sortieren, löschen |
 | `(tabs)/favorites` | **Favorites** | Favorisierte Produkte anzeigen, entfavorisieren, löschen |
-| `(tabs)/settings` | **Settings** | Sprache, OFF-Konto, Filter-Regeln, Übersetzungs-API-Key |
+| `(tabs)/settings` | **Settings** | Sprache, OFF-Konto, Filter-Regeln, Übersetzungs-API-Key, Backup |
 | `/result` | **Product** | Vollständige Produktanalyse: Red Flags, NOVA, Nährwerte, Allergene, Zutaten (mehrsprachig), KI-Erkenntnisse, Bildergalerie |
 | `/settings/filters` | **Filter Rules** | 683 vordefinierte + eigene Zutaten-/Nährwert-Regeln verwalten |
 | `/settings/api-key` | **API Keys** | DeepL/MyMemory API Keys konfigurieren |
-| `/edit/[ean]` | **Edit Product** | Produktdaten bearbeiten: Zutaten (8 Sprachen), Nährwerte, Allergene, Herkunft — lokal + Upload an Open Food Facts |
+| `/edit/[ean]` | **Edit Product** | Produktdaten bearbeiten + an Open Food Facts beitragen: Zutaten (8 Sprachen), Nährwerte, Allergene, Herkunft — lokal + Upload an OFF |
 
 ---
 
@@ -129,6 +129,7 @@
   - **Severity**: RED FLAG / OK
 - **Auto-Translation**: Neue Zutaten werden via MyMemory in 7 Sprachen übersetzt
 - **Display**: Zutaten-Keywords werden in aktueller App-Sprache (DE/EN) angezeigt
+- **Favoriten-Markierung**: Jede Regel kann per Stern-Toggle als Favorit markiert werden (`is_favorite`-Spalte); favorisierte Regeln erscheinen priorisiert oben in der Liste
 - **Löschen** mit Bestätigungsdialog
 - **19 Kategorie-Presets**: Süßungsmittel, Farbstoffe, Konservierungsstoffe, Geschmacksverstärker & Aromen, Emulgatoren & Stabilisatoren, Verdickungs- & Geliermittel, Säuren & Säureregulatoren, Antioxidationsmittel, Gehärtete Fette & raffinierte Öle, Zucker & Sirupe, Modifizierte Stärken, Phosphate & Mineralstoffe, Füll- & Trägerstoffe, Proteine & Fleischersatz, Trenn- & Überzugsmittel, Treib- & Schutzgase, Metalle, E-Nummern, Sonstige Zusatzstoffe
 
@@ -138,10 +139,11 @@
 
 | Einstellung | Beschreibung |
 |-------------|-------------|
-| **Sprache** | DE ↔ EN (App-UI umschaltbar) |
+| **Sprache** | DE ↔ EN (App-UI umschaltbar, 2 Stores: settingsStore + languageStore) |
 | **OFF-Konto** | Open Food Facts Login/Logout für Produktbeiträge |
 | **Filter-Regeln** | Link zur Filter-Regel-Verwaltung |
 | **Übersetzungs-API** | DeepL/MyMemory Key-Verwaltung |
+| **Backup** | SQLite-Daten exportieren/importieren (JSON) |
 
 ### API Key Screen
 - **Provider-Wahl**: DeepL vs MyMemory
@@ -152,7 +154,8 @@
 
 ## Mehrsprachigkeit
 
-- **UI-Sprachen**: Deutsch, Englisch (597 Übersetzungsschlüssel)
+- **UI-Sprachen**: Deutsch, Englisch (597 Übersetzungsschlüssel in `i18n/translations.ts`)
+- **Runtime-Switch**: `useTranslation()` Hook + `languageStore` (Zustand, persistiert in SecureStore)
 - **Zutaten-Suche**: 7 Sprachen (de, en, fr, it, es, nl, pt, pl)
 - **Zutaten-Bearbeitung**: 8 Sprachen (alle oben + en als Editiersprache)
 - **Produkt-Zutaten**: Mehrsprachige Anzeige mit Accordion
@@ -164,10 +167,11 @@
 ## OCR (Texterkennung)
 
 - **On-Device**: ML Kit Text Recognition (Latin Script)
-  - Texterkennung mit Konfidenzwerten
+  - Texterkennung mit Konfidenzwerten (`OcrService`)
+  - Vorverarbeitung durch `OcrPreprocessor` (Kontrast, Schärfe)
   - Qualitätsprüfung (Rauschfilter, Sonderzeichen-Erkennung)
   - Nährwert-Parsing mit Sprachautomatik (8 Nährwerte)
-- **Cloud**: Open Food Facts Google Cloud Vision Pipeline
+- **Cloud**: Open Food Facts Google Cloud Vision Pipeline (`OffOcrClient`)
   - Bild-Upload → Polling auf OCR-Ergebnis (max. 10 Versuche, 2s Interval)
   - Bildvorverarbeitung (Max 2048px, JPEG)
   - Zuschneide-Empfehlungen basierend auf Seitenverhältnis
@@ -181,13 +185,20 @@
 | **SQLite** | Produkte, Favoriten, Filter-Regeln | expo-sqlite |
 | **SecureStore** | OFF-Zugangsdaten, API-Keys, Sprache, Provider | expo-secure-store |
 | **FileSystem** | Produktbilder (4 Typen) | expo-file-system |
-| **Zustand** | In-Memory State (Filter-Regeln, Katalog, Sprache, Settings) | zustand |
+| **Zustand** | In-Memory State (4 Stores: filter, catalog, language, settings) | zustand |
 
 ### Datenbank-Schema
-- **`products`**: id, ean, name, brands, ingredients, nova_score, nutriscore, raw_json, scanned_at, rating, data_version, last_api_fetch, 4 image_urls, visit_count, last_seen_at
+- **`meta`**: key (PK), value — Migrations-Tracking
+- **`products`**: id, ean (UNIQUE), name, brands, ingredients, nova_score, nutriscore, raw_json, scanned_at, rating, data_version, last_api_fetch, image_url, image_ingredients_url, image_nutrition_url, image_packaging_url, visit_count, last_seen_at
 - **`favorites`**: id, product_id (FK → products.id CASCADE), added_at
-- **`filter_rules`**: id, type, key, category, threshold, operator, severity, translations (JSON), created_at
-- **6 Migrationen**: initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte
+- **`filter_rules`**: id, type, key, category, threshold, operator, severity, translations (JSON), is_favorite, created_at
+- **7 Migrationen**: initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte → is_favorite-Spalte
+
+### Backup & Wiederherstellung
+- **Export**: Vollständiger SQLite-Dump als JSON-Datei (Produkte, Favoriten, Filter-Regeln) via `BackupService`
+- **Import**: JSON-Datei einlesen und DB wiederherstellen
+- **ShareSheet**: Export-Datei über native Share-Funktion teilen (AirDrop, Mail, Files etc.)
+- **Keine Cloud-Abhängigkeit**: Backup ist komplett lokal, keine Server-Infrastruktur
 
 ---
 

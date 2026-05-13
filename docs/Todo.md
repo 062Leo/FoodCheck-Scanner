@@ -1,16 +1,5 @@
 ## Neue Features:
 
-
-**Feature 0 — Instant Scan Result Overlay**
-
-EAN-Eingabe Über Tastatur als Fallback wenn
-Kamera nicht funktioniert oder der Barcode
-beschädigt ist. Einfacher Input-Dialog im Scanner-
-Tab (oben.. ein symbol zum klicken.. erst dann erscheint eingabefeld .. soll nicht dauerhaft sichtbar sein..).
-
-
-
-
 **Feature 1 — Instant Scan Result Overlay**
 
 Nach erfolgreichem Scan färbt sich der gesamte Kamera-Hintergrund in der bereits implementierten Grün/Gelb/Rot-Logik — dieselbe Bestimmung die auch im Product Screen genutzt wird, nichts Neues.
@@ -35,39 +24,24 @@ Fallback wenn Produkt unbekannt oder Zutaten fehlen: kein Overlay, bestehende Po
 
 ---
 
-**Feature 2 — Red Flag Favoriten (Stern-Markierung)**
+**Feature 2 — Red Flag Favoriten (Stern-Markierung) ✓ DB-Spalte existiert, UI-Fehlende Integration**
 
-In der Filter Rules Verwaltung bekommt jede Regel einen Stern-Toggle. Markierte Regeln:
-- erscheinen im Overlay (Feature 1) prominent ganz oben
-- bekommen in der Filter Rules Liste einen eigenen Abschnitt "Meine wichtigsten" ganz oben, vor den 19 Kategorien
+In der Filter Rules Verwaltung bekommt jede Regel einen Stern-Toggle (`is_favorite`-Spalte existiert in filter_rules). Markierte Regeln:
+- Sollen im Overlay (Feature 1) prominent ganz oben erscheinen
+- Sollen in der Filter Rules Liste einen eigenen Abschnitt "Meine wichtigsten" ganz oben bekommen, vor den 19 Kategorien
 
+Aktueller Stand: `is_favorite`-Spalte und DB-Migration sind implementiert. Die UI zum Markieren und die Overlay-Integration fehlen noch.
 
+---
 
+**Feature 3 — Backup & Wiederherstellung ✓ Erledigt**
 
+~~iCloud / Google Drive Backup / andere KOSTENLOSE alternative~~
 
+Erledigt über `BackupService`: JSON-Export/Import der gesamten SQLite-Datenbank (Produkte, Filter-Regeln, Favoriten). Wiederherstellung bei Neuinstallation. Keine eigene Server-Infrastruktur nötig. Export-Datei wird über native Share-Funktion geteilt.
 
-
-
-
-
-
-
-
-
-
-
-**Feature 3 — iCloud / Google Drive Backup / andere KOSTENLOSE alternative (einfach nur lokaler downdload?)**
-
-iCloud / Google Drive Backup / andere KOSTENLOSE alternative (einfach nur lokaler downdload?)
-
-Automatisches Backup der SQLite-Datenbank
-(Produkte, Filter-Regeln, Favoriten).
-Wiederherstellung bei Neuinstallation. Keine
-eigene Server-Infrastruktur nötig.
-
+---
 
 **Feature 4 — CSV / JSON Export**
 
-Katalog als CSV oder JSON exportieren. Nützlich
-für eigene Auswertungen, Tabellen oder das Teilen
-mit Ernährungsberatern.
+Katalog als CSV oder JSON exportieren. Nützlich für eigene Auswertungen, Tabellen oder das Teilen mit Ernährungsberatern.

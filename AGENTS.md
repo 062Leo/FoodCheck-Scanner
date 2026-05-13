@@ -8,7 +8,7 @@
 Run from `App/`:
 - `npm start` — Expo dev server
 - `npm run android` / `npm run ios` / `npm run web`
-- `npm test` — Jest (9 suites, 61 tests, all passing)
+- `npm test` — Jest (23 suites, 265 tests, all passing)
 - `npm run lint` / `npm run lint:fix` — ESLint flat config (`eslint.config.js`)
 - `npm run format` / `npm run format:check` — Prettier (single quotes, semi, trailingComma es5, printWidth 100, tabWidth 2)
 - `npx tsc --noEmit` — type-check (currently has 4 known errors in FilterRuleRepository/FilterScreen, see below)
@@ -31,7 +31,7 @@ components/                       ↑
 ### Routing
 - Expo Router file-based routing in `App/app/` — this is the real navigation source.
 - `App/src/navigation/` is **empty** — do not add routes there.
-- Tabs: Scanner (index), Catalog, Favorites, Filters. Stack screens: result, contribute, edit/[ean].
+- Tabs: Scanner (index), Catalog, Favorites, Settings. Stack screens: result, edit/[ean], settings/filters, settings/api-key.
 
 ### Actual wiring pattern
 Screens commonly instantiate domain classes and infrastructure repositories **directly** (e.g. `new ProductRating(new RedFlagAnalyzer(), new NovaScoreEvaluator())`). The Zustand stores (`catalogStore`, `filterStore`) handle persistence state, not domain orchestration. Follow this existing pattern rather than forcing everything through stores.
@@ -48,7 +48,8 @@ Screens commonly instantiate domain classes and infrastructure repositories **di
 - To run a single test file: `npm test -- --testPathPattern=RedFlagAnalyzer`
 
 ## Known Issues
-- `npx tsc --noEmit` fails with 4 errors: `FilterRuleRepository.ts` references `created_at` on `NewFilterRule` (which omits it), and the `update` method uses `Record<string, unknown>` instead of the typed SQLite bind params. `FilterScreen.tsx` also references `created_at` on `NewFilterRule`. Lint and tests pass; type-check is the safety gap.
+- `npx tsc --noEmit` fails with 5 errors: `app/(tabs)/_layout.tsx` — `TranslationKey` not found/imported (regression), `OcrCameraSheet.tsx:242` — `string` not assignable to union, `CatalogScreen.tsx:320` — `string` not assignable to translation key type, `ProductScreen.tsx:352` — `string` not assignable to `ScanStatus`. Plus the older `FilterRuleRepository.ts`/`FilterScreen.tsx` `created_at` errors still present.
+- Lint shows 13,741 `prettier/prettier` CRLF errors (Windows line endings on WSL/Linux) — fixable via `npm run lint:fix`.
 - `App/src/screens/ResultScreen.tsx` was the older dead version — the active one is `App/src/screens/ProductScreen.tsx`.
 
 ## Project Conventions
@@ -61,9 +62,9 @@ Screens commonly instantiate domain classes and infrastructure repositories **di
 - OFF User-Agent header must be `FoodScanner/1.0 (private)`.
 
 ## Reference Docs
-- [Systemarchitektur](docs/02_Systemarchitektur.md) — layer boundaries, data flow, DB schema
-- [Roadmap](docs/04_Roadmap.md) — all phases complete, useful for understanding what was built
-- [Lastenheft](docs/01_Lastenheft.md) — requirements and acceptance criteria
-- [UX-Konzept](docs/03_UX-Konzept.md) — screen behavior and visual design tokens
-- [OFF API Reference](docs/openfoodfacts_api_reference.md) — complete OFF API technical reference
-- [Current API Status](docs/CURRENT_API_STATUS.md) — audit of existing OFF integration with gap analysis
+- [Features & Capabilities](docs/Features.md) — complete feature list, DB schema, API integrations
+- [How To Use](docs/HowToUse.md) — user-facing guide, troubleshooting
+- [Technical Documentation](docs/TechnicalDocumentation.md) — architecture, data flow, tech stack, testing
+- [Feature Todo List](docs/Todo.md) — planned / in-progress / done items
+- `docs/01_Lastenheft.md` through `docs/04_Roadmap.md` — original project planning docs (referenced but may be outdated/removed)
+- `docs/openfoodfacts_api_reference.md` / `docs/CURRENT_API_STATUS.md` — API reference docs (referenced but may be outdated/removed)

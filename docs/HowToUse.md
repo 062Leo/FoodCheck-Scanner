@@ -30,10 +30,10 @@ Scan the QR code with Expo Go, or connect a device via USB.
 ## 4. Result Screen
 
 - **Traffic Light Banner** at the top: Green (OK), Yellow (Warning), Red (Critical).
-- Shows: product name, brand, found red flags, Nova score, expandable ingredients list.
+- Shows: product name, brand, found red flags (favorites prioritized), Nova score, expandable ingredients list.
 - **Star icon** (top right): toggle favorite.
 - **Data Source Toggle**: switch between OFF Database and Local Database.
-- **Contribute button**: appears for products not in OFF — opens contribution flow.
+- **Edit icon** (top right): opens Edit Product screen for corrections or contributing new data to OFF.
 - Error states:
   - No internet → Toast "Kein Internet – Produkt kann nicht abgerufen werden"
   - Product not found → Toast "Produkt nicht in der Datenbank"
@@ -55,28 +55,36 @@ Scan the QR code with Expo Go, or connect a device via USB.
 
 ## 7. Filter Rules
 
-- Fourth tab: **Filters**.
+- Accessible via **Settings → Filter Rules** (`/settings/filters`).
 - View, add, edit, and delete custom filter rules.
 - **Ingredient rules**: keyword + RED FLAG / OK severity.
 - **Nutrient rules**: select nutrient (sugar, fat, salt, etc.), set threshold + operator (>, <, =), assign severity.
+- **Favorite toggle**: mark rules with a star to prioritize them in scan results.
 - Rules persist across app restarts.
 - Default hardcoded rules are pre-loaded; you can override any of them.
 
 ## 8. OCR & Product Contribution
 
-When a scanned product is not in Open Food Facts:
+When editing a product (via Edit icon on Product Screen):
 
 1. **Step 1** — Photograph the ingredients list (or skip).
 2. **Step 2** — Photograph the nutrition table (or skip).
-3. **Step 3** — Review & edit the pre-filled form, then confirm upload.
+3. **Step 3** — Review & edit the pre-filled form, then save locally and/or upload to Open Food Facts.
 
-- OCR runs on-device via ML Kit (no cloud, works offline).
+- OCR runs on-device via ML Kit (no cloud, works offline) and/or via OFF Cloud OCR pipeline.
 - Product name is the only required field.
-- On first use: set up a free Open Food Facts account (stored securely via expo-secure-store).
-- After upload: immediate local analysis + navigation to Result Screen.
-- If upload fails (offline, server error): local analysis still runs, product is saved locally.
+- On first upload: set up a free Open Food Facts account (stored securely via expo-secure-store).
+- After upload: immediate local analysis.
+- If upload fails (offline, server error): data is still saved locally.
 
-## 9. Build Standalone APK (Android)
+## 9. Backup & Restore
+
+- **Settings → Backup**: Export entire database (products, favorites, filter rules) as JSON.
+- Share via native share sheet (AirDrop, Mail, Files, etc.).
+- Import a previously exported backup to restore all data.
+- Works fully offline — no cloud account needed.
+
+## 10. Build Standalone APK (Android)
 
 ```bash
 npx eas-cli build --platform android --profile preview
@@ -87,11 +95,11 @@ npx eas-cli build --platform android --profile preview
 - Find the download link in the Expo dashboard or terminal output after the build completes.
 - For a production `.aab` (Play Store): use `--profile production`.
 
-## 10. Development Commands
+## 11. Development Commands
 
 ```bash
 cd App
-npm test                 # Jest (9 suites, 61 tests)
+npm test                 # Jest (23 suites, 265 tests)
 npm run lint             # ESLint
 npm run lint:fix         # ESLint auto-fix
 npm run format           # Prettier
@@ -99,10 +107,11 @@ npm run format:check     # Prettier check
 npx tsc --noEmit         # TypeScript type-check
 ```
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 - **expo-camera / native module errors**: ensure Expo SDK version matches installed packages.
 - **Peer dependency errors on `npm install`**: use `--legacy-peer-deps`.
 - **Haptics not working (simulator)**: test on a real device.
 - **Camera permission denied**: re-enable in system settings.
-- **Credentials lost**: OFF account credentials are stored in the device secure store; re-enter them if you clear app data.
+- **Credentials lost**: OFF account credentials and API keys are stored in the device secure store; re-enter them if you clear app data.
+- **Lint errors about `␍` (CRLF)**: run `npm run lint:fix` to convert Windows line endings on WSL/Linux.
