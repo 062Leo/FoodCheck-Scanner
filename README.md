@@ -1,19 +1,27 @@
-# TrueFood-Scanner
+# FoodCheck Scanner
 
-A React Native (Expo) mobile app that scans food product barcodes and instantly evaluates them for unhealthy ingredients and processing levels — using the Open Food Facts database and on-device OCR.
+A React Native (Expo) mobile app that scans food barcodes and instantly evaluates products for unhealthy ingredients and processing levels — powered by the Open Food Facts database and on-device ML Kit OCR.
 
 ## Features
 
-- **Barcode Scanner** — Point the camera, scan EAN-8/EAN-13 automatically
-- **Traffic Light Rating** — Green (OK), Yellow (Warning), Red (Critical) at a glance
-- **Red Flag Detection** — Finds unhealthy ingredients (palm oil, glucose syrup, additives, etc.)
-- **Nova Score** — Food processing classification (1 = unprocessed, 4 = ultra-processed)
-- **Product Catalog** — All scanned products stored locally (SQLite, offline-capable)
-- **Favorites** — Mark trusted products as favorites
-- **Custom Filter Rules** — Define your own ingredient/nutrient thresholds
-- **OCR Contribution** — Photograph ingredients & nutrition labels, edit, and upload to Open Food Facts
-- **Dark Mode** — Designed for supermarket use
-- **100% Local** — No backend server, no cloud sync, no tracking
+**Scanning & Analysis**
+- Instant barcode scanning (EAN-8/EAN-13) via camera
+- Traffic-light rating: Green / Yellow / Red at a glance
+- Red-flag detection for unhealthy ingredients (palm oil, glucose syrup, additives, etc.)
+- Nova Score classification (1 = unprocessed, 4 = ultra-processed)
+
+**Product Management**
+- Full product catalog stored locally with SQLite — works offline
+- Favorites: mark trusted products for quick access
+- Custom filter rules: define your own ingredient and nutrient thresholds
+
+**OCR Contribution**
+- Photograph ingredient and nutrition labels
+- Edit recognized text and upload missing data to Open Food Facts
+
+**Privacy by Design**
+- No backend server, no cloud sync, no tracking — 100% local
+- Dark mode for comfortable supermarket use
 
 ## Quick Start
 
@@ -23,17 +31,17 @@ npm install
 npm start
 ```
 
-Scan the QR code with Expo Go, or connect a device via USB.
-
-## Documentation
-
-- [HowToUse.md](docs/HowToUse.md) — User guide
-- [TechnicalDocumentation.md](docs/TechnicalDocumentation.md) — Architecture, APIs, database schema, domain logic
+Scan the QR code with Expo Go or connect a device via USB.
 
 ## Tech Stack
 
-TypeScript • Expo • React Native • Zustand • expo-sqlite • Expo Router • ML Kit OCR
+TypeScript · Expo · React Native · Zustand · expo-sqlite · Expo Router · ML Kit OCR
 
 ## Data Source
 
 Product data from [Open Food Facts](https://world.openfoodfacts.org) (Open Database License).
+
+## Documentation
+
+- [How To Use](docs/HowToUse.md) — User guide & troubleshooting
+- [Technical Documentation](docs/TechnicalDocumentation.md) — Architecture, APIs, database schema, domain logic
