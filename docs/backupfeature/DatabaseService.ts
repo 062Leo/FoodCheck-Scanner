@@ -7,9 +7,8 @@ const META_SCHEMA_VERSION_KEY = 'schema_version';
 
 type Migration = (database: SQLite.SQLiteDatabase) => Promise<void>;
 
-let initializationPromise: Promise<SQLite.SQLiteDatabase> | null = null;
-
 export let db: SQLite.SQLiteDatabase | null = null;
+let initializationPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 export function resetDatabaseState(): void {
   db = null;
