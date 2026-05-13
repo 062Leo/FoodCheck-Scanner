@@ -1,11 +1,11 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguageStore } from '../../src/store/languageStore';
-import { getTranslations } from '../../src/i18n/translations';
+import { getTranslations, type TranslationKey } from '../../src/i18n/translations';
 
 export default function TabLayout() {
   const language = useLanguageStore((s) => s.language);
-  const t = (key: string) => getTranslations(language)[key as TranslationKey] || key;
+  const t = (key: TranslationKey) => getTranslations(language)[key] || key;
 
   return (
     <Tabs

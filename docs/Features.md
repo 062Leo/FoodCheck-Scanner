@@ -129,7 +129,6 @@
   - **Severity**: RED FLAG / OK
 - **Auto-Translation**: Neue Zutaten werden via MyMemory in 7 Sprachen übersetzt
 - **Display**: Zutaten-Keywords werden in aktueller App-Sprache (DE/EN) angezeigt
-- **Favoriten-Markierung**: Jede Regel kann per Stern-Toggle als Favorit markiert werden (`is_favorite`-Spalte); favorisierte Regeln erscheinen priorisiert oben in der Liste
 - **Löschen** mit Bestätigungsdialog
 - **19 Kategorie-Presets**: Süßungsmittel, Farbstoffe, Konservierungsstoffe, Geschmacksverstärker & Aromen, Emulgatoren & Stabilisatoren, Verdickungs- & Geliermittel, Säuren & Säureregulatoren, Antioxidationsmittel, Gehärtete Fette & raffinierte Öle, Zucker & Sirupe, Modifizierte Stärken, Phosphate & Mineralstoffe, Füll- & Trägerstoffe, Proteine & Fleischersatz, Trenn- & Überzugsmittel, Treib- & Schutzgase, Metalle, E-Nummern, Sonstige Zusatzstoffe
 
@@ -191,8 +190,8 @@
 - **`meta`**: key (PK), value — Migrations-Tracking
 - **`products`**: id, ean (UNIQUE), name, brands, ingredients, nova_score, nutriscore, raw_json, scanned_at, rating, data_version, last_api_fetch, image_url, image_ingredients_url, image_nutrition_url, image_packaging_url, visit_count, last_seen_at
 - **`favorites`**: id, product_id (FK → products.id CASCADE), added_at
-- **`filter_rules`**: id, type, key, category, threshold, operator, severity, translations (JSON), is_favorite, created_at
-- **7 Migrationen**: initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte → is_favorite-Spalte
+- **`filter_rules`**: id, type, key, category, threshold, operator, severity, translations (JSON), created_at
+- **6 Migrationen**: initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte
 
 ### Backup & Wiederherstellung
 - **Export**: Vollständiger SQLite-Dump als JSON-Datei (Produkte, Favoriten, Filter-Regeln) via `BackupService`

@@ -11,7 +11,7 @@ Run from `App/`:
 - `npm test` — Jest (23 suites, 265 tests, all passing)
 - `npm run lint` / `npm run lint:fix` — ESLint flat config (`eslint.config.js`)
 - `npm run format` / `npm run format:check` — Prettier (single quotes, semi, trailingComma es5, printWidth 100, tabWidth 2)
-- `npx tsc --noEmit` — type-check (currently has 4 known errors in FilterRuleRepository/FilterScreen, see below)
+- `npx tsc --noEmit` — type-check (0 errors)
 
 No dedicated `typecheck` script exists.
 
@@ -48,8 +48,8 @@ Screens commonly instantiate domain classes and infrastructure repositories **di
 - To run a single test file: `npm test -- --testPathPattern=RedFlagAnalyzer`
 
 ## Known Issues
-- `npx tsc --noEmit` fails with 5 errors: `app/(tabs)/_layout.tsx` — `TranslationKey` not found/imported (regression), `OcrCameraSheet.tsx:242` — `string` not assignable to union, `CatalogScreen.tsx:320` — `string` not assignable to translation key type, `ProductScreen.tsx:352` — `string` not assignable to `ScanStatus`. Plus the older `FilterRuleRepository.ts`/`FilterScreen.tsx` `created_at` errors still present.
-- Lint shows 13,741 `prettier/prettier` CRLF errors (Windows line endings on WSL/Linux) — fixable via `npm run lint:fix`.
+- `npx tsc --noEmit` — type-check is clean (0 errors).
+- Lint — clean (0 errors).
 - `App/src/screens/ResultScreen.tsx` was the older dead version — the active one is `App/src/screens/ProductScreen.tsx`.
 
 ## Project Conventions

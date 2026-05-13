@@ -239,7 +239,11 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
     try {
       const client = new OffOcrClient();
       const imagefield = mode === 'ingredients' && lang ? `ingredients_${lang}` : mode;
-      const text = await client.extractText(barcode, uriToUpload, imagefield);
+      const text = await client.extractText(
+        barcode,
+        uriToUpload,
+        imagefield as 'ingredients' | 'nutrition'
+      );
       setExtractedText(text);
       setOcrError(null);
     } catch (e) {

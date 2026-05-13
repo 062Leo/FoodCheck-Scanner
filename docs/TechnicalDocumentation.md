@@ -251,12 +251,11 @@ CREATE TABLE IF NOT EXISTS filter_rules (
   operator     TEXT,
   severity     TEXT NOT NULL,
   translations TEXT,
-  is_favorite  INTEGER NOT NULL DEFAULT 0,
   created_at   TEXT NOT NULL
 );
 ```
 
-### Migrations (DatabaseService, version 7)
+### Migrations (DatabaseService, version 6)
 
 | Version | Migration | Description |
 |---------|-----------|-------------|
@@ -266,7 +265,6 @@ CREATE TABLE IF NOT EXISTS filter_rules (
 | 4 | `addVisitTrackingColumns` | Add visit_count, last_seen_at |
 | 5 | `addCategoryColumn` | Add category column, backfill for existing rules |
 | 6 | `addTranslationsColumn` | Add translations (JSON) for multi-language rule keywords |
-| 7 | `addFavoriteColumn` | Add is_favorite for favorite rule marking |
 
 ## 7. External APIs
 
@@ -445,7 +443,6 @@ Expo Router file-based routing in `App/app/`:
 | Favorites list | Done |
 | Offline cache for scanned products (7-day stale detection) | Done |
 | Custom filter rules (ingredient + nutrient, 19 category presets) | Done |
-| Filter rule favorites (star marking, is_favorite) | Done |
 | Multi-language ingredients search (8 languages) | Done |
 | OCR ingredients list (on-device ML Kit + OFF Cloud Vision) | Done |
 | OCR nutrition table (multi-language) | Done |
@@ -460,13 +457,10 @@ Expo Router file-based routing in `App/app/`:
 
 ## 15. Known Issues
 
-1. **TypeScript type-check errors** (`npx tsc --noEmit`): 5 errors
-   - `app/(tabs)/_layout.tsx:8` — `TranslationKey` type not found/imported (2 errors, regression)
-   - `OcrCameraSheet.tsx:242` — `string` not assignable to `"ingredients" | "nutrition" | undefined`
-   - `CatalogScreen.tsx:320` — `string` not assignable to translation key union type
-   - `ProductScreen.tsx:352` — `string` not assignable to `ScanStatus`
-2. **Lint (CRLF)**: 13,741 `prettier/prettier` errors from Windows line endings on WSL/Linux — fixable via `npm run lint:fix`
-3. Previous `FilterRuleRepository`/`FilterScreen` type errors (referencing `created_at` on `NewFilterRule`) still present alongside the new errors
+- `npx tsc --noEmit` — type-check is clean (0 errors)
+- Lint — clean (0 errors, ESLint 10 flat config)
+- `npm test` — 23 suites, 265 tests, all passing
+- `App/src/screens/ProductScreen.tsx` is the active product detail screen (the old `ResultScreen.tsx` is removed)
 
 ## 16. Non-Functional Requirements
 

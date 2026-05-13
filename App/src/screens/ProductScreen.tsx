@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import * as Haptics from 'expo-haptics';
 import type { Product, ProductRecord } from '../types/Product';
-import type { ScanResult } from '../types/ScanResult';
+import type { ScanResult, ScanStatus } from '../types/ScanResult';
 import type { AIInsightFinding } from '../types/Robotoff';
 import { OpenFoodFactsClient } from '../infrastructure/api/OpenFoodFactsClient';
 import { RobotoffClient } from '../infrastructure/api/RobotoffClient';
@@ -349,7 +349,7 @@ export default function ProductScreen() {
           nutriscore: null,
           raw_json: JSON.stringify({ product }),
           scanned_at: new Date().toISOString(),
-          rating: result?.status || t('product.status.ok'),
+          rating: result?.status || ('OK' as ScanStatus),
         };
         await catalogStore.addProduct(record);
         const savedProduct = await productRepository.findByEan(product.ean);

@@ -15,6 +15,7 @@ import { ProductCard } from '../components/ProductCard';
 import { ProductRepository } from '../infrastructure/db/ProductRepository';
 import { ProductStatistics } from '../domain/analysis/ProductStatistics';
 import { useTranslation } from '../i18n/useTranslation';
+import type { TranslationKey } from '../i18n/translations';
 import type { ProductRecord } from '../types/Product';
 import type { ScanStatus } from '../types/ScanResult';
 import type { ProductStats } from '../domain/analysis/ProductStatistics';
@@ -24,7 +25,7 @@ type SortField = 'scanned_at' | 'name' | 'rating' | 'nova_score' | 'visit_count'
 type SortOrder = 'asc' | 'desc';
 
 const FILTER_OPTIONS: FilterStatus[] = ['All', 'OK', 'Warning', 'Critical'];
-const SORT_OPTIONS: { field: SortField; key: string }[] = [
+const SORT_OPTIONS: { field: SortField; key: TranslationKey }[] = [
   { field: 'scanned_at', key: 'catalog.sort.date' },
   { field: 'name', key: 'catalog.sort.name' },
   { field: 'rating', key: 'catalog.sort.rating' },

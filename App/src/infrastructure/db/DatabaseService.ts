@@ -2,7 +2,7 @@ import * as SQLite from 'expo-sqlite';
 import { seedRules } from '../../domain/rules/seedRules';
 
 const DATABASE_NAME = 'foodscanner.db';
-const DATABASE_VERSION = 7;
+const DATABASE_VERSION = 6;
 const META_SCHEMA_VERSION_KEY = 'schema_version';
 
 type Migration = (database: SQLite.SQLiteDatabase) => Promise<void>;
@@ -23,7 +23,6 @@ const migrations: Record<number, Migration> = {
   4: addVisitTrackingColumns,
   5: addCategoryColumn,
   6: addTranslationsColumn,
-  7: addFavoriteColumn,
 };
 
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -84,9 +83,11 @@ async function migrateSchema(database: SQLite.SQLiteDatabase): Promise<void> {
     const currentVersion = await getSchemaVersion(database);
 
     if (currentVersion > DATABASE_VERSION) {
-      throw new Error(
-        `Unsupported database version ${currentVersion}. Expected at most ${DATABASE_VERSION}.`
+      console.warn(
+        `Database version ${currentVersion} is newer than expected (${DATABASE_VERSION}). ` +
+          'Some features may not be available. Continuing with existing schema.'
       );
+      return;
     }
 
     if (currentVersion === DATABASE_VERSION) {
@@ -370,19 +371,6 @@ async function addTranslationsColumn(database: SQLite.SQLiteDatabase): Promise<v
     const message = getErrorMessage(error);
     if (!message.includes('duplicate column name') && !message.includes('already exists')) {
       throw new Error(`Failed to add translations column: ${message}`, { cause: error });
-    }
-  }
-}
-
-async function addFavoriteColumn(database: SQLite.SQLiteDatabase): Promise<void> {
-  try {
-    await database.execAsync(`
-      ALTER TABLE filter_rules ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0;
-    `);
-  } catch (error) {
-    const message = getErrorMessage(error);
-    if (!message.includes('duplicate column name') && !message.includes('already exists')) {
-      throw new Error(`Failed to add is_favorite column: ${message}`, { cause: error });
     }
   }
 }
