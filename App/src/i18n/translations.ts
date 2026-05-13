@@ -30,7 +30,7 @@ const de = {
   'settings.deeplHint': 'Eigenen DeepL Free API Key hinterlegen',
   'settings.backup': 'Datenbank-Backup',
   'settings.backupHint': 'Produkte, Filter-Regeln & Favoriten als Datei sichern',
-  'settings.backupCreate': 'Backup jetzt erstellen',
+  'settings.backupCreate': 'Backup erstellen',
   'settings.backupCreating': 'Erstelle Backup...',
   'settings.backupLast': 'Letztes Backup: {{date}}',
   'settings.backupNever': 'Noch kein Backup',
@@ -268,6 +268,7 @@ const de = {
   'filter.subtitle': '{{n}} Regeln in {{m}} Kategorien',
   'filter.searchPlaceholder': 'Kategorie, Zutat oder Regel suchen…',
   'filter.add': 'Neu',
+  'filter.favoritesHeader': 'Meine wichtigsten',
   'filter.empty': 'Noch keine Regeln',
   'filter.emptyHint': 'Füge eine Ingredient- oder Nutrient-Regel hinzu.',
   'filter.deleteTitle': 'Regel löschen?',
@@ -324,7 +325,7 @@ const de = {
   'filter.preset.metals': 'Metalle',
   'filter.preset.eNumbers': 'E-Nummern',
   'filter.preset.other': 'Sonstige Zusatzstoffe',
-} as const;
+};
 
 type Translations = typeof de;
 
@@ -351,7 +352,7 @@ const en: Translations = {
   'settings.deeplHint': 'Enter your own DeepL Free API Key',
   'settings.backup': 'Database Backup',
   'settings.backupHint': 'Save products, filter rules & favorites as file',
-  'settings.backupCreate': 'Create Backup Now',
+  'settings.backupCreate': 'Create Backup',
   'settings.backupCreating': 'Creating backup...',
   'settings.backupLast': 'Last backup: {{date}}',
   'settings.backupNever': 'No backup yet',
@@ -579,6 +580,7 @@ const en: Translations = {
   'filter.subtitle': '{{n}} rules in {{m}} categories',
   'filter.searchPlaceholder': 'Search category, ingredient or rule…',
   'filter.add': 'New',
+  'filter.favoritesHeader': 'My Priorities',
   'filter.empty': 'No rules yet',
   'filter.emptyHint': 'Add an ingredient or nutrient rule.',
   'filter.deleteTitle': 'Delete rule?',
@@ -634,7 +636,7 @@ const en: Translations = {
   'filter.preset.metals': 'Metals',
   'filter.preset.eNumbers': 'E-Numbers',
   'filter.preset.other': 'Other Additives',
-} as const;
+};
 
 export type TranslationKey = keyof typeof de;
 
