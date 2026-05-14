@@ -95,6 +95,10 @@ npx eas-cli build --platform android --profile preview
 - Find the download link in the Expo dashboard or terminal output after the build completes.
 - For a production `.aab` (Play Store): use `--profile production`.
 
+```bash
+npx eas-cli build --platform android --profile production
+```
+
 ## 11. Development Commands
 
 ```bash
