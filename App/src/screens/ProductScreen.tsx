@@ -30,7 +30,9 @@ import { ProductNormalizer, PRODUCT_DATA_VERSION } from '../domain/analysis/Prod
 import { RobotoffInsightAnalyzer } from '../domain/analysis/RobotoffInsightAnalyzer';
 import { TranslationRouter } from '../infrastructure/translation/TranslationRouter';
 import { defaultRules } from '../domain/rules/defaultRules';
+import { getIngredientTranslation } from '../domain/rules/ingredientTranslations';
 import { useTranslation } from '../i18n/useTranslation';
+import type { TranslationKey } from '../i18n/translations';
 import { SkeletonLoadingScreen } from '../components/SkeletonLoading';
 import { Accordion } from '../components/Accordion';
 import { NutritionTable } from '../components/NutritionTable';
@@ -65,7 +67,7 @@ function buildProductFromRecord(record: ProductRecord): Product {
 }
 
 export default function ProductScreen() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const params = useLocalSearchParams<{ ean: string; fromCache?: string; cachedData?: string }>();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -424,22 +426,9 @@ export default function ProductScreen() {
   };
 
   const getLangLabel = (code: string): string => {
-    const labels: Record<string, string> = {
-      de: 'Deutsch',
-      en: 'English',
-      fr: 'Français',
-      it: 'Italiano',
-      es: 'Español',
-      nl: 'Nederlands',
-      pt: 'Português',
-      pl: 'Polski',
-      ru: 'Русский',
-      ja: '日本語',
-      zh: '中文',
-      ar: 'العربية',
-      tr: 'Türkçe',
-    };
-    return labels[code] || code.toUpperCase();
+    const langKey = `product.lang.${code}` as TranslationKey;
+    const translated = t(langKey);
+    return translated !== langKey ? translated : code.toUpperCase();
   };
 
   const handleContributePress = () => {
@@ -486,7 +475,8 @@ export default function ProductScreen() {
   const buildGalleryImages = (prod: Product) => {
     const entries: { uri: string; label: string }[] = [];
     if (prod.imageUrl) entries.push({ uri: prod.imageUrl, label: t('product.front') });
-    if (prod.imageIngredientsUrl) entries.push({ uri: prod.imageIngredientsUrl, label: 'Zutaten' });
+    if (prod.imageIngredientsUrl)
+      entries.push({ uri: prod.imageIngredientsUrl, label: t('product.ingredientsImg') });
     if (prod.imageNutritionUrl)
       entries.push({ uri: prod.imageNutritionUrl, label: t('product.nutrition') });
     if (prod.imagePackagingUrl)
@@ -506,20 +496,6 @@ export default function ProductScreen() {
   const formatAllergenLabel = (tag: string): string => {
     const name = tag.startsWith('en:') ? tag.slice(3) : tag;
     return name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ');
-  };
-
-  const formatDate = (isoDate?: string): string => {
-    if (!isoDate) return t('product.unknown');
-    try {
-      const date = new Date(isoDate);
-      return date.toLocaleDateString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-      });
-    } catch {
-      return isoDate;
-    }
   };
 
   const bestIngredientsText = useMemo(
@@ -545,7 +521,7 @@ export default function ProductScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>← Zurück</Text>
+            <Text style={styles.backText}>{t('product.back')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -554,14 +530,14 @@ export default function ProductScreen() {
             <Text style={styles.errorText}>{error?.message || t('product.rating.error')}</Text>
             {error?.type === 'not-found' && (
               <View style={styles.notFoundCard}>
-                <Text style={styles.notFoundSubtitle}>
-                  Hilf mit, den Katalog zu erweitern und füge das Produkt hinzu!
-                </Text>
+                <Text style={styles.notFoundSubtitle}>{t('product.contributeCta')}</Text>
                 <TouchableOpacity
                   style={styles.primaryContributeButton}
                   onPress={handleContributePress}
                 >
-                  <Text style={styles.primaryContributeButtonText}>Jetzt beitragen</Text>
+                  <Text style={styles.primaryContributeButtonText}>
+                    {t('product.contributeButton')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -581,16 +557,14 @@ export default function ProductScreen() {
       <Modal visible={showMissingDataModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Zutaten fehlen</Text>
-            <Text style={styles.modalBody}>
-              Für dieses Produkt ist keine Zutatenliste hinterlegt. Möchtest du sie jetzt ergänzen?
-            </Text>
+            <Text style={styles.modalTitle}>{t('product.modal.missingTitle')}</Text>
+            <Text style={styles.modalBody}>{t('product.modal.missingBody')}</Text>
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.cancelLink}
                 onPress={() => setShowMissingDataModal(false)}
               >
-                <Text style={styles.cancelLinkText}>Später</Text>
+                <Text style={styles.cancelLinkText}>{t('product.modal.later')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.primaryContributeButton}
@@ -599,7 +573,9 @@ export default function ProductScreen() {
                   handleContributePress();
                 }}
               >
-                <Text style={styles.primaryContributeButtonText}>Daten eintragen</Text>
+                <Text style={styles.primaryContributeButtonText}>
+                  {t('product.modal.contribute')}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -609,7 +585,7 @@ export default function ProductScreen() {
       {/* 1. Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>← Zurück</Text>
+          <Text style={styles.backText}>{t('product.back')}</Text>
         </TouchableOpacity>
         <View style={styles.headerRightSection}>
           <TouchableOpacity
@@ -622,7 +598,7 @@ export default function ProductScreen() {
           </TouchableOpacity>
           {isStale && (
             <View style={styles.staleBadge}>
-              <Text style={styles.staleBadgeText}>Veraltet</Text>
+              <Text style={styles.staleBadgeText}>{t('product.stale')}</Text>
             </View>
           )}
           <TouchableOpacity onPress={handleToggleFavorite} disabled={!product || savingProduct}>
@@ -651,7 +627,7 @@ export default function ProductScreen() {
           </View>
         ) : (
           <View style={[styles.heroImage, styles.heroPlaceholder]}>
-            <Text style={styles.heroPlaceholderText}>Kein Bild</Text>
+            <Text style={styles.heroPlaceholderText}>{t('product.noImage')}</Text>
           </View>
         )}
 
@@ -710,7 +686,7 @@ export default function ProductScreen() {
 
         {/* 3. Red Flags */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Red Flags</Text>
+          <Text style={styles.sectionTitle}>{t('product.redFlags')}</Text>
           {result.redFlags.length > 0 ? (
             result.redFlags.map((flag, index) => (
               <View key={`${flag.ingredient}-${index}`} style={styles.redFlagItem}>
@@ -721,13 +697,17 @@ export default function ProductScreen() {
                   ]}
                 />
                 <View style={styles.flagContent}>
-                  <Text style={styles.flagIngredient}>{flag.ingredient}</Text>
+                  <Text style={styles.flagIngredient}>
+                    {flag.canonicalKey
+                      ? getIngredientTranslation(flag.canonicalKey, language)
+                      : flag.ingredient}
+                  </Text>
                   <Text style={styles.flagCategory}>{flag.category}</Text>
                 </View>
               </View>
             ))
           ) : (
-            <Text style={styles.emptyStateText}>Keine Red Flags gefunden</Text>
+            <Text style={styles.emptyStateText}>{t('product.noRedFlags')}</Text>
           )}
         </View>
 
@@ -735,9 +715,9 @@ export default function ProductScreen() {
         {(aiInsights.length > 0 || aiInsightsLoading) && (
           <View style={styles.section}>
             <View style={styles.aiSectionHeader}>
-              <Text style={styles.sectionTitle}>KI-Erkenntnisse</Text>
+              <Text style={styles.sectionTitle}>{t('product.aiInsights')}</Text>
               <View style={styles.aiBadge}>
-                <Text style={styles.aiBadgeText}>AI</Text>
+                <Text style={styles.aiBadgeText}>{t('product.ai')}</Text>
               </View>
             </View>
             {aiInsightsLoading && aiInsights.length === 0 ? (
@@ -790,21 +770,33 @@ export default function ProductScreen() {
         {/* 4. Nutrition Summary */}
         {product.nutriments && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Nährwerte</Text>
+            <Text style={styles.sectionTitle}>{t('product.nutrition')}</Text>
             <View style={styles.nutritionSummaryRow}>
               <NutritionSummaryCard
-                label="Kalorien"
+                label={t('product.calories')}
                 value={product.nutriments.energyKcal100g}
                 unit="kcal"
               />
-              <NutritionSummaryCard label="Fett" value={product.nutriments.fat100g} unit="g" />
-              <NutritionSummaryCard label="Zucker" value={product.nutriments.sugars100g} unit="g" />
               <NutritionSummaryCard
-                label="Eiweiß"
+                label={t('product.fat')}
+                value={product.nutriments.fat100g}
+                unit="g"
+              />
+              <NutritionSummaryCard
+                label={t('product.sugar')}
+                value={product.nutriments.sugars100g}
+                unit="g"
+              />
+              <NutritionSummaryCard
+                label={t('product.protein')}
                 value={product.nutriments.proteins100g}
                 unit="g"
               />
-              <NutritionSummaryCard label="Salz" value={product.nutriments.salt100g} unit="g" />
+              <NutritionSummaryCard
+                label={t('product.salt')}
+                value={product.nutriments.salt100g}
+                unit="g"
+              />
             </View>
           </View>
         )}
@@ -851,7 +843,7 @@ export default function ProductScreen() {
                     {translation?.text && (
                       <View style={styles.translatedBlock}>
                         <Text style={styles.translatedLabel}>
-                          {getLangLabel(targetLang)} (übersetzt)
+                          {t('product.translated', { lang: getLangLabel(targetLang) })}
                         </Text>
                         <Text style={styles.ingredientsText}>{translation.text}</Text>
                       </View>
@@ -881,11 +873,11 @@ export default function ProductScreen() {
         {/* 6. Allergens */}
         {product.allergensTags?.length || product.traces ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Allergene</Text>
+            <Text style={styles.sectionTitle}>{t('product.allergens')}</Text>
 
             {product.allergensTags && product.allergensTags.length > 0 && (
               <View style={styles.allergenGroup}>
-                <Text style={styles.allergenGroupLabel}>Enthält</Text>
+                <Text style={styles.allergenGroupLabel}>{t('product.contains')}</Text>
                 <View style={styles.chipRow}>
                   {product.allergensTags.map((tag, i) => (
                     <View key={i} style={styles.allergenChip}>
@@ -898,7 +890,7 @@ export default function ProductScreen() {
 
             {product.traces ? (
               <View style={styles.allergenGroup}>
-                <Text style={styles.allergenGroupLabel}>Kann Spuren enthalten von</Text>
+                <Text style={styles.allergenGroupLabel}>{t('product.traces')}</Text>
                 <Text style={styles.tracesText}>{product.traces}</Text>
               </View>
             ) : null}
@@ -927,7 +919,7 @@ export default function ProductScreen() {
         {/* 8. Image Gallery */}
         {galleryImages.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Produktbilder</Text>
+            <Text style={styles.sectionTitle}>{t('product.images')}</Text>
             <ImageGallery images={galleryImages} />
           </View>
         )}
@@ -942,12 +934,17 @@ export default function ProductScreen() {
                   content: (
                     <View>
                       {product.origins ? (
-                        <InfoRow label="Herkunft" value={product.origins} />
+                        <InfoRow label={t('product.origin')} value={product.origins} />
                       ) : null}
                       {product.manufacturingPlaces ? (
-                        <InfoRow label="Herstellungsort" value={product.manufacturingPlaces} />
+                        <InfoRow
+                          label={t('product.manufacturingPlace')}
+                          value={product.manufacturingPlaces}
+                        />
                       ) : null}
-                      {product.stores ? <InfoRow label="Geschäfte" value={product.stores} /> : null}
+                      {product.stores ? (
+                        <InfoRow label={t('product.stores')} value={product.stores} />
+                      ) : null}
                     </View>
                   ),
                 },

@@ -1,21 +1,25 @@
 import { View, Text, StyleSheet } from 'react-native';
 import type { ProductNutriments } from '../types/Product';
+import { useTranslation } from '../i18n/useTranslation';
+import type { TranslationKey } from '../i18n/translations';
+
+type NutrientKey = keyof ProductNutriments;
 
 interface NutritionRow {
-  label: string;
-  key: keyof ProductNutriments;
+  labelKey: TranslationKey;
+  key: NutrientKey;
   unit: string;
 }
 
 const NUTRIENT_ROWS: NutritionRow[] = [
-  { label: 'Energie', key: 'energyKcal100g', unit: 'kcal' },
-  { label: 'Fett', key: 'fat100g', unit: 'g' },
-  { label: 'davon gesättigte Fettsäuren', key: 'saturatedFat100g', unit: 'g' },
-  { label: 'Kohlenhydrate', key: 'carbohydrates100g', unit: 'g' },
-  { label: 'davon Zucker', key: 'sugars100g', unit: 'g' },
-  { label: 'Ballaststoffe', key: 'fiber100g', unit: 'g' },
-  { label: 'Eiweiß', key: 'proteins100g', unit: 'g' },
-  { label: 'Salz', key: 'salt100g', unit: 'g' },
+  { labelKey: 'product.nutritionEnergy', key: 'energyKcal100g', unit: 'kcal' },
+  { labelKey: 'product.nutritionFat', key: 'fat100g', unit: 'g' },
+  { labelKey: 'product.nutritionSaturatedFat', key: 'saturatedFat100g', unit: 'g' },
+  { labelKey: 'product.nutritionCarbs', key: 'carbohydrates100g', unit: 'g' },
+  { labelKey: 'product.nutritionSugar', key: 'sugars100g', unit: 'g' },
+  { labelKey: 'product.nutritionFiber', key: 'fiber100g', unit: 'g' },
+  { labelKey: 'product.nutritionProtein', key: 'proteins100g', unit: 'g' },
+  { labelKey: 'product.nutritionSalt', key: 'salt100g', unit: 'g' },
 ];
 
 interface NutritionTableProps {
@@ -24,6 +28,7 @@ interface NutritionTableProps {
 }
 
 export function NutritionTable({ nutriments, servingSize }: NutritionTableProps) {
+  const { t } = useTranslation();
   const hasAnyValue = NUTRIENT_ROWS.some((row) => nutriments[row.key] !== undefined);
   if (!hasAnyValue) return null;
 
@@ -31,8 +36,12 @@ export function NutritionTable({ nutriments, servingSize }: NutritionTableProps)
     <View style={styles.container}>
       <View style={styles.table}>
         <View style={styles.headerRow}>
-          <Text style={[styles.cell, styles.headerCell, styles.labelCell]}>Nährwerte</Text>
-          <Text style={[styles.cell, styles.headerCell, styles.valueCell]}>pro 100 g</Text>
+          <Text style={[styles.cell, styles.headerCell, styles.labelCell]}>
+            {t('product.nutritionHeader')}
+          </Text>
+          <Text style={[styles.cell, styles.headerCell, styles.valueCell]}>
+            {t('product.nutritionPer100g')}
+          </Text>
         </View>
 
         {NUTRIENT_ROWS.map((row, index) => {
@@ -41,7 +50,9 @@ export function NutritionTable({ nutriments, servingSize }: NutritionTableProps)
 
           return (
             <View key={row.key} style={[styles.row, index % 2 === 1 && styles.rowAlt]}>
-              <Text style={[styles.cell, styles.labelCell, styles.labelText]}>{row.label}</Text>
+              <Text style={[styles.cell, styles.labelCell, styles.labelText]}>
+                {t(row.labelKey)}
+              </Text>
               <Text style={[styles.cell, styles.valueCell, styles.valueText]}>
                 {formatNumber(value)} {row.unit}
               </Text>
@@ -50,7 +61,11 @@ export function NutritionTable({ nutriments, servingSize }: NutritionTableProps)
         })}
       </View>
 
-      {servingSize && <Text style={styles.servingNote}>Portionsgröße: {servingSize}</Text>}
+      {servingSize && (
+        <Text style={styles.servingNote}>
+          {t('product.nutritionServingSize')}: {servingSize}
+        </Text>
+      )}
     </View>
   );
 }

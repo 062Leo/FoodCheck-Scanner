@@ -9,6 +9,7 @@ export interface RedFlagFinding {
   ingredient: string;
   category: string;
   severity: RedFlagSeverity;
+  canonicalKey?: string;
 }
 
 export interface NovaDetails {

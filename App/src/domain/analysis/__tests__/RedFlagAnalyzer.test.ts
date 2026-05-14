@@ -30,7 +30,7 @@ describe('RedFlagAnalyzer', () => {
   it('should find single red flag in ingredient list', () => {
     const result = analyzer.analyze('Wasser, Zucker, Palmöl, Salz', mockRules);
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
+    expect(result[0]).toMatchObject({
       ingredient: 'Palmöl',
       category: 'Kritische Öle',
       severity: 'critical',

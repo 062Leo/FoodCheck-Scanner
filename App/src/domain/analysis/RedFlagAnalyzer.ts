@@ -4,7 +4,7 @@ import type { RedFlagRule } from '../rules/defaultRules';
 import { defaultRedFlagRules } from './defaultRedFlagRules';
 import { IngredientParser } from './IngredientParser';
 import { IngredientTaxonomy } from './IngredientTaxonomy';
-import { getAllSearchTerms } from '../rules/ingredientTranslations';
+import { getAllSearchTerms, resolveIngredientKey } from '../rules/ingredientTranslations';
 
 type AnalyzerRule = RedFlagRule | FilterRule;
 
@@ -80,6 +80,7 @@ export class RedFlagAnalyzer {
             ingredient: this.extractIngredient(ingredientsText, matchedTerm),
             category: rule.category,
             severity: 'critical',
+            canonicalKey: rule.key,
           });
           continue;
         }
@@ -98,6 +99,7 @@ export class RedFlagAnalyzer {
           ingredient: rule.key,
           category: rule.category,
           severity: 'critical',
+          canonicalKey: rule.key,
         });
         continue;
       }
@@ -117,6 +119,7 @@ export class RedFlagAnalyzer {
         ingredient: this.extractIngredient(ingredientsText, rule.searchTerm),
         category: rule.category,
         severity: rule.severity,
+        canonicalKey: resolveIngredientKey(rule.searchTerm),
       });
     }
 
