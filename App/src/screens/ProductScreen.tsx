@@ -621,7 +621,7 @@ export default function ProductScreen() {
             <Image
               source={{ uri: product.imageUrl }}
               style={styles.heroImage}
-              resizeMode="cover"
+              resizeMode="contain"
               onLoadEnd={() => setHeroImageLoaded(true)}
             />
           </View>
