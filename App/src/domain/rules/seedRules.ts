@@ -2532,16 +2532,9 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
-  // Metalle (3)
+  // Metalle (1)
   {
     key: 'Aluminium',
-    category: 'Metalle',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  { key: 'Gold', category: 'Metalle', type: 'ingredient' as const, severity: 'red_flag' as const },
-  {
-    key: 'Silver',
     category: 'Metalle',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -3791,25 +3784,6 @@ export const seedRules: FilterRuleSeed[] = [
   {
     key: 'Xylitol',
     category: 'Süßungsmittel',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  // Treib- & Schutzgase (3)
-  {
-    key: 'Helium',
-    category: 'Treib- & Schutzgase',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
-    key: 'Nitrogen',
-    category: 'Treib- & Schutzgase',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
-    key: 'Oxygen',
-    category: 'Treib- & Schutzgase',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
