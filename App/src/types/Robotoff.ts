@@ -59,8 +59,12 @@ export interface AIInsightFinding {
   description: string;
 }
 
-export function formatInsightValue(type: RobotoffInsightType, valueTag: string | null): string {
-  if (!valueTag) return 'Unbekannt';
+export function formatInsightValue(
+  type: RobotoffInsightType,
+  valueTag: string | null,
+  fallback = 'Unknown'
+): string {
+  if (!valueTag) return fallback;
 
   if (type === 'category' || type === 'label' || type === 'ingredient') {
     return valueTag

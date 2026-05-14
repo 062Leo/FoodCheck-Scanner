@@ -66,6 +66,30 @@ function buildProductFromRecord(record: ProductRecord): Product {
   });
 }
 
+const CATEGORY_TRANSLATION_KEYS: Record<string, TranslationKey> = {
+  Süßungsmittel: 'filter.preset.sweeteners',
+  Farbstoffe: 'filter.preset.colors',
+  Konservierungsstoffe: 'filter.preset.preservatives',
+  'Geschmacksverstärker & Aromen': 'filter.preset.flavorEnhancers',
+  'Emulgatoren & Stabilisatoren': 'filter.preset.emulsifiers',
+  'Verdickungs- & Geliermittel': 'filter.preset.thickeners',
+  'Säuren & Säureregulatoren': 'filter.preset.acids',
+  Antioxidationsmittel: 'filter.preset.antioxidants',
+  'Gehärtete Fette & raffinierte Öle': 'filter.preset.hydrogenatedFats',
+  'Zucker & Sirupe': 'filter.preset.sugarSyrups',
+  'Modifizierte Stärken': 'filter.preset.modifiedStarches',
+  'Phosphate & Mineralstoffe': 'filter.preset.phosphates',
+  'Füll- & Trägerstoffe': 'filter.preset.fillers',
+  'Proteine & Fleischersatz': 'filter.preset.proteins',
+  'Trenn- & Überzugsmittel': 'filter.preset.releaseAgents',
+  'Treib- & Schutzgase': 'filter.preset.propellantGases',
+  Metalle: 'filter.preset.metals',
+  'E-Nummern': 'filter.preset.eNumbers',
+  'Sonstige Zusatzstoffe': 'filter.preset.other',
+  'Kritische Öle': 'product.category.criticalOils',
+  Zucker: 'product.category.sugar',
+};
+
 export default function ProductScreen() {
   const { t, language } = useTranslation();
   const params = useLocalSearchParams<{ ean: string; fromCache?: string; cachedData?: string }>();
@@ -272,7 +296,7 @@ export default function ProductScreen() {
             const insights = await robotoffClient.getInsights(params.ean);
             if (insights.length > 0) {
               const insightAnalyzer = new RobotoffInsightAnalyzer();
-              const findings = insightAnalyzer.analyze(insights);
+              const findings = insightAnalyzer.analyze(insights, language);
               setAiInsights(findings);
               setResult((prev) => (prev ? { ...prev, aiInsights: findings } : prev));
             }
@@ -702,7 +726,11 @@ export default function ProductScreen() {
                       ? getIngredientTranslation(flag.canonicalKey, language)
                       : flag.ingredient}
                   </Text>
-                  <Text style={styles.flagCategory}>{flag.category}</Text>
+                  <Text style={styles.flagCategory}>
+                    {t(
+                      CATEGORY_TRANSLATION_KEYS[flag.category] ?? (flag.category as TranslationKey)
+                    )}
+                  </Text>
                 </View>
               </View>
             ))

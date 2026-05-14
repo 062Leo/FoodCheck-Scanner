@@ -175,6 +175,11 @@ const de = {
   'product.nutritionHeader': 'Nährwerte',
   'product.nutritionPer100g': 'pro 100 g',
   'product.nutritionServingSize': 'Portionsgröße',
+  'product.ai.recognizedAs': 'Erkannt als:',
+  'product.ai.confidence': 'Konfidenz:',
+  'product.ai.unknown': 'Unbekannt',
+  'product.category.criticalOils': 'Kritische Öle',
+  'product.category.sugar': 'Zucker',
   'product.original': 'Original',
   'product.modal.missingTitle': 'Zutaten fehlen',
   'product.modal.missingBody':
@@ -535,6 +540,11 @@ const en: Translations = {
   'product.nutritionHeader': 'Nutrition',
   'product.nutritionPer100g': 'per 100 g',
   'product.nutritionServingSize': 'Serving size',
+  'product.ai.recognizedAs': 'Recognized as:',
+  'product.ai.confidence': 'Confidence:',
+  'product.ai.unknown': 'Unknown',
+  'product.category.criticalOils': 'Critical Oils',
+  'product.category.sugar': 'Sugar',
   'product.original': 'Original',
   'product.modal.missingTitle': 'Ingredients missing',
   'product.modal.missingBody':

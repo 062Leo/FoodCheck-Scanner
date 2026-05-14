@@ -1,8 +1,11 @@
 import type { RobotoffInsight, AIInsightFinding } from '../../types/Robotoff';
 import { isHighConfidence, isRelevantForAnalysis, formatInsightValue } from '../../types/Robotoff';
+import { getTranslations } from '../../i18n/translations';
+import type { SupportedLanguage } from '../../i18n/translations';
 
 export class RobotoffInsightAnalyzer {
-  analyze(insights: RobotoffInsight[]): AIInsightFinding[] {
+  analyze(insights: RobotoffInsight[], language: SupportedLanguage = 'de'): AIInsightFinding[] {
+    const tx = getTranslations(language);
     const findings: AIInsightFinding[] = [];
 
     for (const insight of insights) {
@@ -12,11 +15,11 @@ export class RobotoffInsightAnalyzer {
       findings.push({
         id: insight.id,
         type: insight.type,
-        value: formatInsightValue(insight.type, insight.value_tag),
+        value: formatInsightValue(insight.type, insight.value_tag, tx['product.ai.unknown']),
         confidence: insight.confidence,
         predictor: insight.predictor,
         annotation: insight.annotation,
-        description: this.buildDescription(insight),
+        description: this.buildDescription(insight, language),
       });
     }
 
@@ -29,15 +32,18 @@ export class RobotoffInsightAnalyzer {
     return findings;
   }
 
-  private buildDescription(insight: RobotoffInsight): string {
+  private buildDescription(insight: RobotoffInsight, language: SupportedLanguage): string {
+    const tx = getTranslations(language);
     const parts: string[] = [];
 
     if (insight.value_tag) {
-      parts.push(`Erkannt als: ${formatInsightValue(insight.type, insight.value_tag)}`);
+      parts.push(
+        `${tx['product.ai.recognizedAs']} ${formatInsightValue(insight.type, insight.value_tag, tx['product.ai.unknown'])}`
+      );
     }
 
     if (insight.confidence !== null) {
-      parts.push(`Konfidenz: ${Math.round(insight.confidence * 100)}%`);
+      parts.push(`${tx['product.ai.confidence']} ${Math.round(insight.confidence * 100)}%`);
     }
 
     return parts.join(' · ');
