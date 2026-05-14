@@ -24,7 +24,6 @@ export interface NormalizedProduct {
   stores: string | null;
   quantity: string | null;
   servingSize: string | null;
-  lastModified: string | null;
   nutriments: ProductNutriments | null;
   ingredientsTextByLang: Record<string, string> | null;
   ingredientsTextDe: string | null;
@@ -56,7 +55,6 @@ export class ProductNormalizer {
       stores: product.stores || null,
       quantity: product.quantity || null,
       servingSize: product.servingSize || null,
-      lastModified: product.lastModified || null,
       nutriments: product.nutriments || null,
       ingredientsTextByLang: product.ingredientsTextByLang || null,
       ingredientsTextDe: product.ingredientsTextDe || null,
@@ -138,7 +136,6 @@ export class ProductNormalizer {
       product.manufacturingPlaces = strOr('manufacturingPlaces', 'manufacturing_places');
       product.stores = strOr('stores');
       product.traces = strOr('traces');
-      product.lastModified = strOr('lastModified', 'last_modified_t');
 
       if (typeof p.brand === 'string') product.brand = p.brand;
       if (typeof p.brands === 'string' && !product.brand) product.brand = p.brands;

@@ -948,10 +948,6 @@ export default function ProductScreen() {
                         <InfoRow label="Herstellungsort" value={product.manufacturingPlaces} />
                       ) : null}
                       {product.stores ? <InfoRow label="Geschäfte" value={product.stores} /> : null}
-                      <InfoRow
-                        label="Letzte Aktualisierung"
-                        value={formatDate(product.lastModified)}
-                      />
                     </View>
                   ),
                 },

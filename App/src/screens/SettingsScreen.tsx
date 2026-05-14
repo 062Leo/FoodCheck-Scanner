@@ -160,6 +160,53 @@ export default function SettingsScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.title}>{t('settings.title')}</Text>
 
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => setHowToUseExpanded(!howToUseExpanded)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.howToUseHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.itemText}>{t('settings.howToUse')}</Text>
+            <Text style={styles.itemHint}>{t('settings.howToUseHint')}</Text>
+          </View>
+          <Ionicons
+            name={howToUseExpanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color="#757575"
+          />
+        </View>
+      </TouchableOpacity>
+
+      {howToUseExpanded && (
+        <View style={styles.howToUseContent}>
+          <Accordion
+            items={[
+              {
+                title: t('tab.scanner'),
+                content: <Text style={styles.howToUseText}>{t('howToUse.scanner')}</Text>,
+              },
+              {
+                title: t('catalog.title'),
+                content: <Text style={styles.howToUseText}>{t('howToUse.catalog')}</Text>,
+              },
+              {
+                title: t('tab.favorites'),
+                content: <Text style={styles.howToUseText}>{t('howToUse.favorites')}</Text>,
+              },
+              {
+                title: t('edit.title'),
+                content: <Text style={styles.howToUseText}>{t('howToUse.edit')}</Text>,
+              },
+              {
+                title: t('settings.backup'),
+                content: <Text style={styles.howToUseText}>{t('howToUse.backup')}</Text>,
+              },
+            ]}
+          />
+        </View>
+      )}
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('settings.offAccount')}</Text>
         {offUsername ? (
@@ -186,7 +233,6 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
-        <Text style={styles.accountHint}>{t('settings.languageHint')}</Text>
         <View style={styles.languageRow}>
           {LANGUAGES.map((lang) => (
             <TouchableOpacity
@@ -319,53 +365,6 @@ export default function SettingsScreen() {
           />
         </View>
       </View>
-
-      <TouchableOpacity
-        style={styles.item}
-        onPress={() => setHowToUseExpanded(!howToUseExpanded)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.howToUseHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.itemText}>{t('settings.howToUse')}</Text>
-            <Text style={styles.itemHint}>{t('settings.howToUseHint')}</Text>
-          </View>
-          <Ionicons
-            name={howToUseExpanded ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color="#757575"
-          />
-        </View>
-      </TouchableOpacity>
-
-      {howToUseExpanded && (
-        <View style={styles.howToUseContent}>
-          <Accordion
-            items={[
-              {
-                title: t('tab.scanner'),
-                content: <Text style={styles.howToUseText}>{t('howToUse.scanner')}</Text>,
-              },
-              {
-                title: t('catalog.title'),
-                content: <Text style={styles.howToUseText}>{t('howToUse.catalog')}</Text>,
-              },
-              {
-                title: t('tab.favorites'),
-                content: <Text style={styles.howToUseText}>{t('howToUse.favorites')}</Text>,
-              },
-              {
-                title: t('edit.title'),
-                content: <Text style={styles.howToUseText}>{t('howToUse.edit')}</Text>,
-              },
-              {
-                title: t('settings.backup'),
-                content: <Text style={styles.howToUseText}>{t('howToUse.backup')}</Text>,
-              },
-            ]}
-          />
-        </View>
-      )}
 
       <TouchableOpacity style={styles.item} onPress={() => router.push('/settings/about')}>
         <Text style={styles.itemText}>{t('settings.about')}</Text>

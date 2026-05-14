@@ -64,7 +64,7 @@
 - **Zutatenliste**: Mehrsprachig (de/en/fr/it/es/nl/pt/pl) mit Accordion; pro Sprache Übersetzen-Button (DeepL/MyMemory)
 - **Allergene**: Enthält-Tags + Spuren-Warnung
 - **Bildergalerie**: Swipeable (Vorderseite, Zutaten, Nährwerte, Verpackung)
-- **Zusatzinfos**: Herkunft, Herstellungsort, Geschäfte, letzte Aktualisierung
+- **Zusatzinfos**: Herkunft, Herstellungsort, Geschäfte
 - **Datenquellen-Umschalter**: Live OFF API vs. lokaler Cache
 - **Favoriten**: Stern-Toggle im Header
 - **Bearbeiten**: Stift-Icon → EditProductScreen

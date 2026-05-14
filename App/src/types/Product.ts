@@ -61,7 +61,6 @@ export interface Product {
   origins?: string;
   manufacturingPlaces?: string;
   stores?: string;
-  lastModified?: string;
 }
 
 export function getMissingScoreTags(product: Product): string[] {

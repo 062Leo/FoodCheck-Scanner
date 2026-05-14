@@ -152,7 +152,6 @@ function mapOffProduct(ean: string, p: Record<string, unknown>): Product {
     origins: p.origins as string | undefined,
     manufacturingPlaces: p.manufacturing_places as string | undefined,
     stores: p.stores as string | undefined,
-    lastModified: p.last_modified_t as string | undefined,
   };
 }
 
