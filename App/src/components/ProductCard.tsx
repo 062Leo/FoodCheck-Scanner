@@ -10,6 +10,7 @@ const STATUS_COLORS: Record<ScanStatus, string> = {
   OK: '#4CAF50',
   Warning: '#FFC107',
   Critical: '#F44336',
+  Unknown: '#757575',
 };
 
 interface ProductCardProps {

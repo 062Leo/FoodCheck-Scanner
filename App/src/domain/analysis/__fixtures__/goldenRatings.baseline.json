@@ -12,7 +12,6 @@
         "critical|Süßungsmittel|Sugar|Zucker",
         "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|Palmöl",
         "critical|Proteine & Fleischersatz|Skim Milk Powder|Magermilchpulver",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
         "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin"
       ]
     },
@@ -21,33 +20,24 @@
       "nova": 4,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Farbstoffe|Color|Farbstoff",
         "critical|E-Nummern|E150d|E150d",
-        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure",
-        "warning|Säuerungsmittel||Säuerungsmittel Phosphorsäure"
+        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure"
       ]
     },
     "4000000000004 Cola light": {
       "status": "Critical",
       "nova": 4,
       "redFlags": [
-        "critical|Farbstoffe|Color|Farbstoff",
         "critical|Farbstoffe|Caramel Color|Zuckerkulör",
-        "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Süßungsmittel|Sugar Color|Zuckerkulör",
-        "critical|E-Nummern|E150d|E150d",
-        "critical|Süßungsmittel|Sweetener|Süßungsmittel",
         "critical|Süßungsmittel|Aspartame|Aspartam",
         "critical|Süßungsmittel|Acesulfame K|Acesulfam K",
-        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure",
-        "warning|Süßungsmittel||Süßungsmittel Aspartam und Acesulfam K",
-        "warning|Säuerungsmittel||Säuerungsmittel Phosphorsäure und Citronensäure"
+        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure"
       ]
     },
     "4000000000005 Amaranth-Müsli": {
-      "status": "Warning",
+      "status": "OK",
       "nova": 1,
-      "redFlags": ["critical|Farbstoffe|Amaranth|Amaranth", "critical|Farbstoff||Amaranth gepufft"]
+      "redFlags": []
     },
     "4000000000006 Bratwurst": {
       "status": "Critical",
@@ -55,17 +45,14 @@
       "redFlags": [
         "critical|Zucker & Sirupe|Dextrose|Dextrose",
         "critical|Emulgatoren & Stabilisatoren|Stabiliser|Stabilisator",
-        "critical|Antioxidationsmittel|Antioxidant|Antioxidationsmittel",
         "critical|Antioxidationsmittel|Sodium Ascorbate|Natriumascorbat",
-        "critical|Konservierungsstoffe|Sodium Nitrite|Natriumnitrit",
-        "critical|Konservierungsstoff||Konservierungsstoff: Natriumnitrit"
+        "critical|Konservierungsstoffe|Sodium Nitrite|Natriumnitrit"
       ]
     },
     "4000000000007 Fruchtgummi": {
       "status": "Critical",
       "nova": 4,
       "redFlags": [
-        "critical|Zucker & Sirupe|Glucose|Glukose",
         "critical|Zucker & Sirupe|Glucose Syrup|Glukosesirup",
         "critical|Süßungsmittel|Sugar|Zucker",
         "critical|Sonstige Zusatzstoffe|Gelatin|Gelatin",
@@ -80,7 +67,6 @@
       "nova": 4,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
         "critical|E-Nummern|E471|E471",
         "critical|Modifizierte Stärken|Flour Treatment Agent|Mehlbehandlungsmittel"
       ]
@@ -98,26 +84,19 @@
     "4000000000011 Limonade": {
       "status": "Critical",
       "nova": 4,
-      "redFlags": [
-        "critical|Zucker & Sirupe|Glucose|Glukose",
-        "critical|Zucker & Sirupe|Glucose Fructose Syrup|Glukose-Fruktose-Sirup",
-        "critical|Zucker & Sirupe|Fructose|Fruktose"
-      ]
+      "redFlags": ["critical|Zucker & Sirupe|Glucose Fructose Syrup|Glukose-Fruktose-Sirup"]
     },
     "4000000000012 Chocolate bar": {
       "status": "Critical",
       "nova": 4,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Sugar",
-        "critical|Zucker & Sirupe|Glucose|glucose",
         "critical|Zucker & Sirupe|Glucose Syrup|glucose syrup",
         "critical|Gehärtete Fette & raffinierte Öle|Hydrogenated Vegetable Fat|hydrogenated vegetable fat",
         "critical|Gehärtete Fette & raffinierte Öle|Palm Kernel Oil|palm kernel oil",
         "critical|Proteine & Fleischersatz|Whey Powder|whey powder",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|emulsifier",
         "critical|Emulgatoren & Stabilisatoren|Lecithin|lecithin",
-        "critical|E-Nummern|E102|E102",
-        "critical|Farbstoff||Tartrazin (E102)"
+        "critical|E-Nummern|E102|E102"
       ]
     },
     "4000000000013 Pudding": {
@@ -125,20 +104,17 @@
       "nova": 4,
       "redFlags": [
         "critical|Modifizierte Stärken|Modified Starch|modifizierte Stärke",
-        "critical|E-Nummern|E140|E140",
         "critical|E-Nummern|E1400|E1400",
-        "critical|E-Nummern|E141|E141",
         "critical|Süßungsmittel|Sugar|Zucker"
       ]
     },
     "4000000000014 Eistee mit E-Nummern": {
       "status": "Critical",
       "nova": 4,
-      "redFlags": ["warning|Konservierungsstoff||Natriumbenzoat (E211)"]
+      "redFlags": ["critical|E-Nummern|E330|E330", "critical|E-Nummern|E211|E211"]
     },
     "4000000000015 Ohne Daten": {
-      "status": "OK",
-      "nova": 1,
+      "status": "Unknown",
       "redFlags": []
     },
     "4000000000016 Nur NOVA 4": {
@@ -148,7 +124,6 @@
     },
     "4000000000017 Reis": {
       "status": "OK",
-      "nova": 1,
       "redFlags": []
     },
     "4000000000018 Zuckerreiche Cerealien": {
@@ -169,13 +144,9 @@
       "nova": 4,
       "redFlags": [
         "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|Palmöl",
-        "critical|Geschmacksverstärker & Aromen|Flavor Enhancer|Geschmacksverstärker",
         "critical|Geschmacksverstärker & Aromen|Monosodium Glutamate|Mononatriumglutamat",
         "critical|Geschmacksverstärker & Aromen|Yeast Extract|Hefeextrakt",
-        "critical|Modifizierte Stärken|Maltodextrin|Maltodextrin",
-        "critical|Modifizierte Stärken|Dextrin|dextrin",
-        "critical|E-Nummern|E621|E621",
-        "warning|Geschmacksverstärker||Geschmacksverstärker Mononatriumglutamat"
+        "critical|Modifizierte Stärken|Maltodextrin|Maltodextrin"
       ]
     },
     "4000000000021 Olivenöl": {
@@ -187,7 +158,6 @@
       "status": "Critical",
       "nova": 4,
       "redFlags": [
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
         "critical|Emulgatoren & Stabilisatoren|Mono Diglycerides|Mono- und Diglyceride",
         "critical|Emulgatoren & Stabilisatoren|Fatty Acids|fettsäuren",
         "critical|Farbstoffe|Color|Farbstoff"
@@ -199,7 +169,6 @@
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Sucre",
         "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|huile de palme",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|émulsifiant",
         "critical|Emulgatoren & Stabilisatoren|Lecithin|lécithine"
       ]
     },
@@ -207,29 +176,20 @@
       "status": "Critical",
       "nova": 4,
       "redFlags": [
-        "critical|Süßungsmittel|Sweetener|Süßungsmittel",
         "critical|Süßungsmittel|Sorbitol|Sorbit",
         "critical|Süßungsmittel|Maltitol|Maltit",
         "critical|Süßungsmittel|Mannitol|Mannit",
         "critical|Süßungsmittel|Aspartame|Aspartam",
         "critical|Süßungsmittel|Acesulfame K|Acesulfam K",
-        "critical|Verdickungs- & Geliermittel|Thickener|Verdickungsmittel",
         "critical|Verdickungs- & Geliermittel|Acacia Gum|Gummi arabicum",
-        "critical|Füll- & Trägerstoffe|Humectant|Feuchthaltemittel",
         "critical|Füll- & Trägerstoffe|Glycerol|Glycerin",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
         "critical|Emulgatoren & Stabilisatoren|Lecithin|lecithin",
-        "critical|Farbstoffe|Color|Farbstoff",
         "critical|E-Nummern|E171|E171",
-        "critical|Antioxidationsmittel|Antioxidant|Antioxidationsmittel",
-        "critical|E-Nummern|E321|E321",
-        "critical|Farbstoff||Titandioxid (E171)",
-        "warning|Antioxidationsmittel||Butylhydroxytoluol (E321)"
+        "critical|E-Nummern|E321|E321"
       ]
     },
     "4000000000025 Tafelwasser": {
       "status": "OK",
-      "nova": 1,
       "redFlags": []
     },
     "4000000000026 Butter": {
@@ -242,9 +202,7 @@
       "nova": 4,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
-        "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin",
-        "critical|E-Nummern|E322|E322"
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin"
       ]
     },
     "4000000000028 Kurkuma gemahlen": {
@@ -257,7 +215,6 @@
       "nova": 4,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Säuren & Säureregulatoren|Acidity Regulator|Säureregulator",
         "critical|Phosphate & Mineralstoffe|Sodium Citrate|Natriumcitrat",
         "critical|Antioxidationsmittel|Antioxidant|Antioxidationsmittel"
       ]
@@ -269,7 +226,6 @@
         "critical|Proteine & Fleischersatz|Soy Protein|Sojaprotein",
         "critical|Süßungsmittel|Maltitol|Maltit",
         "critical|Süßungsmittel|Sucralose|Sucralose",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
         "critical|E-Nummern|E322|E322"
       ]
     },
@@ -279,8 +235,7 @@
       "redFlags": []
     },
     "4000000000032 Nur Nährwerte": {
-      "status": "OK",
-      "nova": 1,
+      "status": "Unknown",
       "redFlags": []
     }
   },
@@ -297,8 +252,8 @@
         "critical|Süßungsmittel|Sugar|Zucker",
         "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|Palmöl",
         "critical|Proteine & Fleischersatz|Skim Milk Powder|Magermilchpulver",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
-        "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin"
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin",
+        "critical|Zucker & Sirupe|sugars_100g|sugars_100g"
       ]
     },
     "4000000000003 Cola": {
@@ -306,33 +261,24 @@
       "nova": 4,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Farbstoffe|Color|Farbstoff",
         "critical|E-Nummern|E150d|E150d",
-        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure",
-        "warning|Säuerungsmittel||Säuerungsmittel Phosphorsäure"
+        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure"
       ]
     },
     "4000000000004 Cola light": {
       "status": "Critical",
       "nova": 4,
       "redFlags": [
-        "critical|Farbstoffe|Color|Farbstoff",
         "critical|Farbstoffe|Caramel Color|Zuckerkulör",
-        "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Süßungsmittel|Sugar Color|Zuckerkulör",
-        "critical|E-Nummern|E150d|E150d",
-        "critical|Süßungsmittel|Sweetener|Süßungsmittel",
         "critical|Süßungsmittel|Aspartame|Aspartam",
         "critical|Süßungsmittel|Acesulfame K|Acesulfam K",
-        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure",
-        "warning|Süßungsmittel||Süßungsmittel Aspartam und Acesulfam K",
-        "warning|Säuerungsmittel||Säuerungsmittel Phosphorsäure und Citronensäure"
+        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure"
       ]
     },
     "4000000000005 Amaranth-Müsli": {
-      "status": "Warning",
+      "status": "OK",
       "nova": 1,
-      "redFlags": ["critical|Farbstoffe|Amaranth|Amaranth", "critical|Farbstoff||Amaranth gepufft"]
+      "redFlags": []
     },
     "4000000000006 Bratwurst": {
       "status": "Critical",
@@ -340,17 +286,14 @@
       "redFlags": [
         "critical|Zucker & Sirupe|Dextrose|Dextrose",
         "critical|Emulgatoren & Stabilisatoren|Stabiliser|Stabilisator",
-        "critical|Antioxidationsmittel|Antioxidant|Antioxidationsmittel",
         "critical|Antioxidationsmittel|Sodium Ascorbate|Natriumascorbat",
-        "critical|Konservierungsstoffe|Sodium Nitrite|Natriumnitrit",
-        "critical|Konservierungsstoff||Konservierungsstoff: Natriumnitrit"
+        "critical|Konservierungsstoffe|Sodium Nitrite|Natriumnitrit"
       ]
     },
     "4000000000007 Fruchtgummi": {
       "status": "Critical",
       "nova": 4,
       "redFlags": [
-        "critical|Zucker & Sirupe|Glucose|Glukose",
         "critical|Zucker & Sirupe|Glucose Syrup|Glukosesirup",
         "critical|Süßungsmittel|Sugar|Zucker",
         "critical|Sonstige Zusatzstoffe|Gelatin|Gelatin",
@@ -365,7 +308,6 @@
       "nova": 4,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
         "critical|E-Nummern|E471|E471",
         "critical|Modifizierte Stärken|Flour Treatment Agent|Mehlbehandlungsmittel"
       ]
@@ -378,31 +320,27 @@
     "4000000000010 Tomatenketchup": {
       "status": "Warning",
       "nova": 3,
-      "redFlags": ["critical|Süßungsmittel|Sugar|Zucker"]
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Zucker & Sirupe|sugars_100g|sugars_100g"
+      ]
     },
     "4000000000011 Limonade": {
       "status": "Critical",
       "nova": 4,
-      "redFlags": [
-        "critical|Zucker & Sirupe|Glucose|Glukose",
-        "critical|Zucker & Sirupe|Glucose Fructose Syrup|Glukose-Fruktose-Sirup",
-        "critical|Zucker & Sirupe|Fructose|Fruktose"
-      ]
+      "redFlags": ["critical|Zucker & Sirupe|Glucose Fructose Syrup|Glukose-Fruktose-Sirup"]
     },
     "4000000000012 Chocolate bar": {
       "status": "Critical",
       "nova": 4,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Sugar",
-        "critical|Zucker & Sirupe|Glucose|glucose",
         "critical|Zucker & Sirupe|Glucose Syrup|glucose syrup",
         "critical|Gehärtete Fette & raffinierte Öle|Hydrogenated Vegetable Fat|hydrogenated vegetable fat",
         "critical|Gehärtete Fette & raffinierte Öle|Palm Kernel Oil|palm kernel oil",
         "critical|Proteine & Fleischersatz|Whey Powder|whey powder",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|emulsifier",
         "critical|Emulgatoren & Stabilisatoren|Lecithin|lecithin",
-        "critical|E-Nummern|E102|E102",
-        "critical|Farbstoff||Tartrazin (E102)"
+        "critical|E-Nummern|E102|E102"
       ]
     },
     "4000000000013 Pudding": {
@@ -410,20 +348,17 @@
       "nova": 4,
       "redFlags": [
         "critical|Modifizierte Stärken|Modified Starch|modifizierte Stärke",
-        "critical|E-Nummern|E140|E140",
         "critical|E-Nummern|E1400|E1400",
-        "critical|E-Nummern|E141|E141",
         "critical|Süßungsmittel|Sugar|Zucker"
       ]
     },
     "4000000000014 Eistee mit E-Nummern": {
       "status": "Critical",
       "nova": 4,
-      "redFlags": ["warning|Konservierungsstoff||Natriumbenzoat (E211)"]
+      "redFlags": ["critical|E-Nummern|E330|E330", "critical|E-Nummern|E211|E211"]
     },
     "4000000000015 Ohne Daten": {
-      "status": "OK",
-      "nova": 1,
+      "status": "Unknown",
       "redFlags": []
     },
     "4000000000016 Nur NOVA 4": {
@@ -433,15 +368,15 @@
     },
     "4000000000017 Reis": {
       "status": "OK",
-      "nova": 1,
       "redFlags": []
     },
     "4000000000018 Zuckerreiche Cerealien": {
-      "status": "Warning",
+      "status": "Critical",
       "nova": 3,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Zucker & Sirupe|Malt Extract|malzextrakt"
+        "critical|Zucker & Sirupe|Malt Extract|malzextrakt",
+        "critical|Zucker & Sirupe|sugars_100g|sugars_100g"
       ]
     },
     "4000000000019 Kartoffelchips": {
@@ -454,13 +389,9 @@
       "nova": 4,
       "redFlags": [
         "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|Palmöl",
-        "critical|Geschmacksverstärker & Aromen|Flavor Enhancer|Geschmacksverstärker",
         "critical|Geschmacksverstärker & Aromen|Monosodium Glutamate|Mononatriumglutamat",
         "critical|Geschmacksverstärker & Aromen|Yeast Extract|Hefeextrakt",
-        "critical|Modifizierte Stärken|Maltodextrin|Maltodextrin",
-        "critical|Modifizierte Stärken|Dextrin|dextrin",
-        "critical|E-Nummern|E621|E621",
-        "warning|Geschmacksverstärker||Geschmacksverstärker Mononatriumglutamat"
+        "critical|Modifizierte Stärken|Maltodextrin|Maltodextrin"
       ]
     },
     "4000000000021 Olivenöl": {
@@ -472,7 +403,6 @@
       "status": "Critical",
       "nova": 4,
       "redFlags": [
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
         "critical|Emulgatoren & Stabilisatoren|Mono Diglycerides|Mono- und Diglyceride",
         "critical|Emulgatoren & Stabilisatoren|Fatty Acids|fettsäuren",
         "critical|Farbstoffe|Color|Farbstoff"
@@ -484,7 +414,6 @@
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Sucre",
         "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|huile de palme",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|émulsifiant",
         "critical|Emulgatoren & Stabilisatoren|Lecithin|lécithine"
       ]
     },
@@ -492,29 +421,20 @@
       "status": "Critical",
       "nova": 4,
       "redFlags": [
-        "critical|Süßungsmittel|Sweetener|Süßungsmittel",
         "critical|Süßungsmittel|Sorbitol|Sorbit",
         "critical|Süßungsmittel|Maltitol|Maltit",
         "critical|Süßungsmittel|Mannitol|Mannit",
         "critical|Süßungsmittel|Aspartame|Aspartam",
         "critical|Süßungsmittel|Acesulfame K|Acesulfam K",
-        "critical|Verdickungs- & Geliermittel|Thickener|Verdickungsmittel",
         "critical|Verdickungs- & Geliermittel|Acacia Gum|Gummi arabicum",
-        "critical|Füll- & Trägerstoffe|Humectant|Feuchthaltemittel",
         "critical|Füll- & Trägerstoffe|Glycerol|Glycerin",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
         "critical|Emulgatoren & Stabilisatoren|Lecithin|lecithin",
-        "critical|Farbstoffe|Color|Farbstoff",
         "critical|E-Nummern|E171|E171",
-        "critical|Antioxidationsmittel|Antioxidant|Antioxidationsmittel",
-        "critical|E-Nummern|E321|E321",
-        "critical|Farbstoff||Titandioxid (E171)",
-        "warning|Antioxidationsmittel||Butylhydroxytoluol (E321)"
+        "critical|E-Nummern|E321|E321"
       ]
     },
     "4000000000025 Tafelwasser": {
       "status": "OK",
-      "nova": 1,
       "redFlags": []
     },
     "4000000000026 Butter": {
@@ -527,9 +447,7 @@
       "nova": 4,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
-        "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin",
-        "critical|E-Nummern|E322|E322"
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin"
       ]
     },
     "4000000000028 Kurkuma gemahlen": {
@@ -542,7 +460,6 @@
       "nova": 4,
       "redFlags": [
         "critical|Süßungsmittel|Sugar|Zucker",
-        "critical|Säuren & Säureregulatoren|Acidity Regulator|Säureregulator",
         "critical|Phosphate & Mineralstoffe|Sodium Citrate|Natriumcitrat",
         "critical|Antioxidationsmittel|Antioxidant|Antioxidationsmittel"
       ]
@@ -554,7 +471,6 @@
         "critical|Proteine & Fleischersatz|Soy Protein|Sojaprotein",
         "critical|Süßungsmittel|Maltitol|Maltit",
         "critical|Süßungsmittel|Sucralose|Sucralose",
-        "critical|Emulgatoren & Stabilisatoren|Emulsifier|Emulgator",
         "critical|E-Nummern|E322|E322"
       ]
     },
@@ -564,9 +480,8 @@
       "redFlags": []
     },
     "4000000000032 Nur Nährwerte": {
-      "status": "OK",
-      "nova": 1,
-      "redFlags": []
+      "status": "Warning",
+      "redFlags": ["critical|Zucker & Sirupe|sugars_100g|sugars_100g"]
     }
   }
 }

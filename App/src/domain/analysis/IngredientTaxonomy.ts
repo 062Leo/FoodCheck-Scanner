@@ -23,6 +23,15 @@ export class IngredientTaxonomy {
     return this.byENumber.get(this.normalizeENumber(eNumber));
   }
 
+  /** Exact lookup by E-number, name or alias (no word splitting). */
+  findByExactName(text: string): AdditiveInfo | undefined {
+    const normalized = text.toLowerCase().trim();
+    if (/^e\s*\d{3,4}[a-z]?$/i.test(normalized)) {
+      return this.findByENumber(normalized);
+    }
+    return this.byAlias.get(normalized);
+  }
+
   findByText(text: string): AdditiveInfo | undefined {
     const normalized = text.toLowerCase().trim();
     const eNumber = this.extractENumberPattern(normalized);
