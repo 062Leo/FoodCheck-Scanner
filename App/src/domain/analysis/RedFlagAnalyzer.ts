@@ -345,6 +345,7 @@ export class RedFlagAnalyzer {
   }
 
   private isBlocked(key: string, blocked: Set<string>): boolean {
+    if (blocked.size === 0) return false;
     return (
       blocked.has(this.normalizeKey(key)) ||
       blocked.has(this.normalizeKey(resolveIngredientKey(key)))

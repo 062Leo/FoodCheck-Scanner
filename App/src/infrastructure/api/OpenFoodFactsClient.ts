@@ -2,6 +2,7 @@ import { Product, NovaScore, ProductNutriments } from '../../types/Product';
 import { BASE_URL, USER_AGENT, STAGING_AUTH, USE_STAGING } from './config';
 import { ApiError, ProductNotFoundError } from './ApiError';
 import { retryWithBackoff } from './retry';
+import { fetchWithTimeout, NetworkError } from './fetchWithTimeout';
 
 interface OffProductResponse {
   status: number;
@@ -127,7 +128,7 @@ function mapOffProduct(ean: string, p: Record<string, unknown>): Product {
 
   return {
     ean,
-    name: (p.product_name as string) || 'Unbekanntes Produkt',
+    name: typeof p.product_name === 'string' ? p.product_name.trim() : '',
     brand: p.brands as string | undefined,
     ingredientsText: (p.ingredients_text_de as string) || (p.ingredients_text as string),
     ingredientsTextDe: p.ingredients_text_de as string | undefined,
@@ -156,33 +157,41 @@ function mapOffProduct(ean: string, p: Record<string, unknown>): Product {
 }
 
 export class OpenFoodFactsClient {
+  /**
+   * Looks a product up by barcode. Returns null if Open Food Facts does not know it.
+   * Throws NetworkError on timeout/no connection so callers can fall back to the cache.
+   */
   async getProductByEan(ean: string): Promise<Product | null> {
-    return retryWithBackoff(async () => {
-      try {
-        const url = `${BASE_URL}/api/v2/product/${ean}?fields=${PRODUCT_FIELDS}`;
-        const response = await fetch(url, { headers: buildHeaders() });
+    return retryWithBackoff(
+      async () => {
+        try {
+          const url = `${BASE_URL}/api/v2/product/${encodeURIComponent(ean)}?fields=${PRODUCT_FIELDS}`;
+          const response = await fetchWithTimeout(url, { headers: buildHeaders() });
 
-        if (response.status === 404) {
-          return null;
+          if (response.status === 404) {
+            return null;
+          }
+
+          if (!response.ok) {
+            throw ApiError.fromHttpStatus(response.status);
+          }
+
+          const data = (await response.json()) as OffProductResponse;
+
+          if (data.status === 0 || !data.product) {
+            return null;
+          }
+
+          return mapOffProduct(ean, data.product);
+        } catch (_error) {
+          if (_error instanceof ApiError && _error.retryable) throw _error;
+          if (_error instanceof NetworkError) throw _error;
+          const detail = _error instanceof Error ? _error.message : String(_error);
+          throw new Error(`Failed to fetch product data: ${detail}`, { cause: _error });
         }
-
-        if (!response.ok) {
-          throw ApiError.fromHttpStatus(response.status);
-        }
-
-        const data = (await response.json()) as OffProductResponse;
-
-        if (data.status === 0 || !data.product) {
-          return null;
-        }
-
-        return mapOffProduct(ean, data.product);
-      } catch (_error) {
-        if (_error instanceof ApiError && _error.retryable) throw _error;
-        const detail = _error instanceof Error ? _error.message : String(_error);
-        throw new Error(`Fehler beim Abrufen der Produktdaten: ${detail}`, { cause: _error });
-      }
-    });
+      },
+      { retries: 1, baseDelayMs: 1000 }
+    );
   }
 
   async getProductByEanOrThrow(ean: string): Promise<Product> {

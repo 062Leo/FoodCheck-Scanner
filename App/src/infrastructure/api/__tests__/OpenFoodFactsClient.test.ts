@@ -181,7 +181,7 @@ describe('OpenFoodFactsClient', () => {
         status: 500,
       });
 
-      await expect(client.getProductByEan('123')).rejects.toThrow('Fehler beim Abrufen');
+      await expect(client.getProductByEan('123')).rejects.toThrow('Failed to fetch product data');
     });
   });
 
