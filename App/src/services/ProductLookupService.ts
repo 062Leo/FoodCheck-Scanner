@@ -145,6 +145,13 @@ export class ProductLookupService {
     };
   }
 
+  /** Re-reads a stored product without network access (e.g. after editing it). */
+  async lookupLocal(ean: string, rules: FilterRule[]): Promise<LookupResult> {
+    const record = await this.repository.findByEan(ean).catch(() => null);
+    if (!record) return { status: 'not-found' };
+    return this.fromCache(record, productFromRecord(record), 'view', rules, false);
+  }
+
   private async fromCache(
     record: ProductRecord,
     product: Product,

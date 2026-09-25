@@ -1,102 +1,57 @@
 import { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Animated, StyleSheet, View, type DimensionValue } from 'react-native';
+import { colors, radius, spacing } from '../ui/theme';
 
-interface SkeletonProps {
-  width?: number | `${number}%`;
-  height?: number;
-  borderRadius?: number;
-  marginBottom?: number;
-}
-
-export function SkeletonLine({
-  width = '100%',
-  height = 16,
-  borderRadius = 4,
-  marginBottom = 8,
-}: SkeletonProps) {
-  const shimmerAnim = useRef(new Animated.Value(0)).current;
+/** Placeholder shaped like the product screen while data loads. One shared pulse. */
+export function SkeletonLoadingScreen() {
+  const pulse = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shimmerAnim, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [shimmerAnim]);
+    let animation: Animated.CompositeAnimation | null = null;
+    let cancelled = false;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .catch(() => false)
+      .then((reduceMotion) => {
+        if (cancelled || reduceMotion) return;
+        animation = Animated.loop(
+          Animated.sequence([
+            Animated.timing(pulse, { toValue: 0.8, duration: 700, useNativeDriver: true }),
+            Animated.timing(pulse, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+          ])
+        );
+        animation.start();
+      });
+    return () => {
+      cancelled = true;
+      animation?.stop();
+    };
+  }, [pulse]);
 
-  const opacity = shimmerAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
-  });
-
-  return (
-    <Animated.View
-      style={[
-        styles.skeleton,
-        {
-          width,
-          height,
-          borderRadius,
-          marginBottom,
-          opacity,
-        },
-      ]}
-    />
+  const block = (width: DimensionValue, height: number, extra?: object) => (
+    <Animated.View style={[styles.block, { width, height, opacity: pulse }, extra]} />
   );
-}
 
-export function SkeletonLoadingScreen() {
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <SkeletonLine width={60} height={24} />
-        <SkeletonLine width={40} height={28} />
+    <View style={styles.container} accessibilityRole="progressbar" accessibilityLabel="…">
+      <View style={styles.row}>
+        {block(72, 72)}
+        <View style={styles.column}>
+          {block('80%', 22)}
+          {block('50%', 16)}
+        </View>
       </View>
-
-      <SkeletonLine width="90%" height={80} marginBottom={16} />
-
-      <View style={styles.content}>
-        <SkeletonLine width="80%" height={20} marginBottom={12} />
-        <SkeletonLine width="100%" height={16} marginBottom={8} />
-        <SkeletonLine width="90%" height={16} marginBottom={20} />
-
-        <SkeletonLine width="70%" height={18} marginBottom={12} />
-        <SkeletonLine width={60} height={60} marginBottom={20} />
-
-        <SkeletonLine width="75%" height={18} marginBottom={12} />
-        <SkeletonLine width="100%" height={16} marginBottom={8} />
-        <SkeletonLine width="100%" height={16} marginBottom={8} />
-        <SkeletonLine width="95%" height={16} marginBottom={20} />
-      </View>
+      {block('100%', 110, { borderRadius: radius.lg })}
+      {block('60%', 18)}
+      {block('100%', 52)}
+      {block('100%', 52)}
+      {block('100%', 52)}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121212',
-    padding: 16,
-    paddingTop: 48,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  content: {
-    paddingHorizontal: 0,
-  },
-  skeleton: {
-    backgroundColor: '#2E2E2E',
-  },
+  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg, gap: spacing.lg },
+  row: { flexDirection: 'row', gap: spacing.md },
+  column: { flex: 1, gap: spacing.sm, justifyContent: 'center' },
+  block: { backgroundColor: colors.surfaceRaised, borderRadius: radius.sm },
 });

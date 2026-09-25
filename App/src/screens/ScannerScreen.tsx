@@ -5,7 +5,6 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import { Ionicons } from '@expo/vector-icons';
-import { ProductResolutionService } from '../infrastructure/resolution/ProductResolutionService';
 import { useTranslation } from '../i18n/useTranslation';
 
 export default function ScannerScreen() {
@@ -19,7 +18,6 @@ export default function ScannerScreen() {
   const [torchEnabled, setTorchEnabled] = useState(false);
   const frameAnimation = useRef(new Animated.Value(0)).current;
   const flashAnimation = useRef(new Animated.Value(0)).current;
-  const resolutionService = useRef(new ProductResolutionService()).current;
 
   useEffect(() => {
     Animated.loop(
@@ -105,27 +103,7 @@ export default function ScannerScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     triggerScanFlash();
 
-    try {
-      const cachedProduct = await resolutionService.checkCache(ean);
-      if (cachedProduct) {
-        router.push({
-          pathname: '/result',
-          params: {
-            ean,
-            fromCache: 'true',
-            cachedData: cachedProduct.raw_json || '',
-          },
-        });
-        return;
-      }
-    } catch (err) {
-      console.error('Error checking local cache:', err);
-    }
-
-    router.push({
-      pathname: '/result',
-      params: { ean },
-    });
+    router.push({ pathname: '/result', params: { ean, source: 'scan' } });
   };
 
   const toggleFacing = () => {

@@ -510,11 +510,16 @@ export default function EditProductScreen() {
     });
     initialSnapshotRef.current = currentSnapshot;
     await catalogStore.loadAll();
-    const updated = await repo.findByEan(ean);
-    router.replace({
-      pathname: '/result',
-      params: { ean, fromCache: 'true', cachedData: updated?.raw_json || '' },
-    });
+    returnToProduct();
+  };
+
+  /** Back to where the editor was opened from; the product screen reloads on focus. */
+  const returnToProduct = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace({ pathname: '/result', params: { ean } });
+    }
   };
 
   const handleUploadOFF = async () => {
@@ -594,11 +599,7 @@ export default function EditProductScreen() {
 
       await writeClient.uploadProduct(formData);
       await catalogStore.loadAll();
-      const updated = await repo.findByEan(ean);
-      router.replace({
-        pathname: '/result',
-        params: { ean, fromCache: 'true', cachedData: updated?.raw_json || '' },
-      });
+      returnToProduct();
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       setToastMessage(t('edit.uploadFailed', { error: errorMessage }));

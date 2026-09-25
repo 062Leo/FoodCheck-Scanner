@@ -63,6 +63,14 @@ export const colors = {
     d: '#EE8100',
     e: '#E63E11',
   } as Record<string, string>,
+  /** Text on Nutri-Score colours (dark on the light middle grades). */
+  onNutriScore: {
+    a: '#FFFFFF',
+    b: '#121212',
+    c: '#121212',
+    d: '#121212',
+    e: '#FFFFFF',
+  } as Record<string, string>,
 
   scrim: 'rgba(0,0,0,0.6)',
 } as const;

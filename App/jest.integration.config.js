@@ -7,7 +7,7 @@ const base = require('./jest.config');
 
 module.exports = {
   ...base,
-  setupFiles: [],
+  setupFilesAfterEnv: [],
   testPathIgnorePatterns: ['/node_modules/'],
   testMatch: ['**/*.integration.test.ts'],
   testTimeout: 30000,

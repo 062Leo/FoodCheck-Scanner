@@ -189,7 +189,10 @@ export function Chip({
       accessibilityState={{ selected: Boolean(selected) }}
       style={({ pressed }) => [
         styles.chip,
-        selected && { backgroundColor: color ?? colors.accent, borderColor: color ?? colors.accent },
+        selected && {
+          backgroundColor: color ?? colors.accent,
+          borderColor: color ?? colors.accent,
+        },
         pressed && styles.pressed,
       ]}
     >
