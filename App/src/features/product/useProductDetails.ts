@@ -26,12 +26,19 @@ async function currentRules() {
 }
 
 /**
+ * How the screen was opened: after a scan (counts as a visit), from a list (view), or
+ * from the scanner's result card ('recent': the product was just fetched and stored,
+ * so it is read from the device first).
+ */
+export type OpenIntent = LookupIntent | 'recent';
+
+/**
  * Loads and rates a product for the product screen.
  * `intent` applies to the first load only; retries and refreshes never count as a scan.
  */
-export function useProductDetails(ean: string | undefined, intent: LookupIntent) {
+export function useProductDetails(ean: string | undefined, intent: OpenIntent) {
   const [state, setState] = useState<ProductDetailsState>({ phase: 'loading' });
-  const intentRef = useRef<LookupIntent>(intent);
+  const intentRef = useRef<OpenIntent>(intent);
   const requestRef = useRef(0);
   const phaseRef = useRef<ProductDetailsState['phase']>('loading');
   phaseRef.current = state.phase;
@@ -44,9 +51,17 @@ export function useProductDetails(ean: string | undefined, intent: LookupIntent)
     const request = ++requestRef.current;
     setState({ phase: 'loading' });
 
-    const result = await lookupService
-      .lookup(ean, intentRef.current, await currentRules())
-      .catch((): LookupResult => ({ status: 'error' }));
+    const rules = await currentRules();
+    const local =
+      intentRef.current === 'recent'
+        ? await lookupService.lookupLocal(ean, rules).catch(() => null)
+        : null;
+    const result =
+      local?.status === 'found'
+        ? local
+        : await lookupService
+            .lookup(ean, intentRef.current === 'scan' ? 'scan' : 'view', rules)
+            .catch((): LookupResult => ({ status: 'error' }));
     intentRef.current = 'view';
     if (request !== requestRef.current) return;
 

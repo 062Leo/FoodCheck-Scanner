@@ -88,8 +88,8 @@ const de = {
   'scanner.loading': 'Laden...',
   'scanner.permission': 'Kamerazugriff erforderlich',
   'scanner.allow': 'Erlauben',
-  'scanner.hint': 'Halte den Barcode rein',
-  'scanner.offline': 'Offline',
+  'scanner.hint': 'Barcode in den Rahmen halten',
+  'scanner.offline': 'Offline – nur gespeicherte Produkte',
 
   // Catalog
   'catalog.title': 'Mein Katalog',
@@ -424,6 +424,27 @@ const de = {
   'nutrient.salt_100g': 'Salz',
   'nutrient.energy-kcal_100g': 'Energie',
   'product.translationFailed': 'Übersetzung nicht möglich – später erneut versuchen.',
+  'scanner.permissionTitle': 'Kamerazugriff erforderlich',
+  'scanner.permissionBody':
+    'Zum Scannen braucht FoodCheck die Kamera. Bilder werden nicht gespeichert oder gesendet.',
+  'scanner.permissionDeniedBody':
+    'Der Kamerazugriff wurde abgelehnt. Du kannst ihn in den Systemeinstellungen erlauben oder den Barcode eintippen.',
+  'scanner.openSettings': 'Einstellungen öffnen',
+  'scanner.enterBarcode': 'Barcode eingeben',
+  'scanner.torchOn': 'Taschenlampe einschalten',
+  'scanner.torchOff': 'Taschenlampe ausschalten',
+  'scanner.searching': 'Suche {{ean}} …',
+  'scanner.details': 'Details',
+  'scanner.close': 'Ergebnis schließen',
+  'scanner.offlineResult': 'Keine Verbindung – dieses Produkt ist noch nicht gespeichert.',
+  'scanner.notFoundResult': 'Open Food Facts kennt diesen Barcode nicht.',
+  'scanner.errorResult': 'Laden fehlgeschlagen.',
+  'scanner.cardA11y': '{{name}}: {{status}}. {{reason}}',
+  'manualEntry.title': 'Barcode eingeben',
+  'manualEntry.hint': 'Die 8 oder 13 Ziffern unter dem Strichcode',
+  'manualEntry.invalid': 'Ungültiger Barcode – bitte Ziffern prüfen.',
+  'manualEntry.submit': 'Suchen',
+  'manualEntry.cancel': 'Abbrechen',
 };
 
 type Translations = typeof de;
@@ -508,8 +529,8 @@ const en: Translations = {
   'scanner.loading': 'Loading...',
   'scanner.permission': 'Camera access required',
   'scanner.allow': 'Allow',
-  'scanner.hint': 'Hold the barcode inside',
-  'scanner.offline': 'Offline',
+  'scanner.hint': 'Hold the barcode inside the frame',
+  'scanner.offline': 'Offline – saved products only',
 
   'catalog.title': 'My Catalog',
   'catalog.searchPlaceholder': 'Name, brand or EAN...',
@@ -834,6 +855,27 @@ const en: Translations = {
   'nutrient.salt_100g': 'Salt',
   'nutrient.energy-kcal_100g': 'Energy',
   'product.translationFailed': 'Translation not available – please try again later.',
+  'scanner.permissionTitle': 'Camera access required',
+  'scanner.permissionBody':
+    'FoodCheck needs the camera to scan barcodes. Images are neither stored nor sent.',
+  'scanner.permissionDeniedBody':
+    'Camera access was denied. You can allow it in the system settings or type the barcode.',
+  'scanner.openSettings': 'Open settings',
+  'scanner.enterBarcode': 'Enter barcode',
+  'scanner.torchOn': 'Turn on torch',
+  'scanner.torchOff': 'Turn off torch',
+  'scanner.searching': 'Looking up {{ean}} …',
+  'scanner.details': 'Details',
+  'scanner.close': 'Close result',
+  'scanner.offlineResult': 'No connection – this product is not saved yet.',
+  'scanner.notFoundResult': 'Open Food Facts does not know this barcode.',
+  'scanner.errorResult': 'Loading failed.',
+  'scanner.cardA11y': '{{name}}: {{status}}. {{reason}}',
+  'manualEntry.title': 'Enter barcode',
+  'manualEntry.hint': 'The 8 or 13 digits below the barcode',
+  'manualEntry.invalid': 'Invalid barcode – please check the digits.',
+  'manualEntry.submit': 'Look up',
+  'manualEntry.cancel': 'Cancel',
 };
 
 export type TranslationKey = keyof typeof de;

@@ -1,339 +1,209 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Animated, AppState } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { AppState, Linking, StyleSheet, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useRouter } from 'expo-router';
-import NetInfo from '@react-native-community/netinfo';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../i18n/useTranslation';
+import { subscribeToConnectivity } from '../infrastructure/network/connectivity';
+import { useScanSession } from '../features/scanner/useScanSession';
+import { ScanResultCard } from '../features/scanner/ScanResultCard';
+import { ManualEntrySheet } from '../features/scanner/ManualEntrySheet';
+import { Button, EmptyState, IconButton } from '../ui/components';
+import { colors, radius, spacing, typography } from '../ui/theme';
+
+const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a'] as const;
 
 export default function ScannerScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
-  const [scanned, setScanned] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
-  const [facing, setFacing] = useState<'back' | 'front'>('back');
-  const [torchEnabled, setTorchEnabled] = useState(false);
-  const frameAnimation = useRef(new Animated.Value(0)).current;
-  const flashAnimation = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(frameAnimation, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: false,
-        }),
-        Animated.timing(frameAnimation, {
-          toValue: 0,
-          duration: 1500,
-          useNativeDriver: false,
-        }),
-      ])
-    ).start();
-  }, [frameAnimation]);
+  const [active, setActive] = useState(true);
+  const [torch, setTorch] = useState(false);
+  const [offline, setOffline] = useState(false);
+  const [manualEntry, setManualEntry] = useState(false);
+  const { card, onBarcode, submitManual, dismiss, retry } = useScanSession();
 
   useFocusEffect(
     useCallback(() => {
-      setScanned(false);
-      requestAnimationFrame(() => {
-        cameraRef.current?.resumePreview();
-      });
+      setActive(true);
+      cameraRef.current?.resumePreview();
       return () => {
+        setActive(false);
+        setTorch(false);
         cameraRef.current?.pausePreview();
-        flashAnimation.setValue(0);
-        setTorchEnabled(false);
       };
-    }, [flashAnimation])
+    }, [])
   );
 
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
         cameraRef.current?.resumePreview();
-        flashAnimation.setValue(0);
       } else {
         cameraRef.current?.pausePreview();
+        setTorch(false);
       }
     });
     return () => subscription.remove();
-  }, [flashAnimation]);
-
-  useEffect(() => {
-    if (!permission?.granted && permission?.canAskAgain) {
-      requestPermission();
-    }
-  }, [permission]);
-
-  useEffect(() => {
-    NetInfo.fetch().then((state) => {
-      setIsOffline(!state.isConnected);
-    });
   }, []);
 
-  const triggerScanFlash = () => {
-    Animated.sequence([
-      Animated.timing(flashAnimation, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: false,
-      }),
-      Animated.timing(flashAnimation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  };
+  useEffect(() => subscribeToConnectivity((online) => setOffline(!online)), []);
 
-  const handleBarCodeScanned = async (result: { data: string }) => {
-    if (scanned) return;
-
-    const ean = result.data.trim();
-    const isValidEAN = /^\d{8}$|^\d{13}$/.test(ean);
-
-    if (!isValidEAN) {
-      return;
+  useEffect(() => {
+    if (permission && !permission.granted && permission.canAskAgain) {
+      void requestPermission();
     }
+  }, [permission, requestPermission]);
 
-    setScanned(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    triggerScanFlash();
+  const openDetails = useCallback(() => {
+    if (card?.phase !== 'ready') return;
+    router.push({ pathname: '/result', params: { ean: card.ean, source: 'recent' } });
+  }, [card, router]);
 
-    router.push({ pathname: '/result', params: { ean, source: 'scan' } });
-  };
+  const addProduct = useCallback(() => {
+    if (card) router.push({ pathname: '/edit/[ean]', params: { ean: card.ean } });
+  }, [card, router]);
 
-  const toggleFacing = () => {
-    setFacing((prev) => {
-      if (prev === 'front') {
-        setTorchEnabled(false);
-        return 'back';
-      }
-      return 'front';
-    });
-  };
+  const bottomArea = (
+    <View style={[styles.bottom, { paddingBottom: spacing.lg }]}>
+      {card ? (
+        <ScanResultCard
+          card={card}
+          t={t}
+          onOpen={openDetails}
+          onAdd={addProduct}
+          onRetry={retry}
+          onClose={dismiss}
+        />
+      ) : null}
+      <Button
+        title={t('scanner.enterBarcode')}
+        icon="keypad-outline"
+        variant="secondary"
+        onPress={() => setManualEntry(true)}
+        testID="manual-entry-button"
+      />
+    </View>
+  );
 
-  const toggleTorch = () => {
-    setTorchEnabled((prev) => !prev);
-  };
+  const manualSheet = (
+    <ManualEntrySheet
+      visible={manualEntry}
+      t={t}
+      onSubmit={submitManual}
+      onClose={() => setManualEntry(false)}
+    />
+  );
 
-  if (!permission) {
+  if (!permission || !permission.granted) {
+    const denied = permission && !permission.canAskAgain;
     return (
-      <View style={styles.container}>
-        <Text style={styles.permissionText}>{t('scanner.loading')}</Text>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.flex}>
+          <EmptyState
+            icon="camera-outline"
+            title={t('scanner.permissionTitle')}
+            message={denied ? t('scanner.permissionDeniedBody') : t('scanner.permissionBody')}
+            action={
+              permission ? (
+                <Button
+                  title={denied ? t('scanner.openSettings') : t('scanner.allow')}
+                  icon={denied ? 'settings-outline' : 'camera'}
+                  onPress={() => void (denied ? Linking.openSettings() : requestPermission())}
+                />
+              ) : null
+            }
+          />
+        </View>
+        {bottomArea}
+        {manualSheet}
       </View>
     );
   }
-
-  if (!permission.granted) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>{t('scanner.permission')}</Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>{t('scanner.allow')}</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  const frameScale = frameAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.8, 1.1],
-  });
-
-  const frameOpacity = frameAnimation.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.5, 1, 0.5],
-  });
-
-  const flashOpacity = flashAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 0.6],
-  });
 
   return (
     <View style={styles.container}>
       <CameraView
         ref={cameraRef}
-        facing={facing}
-        enableTorch={torchEnabled}
-        style={styles.camera}
-        barcodeScannerSettings={{
-          barcodeTypes: ['ean8', 'ean13'],
-        }}
-        onBarcodeScanned={handleBarCodeScanned}
+        style={StyleSheet.absoluteFill}
+        facing="back"
+        enableTorch={torch}
+        barcodeScannerSettings={{ barcodeTypes: [...BARCODE_TYPES] }}
+        onBarcodeScanned={active && !manualEntry ? (result) => onBarcode(result.data) : undefined}
       />
 
-      <Animated.View style={[styles.scanFlash, { opacity: flashOpacity }]} pointerEvents="none" />
-
-      <View style={styles.overlay}>
-        <Animated.View
-          style={[
-            styles.scanFrame,
-            {
-              transform: [{ scale: frameScale }],
-              opacity: frameOpacity,
-            },
-          ]}
-        >
-          <View style={styles.corner} />
-          <View style={[styles.corner, styles.cornerTR]} />
-          <View style={[styles.corner, styles.cornerBL]} />
-          <View style={[styles.corner, styles.cornerBR]} />
-        </Animated.View>
-
-        <Text style={styles.hintText}>{t('scanner.hint')}</Text>
-
-        <View style={styles.controls}>
-          <TouchableOpacity style={styles.controlBtn} onPress={toggleFacing}>
-            <Ionicons name="camera-reverse-outline" size={28} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          {facing === 'back' && (
-            <TouchableOpacity style={styles.controlBtn} onPress={toggleTorch}>
-              <Ionicons
-                name={torchEnabled ? 'flashlight' : 'flashlight-outline'}
-                size={28}
-                color={torchEnabled ? '#FFD700' : '#FFFFFF'}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {isOffline && (
-          <View style={styles.offlineBadge}>
-            <Text style={styles.offlineBadgeText}>{t('scanner.offline')}</Text>
+      <View style={[styles.topBar, { paddingTop: insets.top + spacing.sm }]}>
+        {offline ? (
+          <View style={styles.offlineBadge} accessibilityLiveRegion="polite">
+            <Ionicons name="cloud-offline-outline" size={16} color={colors.bg} />
+            <Text style={styles.offlineText}>{t('scanner.offline')}</Text>
           </View>
+        ) : (
+          <View />
         )}
+        <View style={styles.roundButton}>
+          <IconButton
+            icon={torch ? 'flashlight' : 'flashlight-outline'}
+            color={torch ? colors.favorite : colors.text}
+            label={torch ? t('scanner.torchOff') : t('scanner.torchOn')}
+            selected={torch}
+            onPress={() => setTorch((value) => !value)}
+          />
+        </View>
       </View>
+
+      <View style={styles.frameArea} pointerEvents="none">
+        <View style={styles.frame} />
+        {!card && <Text style={styles.hint}>{t('scanner.hint')}</Text>}
+      </View>
+
+      {bottomArea}
+      {manualSheet}
     </View>
   );
 }
 
+const FRAME_WIDTH = 260;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121212',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  camera: {
-    flex: 1,
-    width: '100%',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 60,
-  },
-  scanFrame: {
-    width: 250,
-    height: 250,
-    borderWidth: 3,
-    borderColor: '#4CAF50',
-    borderRadius: 20,
-    position: 'relative',
-  },
-  corner: {
-    position: 'absolute',
-    width: 30,
-    height: 30,
-    borderTopWidth: 3,
-    borderLeftWidth: 3,
-    borderColor: '#4CAF50',
-    top: -3,
-    left: -3,
-  },
-  cornerTR: {
-    borderTopWidth: 3,
-    borderRightWidth: 3,
-    borderLeftWidth: 0,
-    top: -3,
-    right: -3,
-    left: undefined,
-  },
-  cornerBL: {
-    borderBottomWidth: 3,
-    borderLeftWidth: 3,
-    borderTopWidth: 0,
-    bottom: -3,
-    left: -3,
-    top: undefined,
-  },
-  cornerBR: {
-    borderBottomWidth: 3,
-    borderRightWidth: 3,
-    borderTopWidth: 0,
-    borderLeftWidth: 0,
-    bottom: -3,
-    right: -3,
-    top: undefined,
-    left: undefined,
-  },
-  hintText: {
-    position: 'absolute',
-    bottom: 60,
-    color: '#BDBDBD',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  permissionButton: {
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-  },
-  permissionButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  permissionText: {
-    color: '#BDBDBD',
-    fontSize: 16,
-  },
-  errorText: {
-    color: '#F44336',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 20,
-  },
-  scanFlash: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#4CAF50',
-    zIndex: 10,
-  },
-  offlineBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: '#FF9800',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  offlineBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  controls: {
-    position: 'absolute',
-    bottom: 110,
+  container: { flex: 1, backgroundColor: colors.bg },
+  flex: { flex: 1, justifyContent: 'center' },
+  topBar: {
     flexDirection: 'row',
-    gap: 24,
-  },
-  controlBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: spacing.lg,
   },
+  roundButton: { backgroundColor: colors.scrim, borderRadius: radius.pill },
+  offlineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.warning,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  offlineText: { ...typography.label, color: colors.bg },
+  frameArea: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg },
+  frame: {
+    width: FRAME_WIDTH,
+    height: FRAME_WIDTH * 0.6,
+    borderWidth: 3,
+    borderColor: colors.accent,
+    borderRadius: radius.lg,
+  },
+  hint: {
+    ...typography.bodyStrong,
+    color: colors.text,
+    backgroundColor: colors.scrim,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
+  bottom: { paddingHorizontal: spacing.lg, gap: spacing.md },
 });

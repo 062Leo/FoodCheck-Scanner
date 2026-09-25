@@ -29,7 +29,7 @@ export default function ProductScreen() {
   const ean = params.ean;
   const { state, reload, refreshLocal } = useProductDetails(
     ean,
-    params.source === 'scan' ? 'scan' : 'view'
+    params.source === 'scan' || params.source === 'recent' ? params.source : 'view'
   );
 
   // Coming back from the edit screen: show the saved changes without a network call.
