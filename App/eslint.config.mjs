@@ -5,7 +5,7 @@ import eslintPluginPrettier from 'eslint-plugin-prettier';
 
 export default [
   {
-    ignores: ['node_modules', 'dist', 'build', 'coverage', '*.expo', '.expo'],
+    ignores: ['node_modules', 'dist', 'build', 'coverage', '.expo', 'android', 'ios'],
   },
   js.configs.recommended,
   ...tsEslint.configs.recommended,
@@ -33,6 +33,14 @@ export default [
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
     },
+  },
+  {
+    files: ['*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { module: 'writable', require: 'readonly' },
+    },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   prettierConfig,
 ];

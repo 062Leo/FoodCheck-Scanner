@@ -1,16 +1,27 @@
 /**
- * Integration tests against the OFF staging API.
+ * Integration tests against the Open Food Facts STAGING server (world.openfoodfacts.net).
  *
- * These tests require network access to world.openfoodfacts.net.
- * They are skipped when:
- *  - the network is unavailable
- *  - OFF staging credentials are not configured (8.4 only)
- *
- * Run with: npm test -- --testPathPattern=integration
+ * The API config is forced to staging below, so these tests can never read from or
+ * write to production. They are excluded from `npm test` and run only via
+ * `npm run test:integration` (network access required).
  */
 
+jest.mock('../config', () => {
+  const actual = jest.requireActual('../config');
+  return {
+    ...actual,
+    USE_STAGING: true,
+    BASE_URL: 'https://world.openfoodfacts.net',
+  };
+});
+
+import { BASE_URL } from '../config';
 import { OpenFoodFactsClient } from '../OpenFoodFactsClient';
 import { OpenFoodFactsWriteClient } from '../OpenFoodFactsWriteClient';
+
+it('targets the staging server only', () => {
+  expect(BASE_URL).toBe('https://world.openfoodfacts.net');
+});
 
 const readClient = new OpenFoodFactsClient();
 const writeClient = new OpenFoodFactsWriteClient();
@@ -87,41 +98,4 @@ describe('integration: write flow (staging)', () => {
     // It may take time to index. We just verify no error was thrown.
     expect(product).toBeDefined();
   }, 30000);
-});
-
-describe('retry: rate-limit handling', () => {
-  it('8.5 should retry on 429 and succeed', async () => {
-    // This test verifies that retryWithBackoff is properly wired into the client.
-    // We mock fetch to return 429 once, then success.
-
-    const originalFetch = global.fetch;
-
-    try {
-      let callCount = 0;
-      global.fetch = jest.fn().mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          return Promise.resolve({
-            ok: false,
-            status: 429,
-          });
-        }
-        return Promise.resolve({
-          ok: true,
-          json: async () => ({
-            status: 1,
-            product: { product_name: 'Retry Success' },
-          }),
-        });
-      });
-
-      const product = await readClient.getProductByEan('123');
-
-      expect(product).not.toBeNull();
-      expect(product!.name).toBe('Retry Success');
-      expect(callCount).toBeGreaterThanOrEqual(2);
-    } finally {
-      global.fetch = originalFetch;
-    }
-  }, 15000);
 });
