@@ -21,7 +21,29 @@ export interface ProductRecord {
   image_packaging_url?: string | null;
   visit_count?: number | null;
   last_seen_at?: string | null;
+  /** Set when the user edited the product on this device. */
+  edited_at?: string | null;
 }
+
+/** Lightweight row for lists (no raw_json). */
+export type ProductSummary = Pick<
+  ProductRecord,
+  | 'id'
+  | 'ean'
+  | 'name'
+  | 'brands'
+  | 'nova_score'
+  | 'nutriscore'
+  | 'scanned_at'
+  | 'rating'
+  | 'visit_count'
+  | 'last_seen_at'
+  | 'image_url'
+  | 'edited_at'
+> & {
+  /** 1 if an ingredient list is stored. */
+  has_ingredients: number;
+};
 
 export interface ProductNutriments {
   energyKcal100g?: number;

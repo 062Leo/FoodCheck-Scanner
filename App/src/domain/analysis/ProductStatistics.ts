@@ -1,4 +1,4 @@
-import type { ProductRecord } from '../../types/Product';
+import type { ProductRecord, ProductSummary } from '../../types/Product';
 
 export interface ProductStats {
   totalProducts: number;
@@ -17,7 +17,7 @@ export interface CollectionBreakdown {
 
 export class ProductStatistics {
   static computeStats(
-    products: ProductRecord[],
+    products: ProductSummary[],
     stats?: {
       totalScans: number;
       ratingDistribution: Record<string, number>;

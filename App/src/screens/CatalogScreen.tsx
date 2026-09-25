@@ -16,7 +16,7 @@ import { ProductRepository } from '../infrastructure/db/ProductRepository';
 import { ProductStatistics } from '../domain/analysis/ProductStatistics';
 import { useTranslation } from '../i18n/useTranslation';
 import type { TranslationKey } from '../i18n/translations';
-import type { ProductRecord } from '../types/Product';
+import type { ProductSummary } from '../types/Product';
 import type { ScanStatus } from '../types/ScanResult';
 import type { ProductStats } from '../domain/analysis/ProductStatistics';
 
@@ -35,7 +35,7 @@ const SORT_OPTIONS: { field: SortField; key: TranslationKey }[] = [
 
 interface CollectionSection {
   title: string;
-  data: ProductRecord[];
+  data: ProductSummary[];
 }
 
 const repository = new ProductRepository();
@@ -52,7 +52,7 @@ export default function CatalogScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<ProductRecord[]>([]);
+  const [searchResults, setSearchResults] = useState<ProductSummary[]>([]);
 
   const [showCollections, setShowCollections] = useState(false);
   const [missingIngredientsOnly, setMissingIngredientsOnly] = useState(false);
@@ -134,7 +134,7 @@ export default function CatalogScreen() {
   }, []);
 
   const sortProducts = useCallback(
-    (products: ProductRecord[]): ProductRecord[] => {
+    (products: ProductSummary[]): ProductSummary[] => {
       return [...products].sort((a, b) => {
         const comparison = ((): number => {
           switch (sortField) {
@@ -158,7 +158,7 @@ export default function CatalogScreen() {
   );
 
   const missingIngredientsCount = useMemo(
-    () => catalogStore.products.filter((p) => !p.ingredients).length,
+    () => catalogStore.products.filter((p) => !p.has_ingredients).length,
     [catalogStore.products]
   );
 
@@ -168,7 +168,7 @@ export default function CatalogScreen() {
       products = products.filter((p) => p.rating === filter);
     }
     if (missingIngredientsOnly) {
-      products = products.filter((p) => !p.ingredients);
+      products = products.filter((p) => !p.has_ingredients);
     }
     return sortProducts(products);
   }, [filter, missingIngredientsOnly, catalogStore.products, sortProducts]);
@@ -182,23 +182,7 @@ export default function CatalogScreen() {
   );
 
   const handleSelectProduct = useCallback(
-    (product: ProductRecord) => {
-      if (product.raw_json) {
-        try {
-          const parsedJson = JSON.parse(product.raw_json);
-          router.push({
-            pathname: '/result',
-            params: {
-              ean: product.ean,
-              fromCache: 'true',
-              cachedData: JSON.stringify(parsedJson),
-            },
-          });
-          return;
-        } catch {
-          // Fallback
-        }
-      }
+    (product: ProductSummary) => {
       router.push({ pathname: '/result', params: { ean: product.ean } });
     },
     [router]

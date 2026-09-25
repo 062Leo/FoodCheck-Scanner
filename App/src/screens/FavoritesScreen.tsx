@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-nativ
 import { useRouter } from 'expo-router';
 import { useCatalogStore } from '../store/catalogStore';
 import { ProductCard } from '../components/ProductCard';
-import type { ProductRecord } from '../types/Product';
+import type { ProductSummary } from '../types/Product';
 import { useTranslation } from '../i18n/useTranslation';
 
 export default function FavoritesScreen() {
@@ -27,35 +27,8 @@ export default function FavoritesScreen() {
   }, []);
 
   const handleSelectProduct = useCallback(
-    (product: ProductRecord) => {
-      // Navigate to ProductScreen with cached raw_json
-      if (product.raw_json) {
-        try {
-          const parsedJson = JSON.parse(product.raw_json);
-          // Pass the product data and indicate it's from cache
-          router.push({
-            pathname: '/result',
-            params: {
-              ean: product.ean,
-              fromCache: 'true',
-              cachedData: JSON.stringify(parsedJson),
-            },
-          });
-        } catch (err) {
-          console.error('Failed to parse cached data:', err);
-          // Fallback to normal scan
-          router.push({
-            pathname: '/result',
-            params: { ean: product.ean },
-          });
-        }
-      } else {
-        // Fallback if no cache
-        router.push({
-          pathname: '/result',
-          params: { ean: product.ean },
-        });
-      }
+    (product: ProductSummary) => {
+      router.push({ pathname: '/result', params: { ean: product.ean } });
     },
     [router]
   );

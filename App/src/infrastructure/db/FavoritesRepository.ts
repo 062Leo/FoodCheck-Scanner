@@ -1,14 +1,15 @@
-import { db, initDatabase } from './DatabaseService';
-import type { ProductRecord } from '../../types/Product';
+import { getDatabase } from './DatabaseService';
+import { getErrorMessage } from '../../shared/errors';
+import type { ProductSummary } from '../../types/Product';
 
 export class FavoritesRepository {
+  /** Idempotent: adding an existing favorite is a no-op. */
   async add(productId: number): Promise<void> {
     try {
-      const database = await this.getDatabase();
-
+      const database = await getDatabase();
       await database.runAsync(
         `
-          INSERT INTO favorites (product_id, added_at)
+          INSERT OR IGNORE INTO favorites (product_id, added_at)
           VALUES ($product_id, $added_at);
         `,
         {
@@ -26,17 +27,10 @@ export class FavoritesRepository {
 
   async remove(productId: number): Promise<void> {
     try {
-      const database = await this.getDatabase();
-
-      await database.runAsync(
-        `
-          DELETE FROM favorites
-          WHERE product_id = $product_id;
-        `,
-        {
-          $product_id: productId,
-        }
-      );
+      const database = await getDatabase();
+      await database.runAsync('DELETE FROM favorites WHERE product_id = $product_id;', {
+        $product_id: productId,
+      });
     } catch (error) {
       throw new Error(
         `Failed to remove product ${productId} from favorites: ${getErrorMessage(error)}`,
@@ -45,23 +39,17 @@ export class FavoritesRepository {
     }
   }
 
-  async findAll(): Promise<ProductRecord[]> {
+  /** Favorite products, most recently added first, without raw_json. */
+  async findAll(): Promise<ProductSummary[]> {
     try {
-      const database = await this.getDatabase();
-
-      return await database.getAllAsync<ProductRecord>(
+      const database = await getDatabase();
+      return await database.getAllAsync<ProductSummary>(
         `
           SELECT
-            p.id,
-            p.ean,
-            p.name,
-            p.brands,
-            p.ingredients,
-            p.nova_score,
-            p.nutriscore,
-            p.raw_json,
-            p.scanned_at,
-            p.rating
+            p.id, p.ean, p.name, p.brands, p.nova_score, p.nutriscore, p.scanned_at, p.rating,
+            p.visit_count, p.last_seen_at, p.image_url, p.edited_at,
+            CASE WHEN p.ingredients IS NOT NULL AND trim(p.ingredients) <> '' THEN 1 ELSE 0 END
+              AS has_ingredients
           FROM favorites f
           INNER JOIN products p ON p.id = f.product_id
           ORDER BY f.added_at DESC, f.id DESC;
@@ -76,20 +64,11 @@ export class FavoritesRepository {
 
   async isFavorite(productId: number): Promise<boolean> {
     try {
-      const database = await this.getDatabase();
-
+      const database = await getDatabase();
       const favorite = await database.getFirstAsync<{ id: number }>(
-        `
-          SELECT id
-          FROM favorites
-          WHERE product_id = $product_id
-          LIMIT 1;
-        `,
-        {
-          $product_id: productId,
-        }
+        'SELECT id FROM favorites WHERE product_id = $product_id LIMIT 1;',
+        { $product_id: productId }
       );
-
       return favorite !== null;
     } catch (error) {
       throw new Error(
@@ -98,26 +77,4 @@ export class FavoritesRepository {
       );
     }
   }
-
-  private async getDatabase() {
-    if (db) {
-      return db;
-    }
-
-    await initDatabase();
-
-    if (!db) {
-      throw new Error('SQLite database is not available after initialization.');
-    }
-
-    return db;
-  }
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
 }

@@ -153,6 +153,11 @@ export default function ProductScreen() {
           if (record) {
             dbProduct = buildProductFromRecord(record);
             setLocalProduct(dbProduct);
+            if (!cachedOverrides && record.raw_json) {
+              const parsed = JSON.parse(record.raw_json) as { product?: Partial<Product> };
+              cachedOverrides = parsed.product ?? (parsed as Partial<Product>);
+              setIsCached(true);
+            }
           }
         } catch {
           // Ignore DB errors

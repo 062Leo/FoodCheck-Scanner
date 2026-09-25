@@ -1,276 +1,122 @@
-import * as SQLite from 'expo-sqlite';
-
 import { ProductRepository } from '../ProductRepository';
-import type { ProductRecord } from '../../../types/Product';
+import { FavoritesRepository } from '../FavoritesRepository';
+import { productRecord, useTestDatabase } from '../../../testing/testDatabase';
 
-jest.mock('expo-sqlite', () => ({
-  openDatabaseAsync: jest.fn(),
-}));
+jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
 
-type DbState = {
-  records: Map<string, ProductRecord>;
-  nextId: number;
-};
+describe('ProductRepository (SQLite)', () => {
+  const database = useTestDatabase();
+  const repository = new ProductRepository();
 
-type MockDatabase = {
-  execAsync: jest.Mock<Promise<void>, [string]>;
-  getFirstAsync: jest.Mock<Promise<unknown>, [string, ...unknown[]]>;
-  getAllAsync: jest.Mock<Promise<unknown[]>, [string, ...unknown[]]>;
-  runAsync: jest.Mock<
-    Promise<{ changes: number; lastInsertRowId: number }>,
-    [string, ...unknown[]]
-  >;
-};
+  it('saveScan inserts a product that findByEan returns', async () => {
+    await repository.saveScan(productRecord());
 
-const openDatabaseAsync = SQLite.openDatabaseAsync as jest.MockedFunction<
-  typeof SQLite.openDatabaseAsync
->;
+    const found = await repository.findByEan('4000000000001');
 
-describe('ProductRepository', () => {
-  let repository: ProductRepository;
-  let state: DbState;
-  let database: MockDatabase;
-
-  beforeEach(() => {
-    state = {
-      records: new Map<string, ProductRecord>(),
-      nextId: 1,
-    };
-
-    database = {
-      execAsync: jest.fn(async (_sql: string) => {}),
-      getFirstAsync: jest.fn(async (sql: string, ...params: unknown[]) =>
-        handleGetFirst(sql, params, state)
-      ),
-      getAllAsync: jest.fn(async (sql: string, ...params: unknown[]) =>
-        handleGetAll(sql, params, state)
-      ),
-      runAsync: jest.fn(async (sql: string, ...params: unknown[]) => handleRun(sql, params, state)),
-    };
-
-    openDatabaseAsync.mockResolvedValue(database as unknown as SQLite.SQLiteDatabase);
-    repository = new ProductRepository();
+    expect(found).toMatchObject({
+      id: 1,
+      ean: '4000000000001',
+      name: 'Testprodukt',
+      rating: 'Warning',
+      visit_count: 1,
+      last_seen_at: '2026-01-01T10:00:00.000Z',
+      edited_at: null,
+    });
+    expect(await repository.findByEan('0000000000000')).toBeNull();
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  it('saveScan counts repeated scans and updates the scan time', async () => {
+    await repository.saveScan(productRecord());
+    await repository.saveScan(
+      productRecord({ scanned_at: '2026-02-01T10:00:00.000Z', name: 'Neu', rating: 'Critical' })
+    );
+
+    expect(await repository.findByEan('4000000000001')).toMatchObject({
+      name: 'Neu',
+      rating: 'Critical',
+      visit_count: 2,
+      scanned_at: '2026-02-01T10:00:00.000Z',
+      last_seen_at: '2026-02-01T10:00:00.000Z',
+    });
   });
 
-  it('insert then findByEan returns the stored record', async () => {
-    const record: ProductRecord = {
-      ean: '1234567890123',
-      name: 'Test Product',
-      brands: 'Brand A',
-      ingredients: 'Wasser, Zucker',
-      nova_score: 1,
-      nutriscore: 'A',
-      raw_json: '{"status":1}',
-      scanned_at: '2026-05-09T10:00:00.000Z',
+  it('saveRefresh updates data without counting a scan', async () => {
+    await repository.saveScan(productRecord());
+    await repository.saveRefresh(
+      productRecord({ scanned_at: '2026-03-01T10:00:00.000Z', name: 'Frisch', rating: 'OK' })
+    );
+
+    expect(await repository.findByEan('4000000000001')).toMatchObject({
+      name: 'Frisch',
       rating: 'OK',
-    };
+      visit_count: 1,
+      scanned_at: '2026-01-01T10:00:00.000Z',
+    });
+  });
 
-    await repository.insert(record);
-
-    const found = await repository.findByEan(record.ean);
-
-    expect(found).toEqual(
-      expect.objectContaining({
-        id: 1,
-        ...record,
+  it('findAllSummaries omits raw_json and reports whether ingredients exist', async () => {
+    await repository.saveScan(productRecord());
+    await repository.saveScan(
+      productRecord({
+        ean: '4000000000002',
+        ingredients: '   ',
+        scanned_at: '2026-01-02T10:00:00.000Z',
       })
+    );
+
+    const summaries = await repository.findAllSummaries();
+
+    expect(summaries.map((s) => [s.ean, s.has_ingredients])).toEqual([
+      ['4000000000002', 0],
+      ['4000000000001', 1],
+    ]);
+    expect(summaries[0]).not.toHaveProperty('raw_json');
+  });
+
+  it('updateRatings writes all ratings in one go', async () => {
+    await repository.saveScan(productRecord());
+    await repository.saveScan(productRecord({ ean: '4000000000002' }));
+
+    await repository.updateRatings([
+      { ean: '4000000000001', rating: 'Unknown' },
+      { ean: '4000000000002', rating: 'Critical' },
+    ]);
+
+    const ratings = (await repository.findAllForRating()).map((r) => [r.ean, r.rating]);
+    expect(ratings).toEqual(
+      expect.arrayContaining([
+        ['4000000000001', 'Unknown'],
+        ['4000000000002', 'Critical'],
+      ])
     );
   });
 
-  it('findAll returns records sorted by scanned_at descending', async () => {
-    await repository.insert({
-      ean: '1111111111111',
-      name: 'Older Product',
-      brands: 'Brand A',
-      ingredients: 'A',
-      nova_score: 2,
-      nutriscore: 'B',
-      raw_json: null,
-      scanned_at: '2026-05-09T08:00:00.000Z',
-      rating: 'Warning',
-    });
+  it('deleteByEan removes the product and its favorite', async () => {
+    await repository.saveScan(productRecord());
+    await new FavoritesRepository().add(1);
 
-    await repository.insert({
-      ean: '2222222222222',
-      name: 'Newer Product',
-      brands: 'Brand B',
-      ingredients: 'B',
-      nova_score: 1,
-      nutriscore: 'A',
-      raw_json: null,
-      scanned_at: '2026-05-09T12:00:00.000Z',
-      rating: 'OK',
-    });
+    await repository.deleteByEan('4000000000001');
 
-    const products = await repository.findAll();
-
-    expect(products.map((product) => product.ean)).toEqual(['2222222222222', '1111111111111']);
+    expect(await repository.findByEan('4000000000001')).toBeNull();
+    expect(await database().getAllAsync('SELECT * FROM favorites')).toEqual([]);
   });
 
-  it('deleteByEan removes the stored record', async () => {
-    const record: ProductRecord = {
-      ean: '3333333333333',
-      name: 'Delete Me',
-      brands: 'Brand C',
-      ingredients: 'C',
-      nova_score: 3,
-      nutriscore: 'C',
-      raw_json: null,
-      scanned_at: '2026-05-09T09:00:00.000Z',
-      rating: 'Warning',
-    };
+  it('updateProduct marks the product as edited and keeps unrelated data', async () => {
+    await repository.saveScan(
+      productRecord({
+        raw_json: JSON.stringify({
+          product: { ean: '4000000000001', name: 'Alt', stores: 'Laden', novaScore: 3 },
+        }),
+      })
+    );
 
-    await repository.insert(record);
-    await repository.deleteByEan(record.ean);
+    await repository.updateProduct({ ean: '4000000000001', name: 'Korrigiert', novaScore: 2 });
 
-    const found = await repository.findByEan(record.ean);
-
-    expect(found).toBeNull();
+    const updated = await repository.findByEan('4000000000001');
+    expect(updated?.name).toBe('Korrigiert');
+    expect(updated?.nova_score).toBe(2);
+    expect(updated?.edited_at).toEqual(expect.any(String));
+    const product = JSON.parse(updated!.raw_json!).product;
+    expect(product).toMatchObject({ name: 'Korrigiert', stores: 'Laden', novaScore: 2 });
   });
 });
-
-function handleGetFirst(sql: string, params: unknown[], state: DbState): unknown {
-  const normalizedSql = normalizeSql(sql);
-
-  if (normalizedSql.includes('FROM meta')) {
-    return { value: '1' };
-  }
-
-  if (!normalizedSql.includes('FROM products WHERE ean = $ean')) {
-    return null;
-  }
-
-  const ean = getNamedParam(params[0], '$ean');
-
-  return ean ? (state.records.get(ean) ?? null) : null;
-}
-
-function handleGetAll(sql: string, _params: unknown[], state: DbState): unknown[] {
-  if (!normalizeSql(sql).includes('FROM products')) {
-    return [];
-  }
-
-  return Array.from(state.records.values()).sort((left, right) => {
-    const dateComparison = right.scanned_at.localeCompare(left.scanned_at);
-    if (dateComparison !== 0) {
-      return dateComparison;
-    }
-
-    return (right.id ?? 0) - (left.id ?? 0);
-  });
-}
-
-function handleRun(
-  sql: string,
-  params: unknown[],
-  state: DbState
-): { changes: number; lastInsertRowId: number } {
-  const normalizedSql = normalizeSql(sql);
-
-  if (normalizedSql.includes('INSERT INTO products')) {
-    const values = getNamedParams(params[0]);
-    const ean = values['$ean'];
-
-    if (typeof ean !== 'string') {
-      throw new Error('Missing EAN in insert payload.');
-    }
-
-    const existing = state.records.get(ean);
-    const record: ProductRecord = {
-      id: existing?.id ?? state.nextId++,
-      ean,
-      name: getStringOrNull(values['$name']),
-      brands: getStringOrNull(values['$brands']),
-      ingredients: getStringOrNull(values['$ingredients']),
-      nova_score: getNovaScoreOrNull(values['$nova_score']),
-      nutriscore: getStringOrNull(values['$nutriscore']),
-      raw_json: getStringOrNull(values['$raw_json']),
-      scanned_at: getStringValue(values['$scanned_at']),
-      rating: getStringValue(values['$rating']) as ProductRecord['rating'],
-      data_version: getNumberOrNull(values['$data_version']),
-      last_api_fetch: getStringOrNull(values['$last_api_fetch']),
-      image_url: getStringOrNull(values['$image_url']),
-      image_ingredients_url: getStringOrNull(values['$image_ingredients_url']),
-      image_nutrition_url: getStringOrNull(values['$image_nutrition_url']),
-      image_packaging_url: getStringOrNull(values['$image_packaging_url']),
-      visit_count: getNumberOrNull(values['$visit_count']),
-      last_seen_at: getStringOrNull(values['$last_seen_at']),
-    };
-
-    state.records.set(ean, record);
-
-    return {
-      changes: 1,
-      lastInsertRowId: record.id ?? 0,
-    };
-  }
-
-  if (normalizedSql.includes('DELETE FROM products')) {
-    const ean = getNamedParam(params[0], '$ean');
-
-    if (ean) {
-      state.records.delete(ean);
-    }
-
-    return {
-      changes: 1,
-      lastInsertRowId: 0,
-    };
-  }
-
-  return {
-    changes: 0,
-    lastInsertRowId: 0,
-  };
-}
-
-function getNamedParams(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object') {
-    return value as Record<string, unknown>;
-  }
-
-  return {};
-}
-
-function getNamedParam(value: unknown, key: string): string | null {
-  const params = getNamedParams(value);
-  const param = params[key];
-
-  return typeof param === 'string' ? param : null;
-}
-
-function getStringOrNull(value: unknown): string | null {
-  return typeof value === 'string' ? value : null;
-}
-
-function getStringValue(value: unknown): string {
-  if (typeof value !== 'string') {
-    throw new Error('Expected a string value.');
-  }
-
-  return value;
-}
-
-function getNovaScoreOrNull(value: unknown): ProductRecord['nova_score'] {
-  if (value === null || value === undefined) {
-    return null;
-  }
-
-  if (value === 1 || value === 2 || value === 3 || value === 4) {
-    return value;
-  }
-
-  return null;
-}
-
-function getNumberOrNull(value: unknown): number | null {
-  return typeof value === 'number' ? value : null;
-}
-
-function normalizeSql(sql: string): string {
-  return sql.replace(/\s+/g, ' ').trim();
-}

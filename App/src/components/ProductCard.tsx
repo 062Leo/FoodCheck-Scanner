@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, PanResponder, Alert } from 'r
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { ProductRecord } from '../types/Product';
+import type { ProductSummary } from '../types/Product';
 import type { ScanStatus } from '../types/ScanResult';
 
 const STATUS_COLORS: Record<ScanStatus, string> = {
@@ -14,7 +14,7 @@ const STATUS_COLORS: Record<ScanStatus, string> = {
 };
 
 interface ProductCardProps {
-  product: ProductRecord;
+  product: ProductSummary;
   onPress: () => void;
   onDelete: (ean: string) => Promise<void>;
   onToggleFavorite: (productId: number) => Promise<void>;

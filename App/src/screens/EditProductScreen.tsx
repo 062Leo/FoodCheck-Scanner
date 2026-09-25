@@ -227,7 +227,7 @@ export default function EditProductScreen() {
               scanned_at: new Date().toISOString(),
               rating: 'OK',
             };
-            await repo.insert(record);
+            await repo.saveScan(record);
           }
           setIsLoading(false);
         })

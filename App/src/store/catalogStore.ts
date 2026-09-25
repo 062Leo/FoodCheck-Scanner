@@ -2,11 +2,11 @@ import { create } from 'zustand';
 
 import { FavoritesRepository } from '../infrastructure/db/FavoritesRepository';
 import { ProductRepository } from '../infrastructure/db/ProductRepository';
-import type { ProductRecord } from '../types/Product';
+import type { ProductRecord, ProductSummary } from '../types/Product';
 
 interface CatalogStoreState {
-  products: ProductRecord[];
-  favorites: ProductRecord[];
+  products: ProductSummary[];
+  favorites: ProductSummary[];
   isLoading: boolean;
   loadAll: () => Promise<void>;
   addProduct: (product: ProductRecord) => Promise<void>;
@@ -27,7 +27,7 @@ export const useCatalogStore = create<CatalogStoreState>((set, get) => ({
 
     try {
       const [products, favorites] = await Promise.all([
-        productRepository.findAll(),
+        productRepository.findAllSummaries(),
         favoritesRepository.findAll(),
       ]);
 
@@ -43,7 +43,7 @@ export const useCatalogStore = create<CatalogStoreState>((set, get) => ({
     set({ isLoading: true });
 
     try {
-      await productRepository.insert(product);
+      await productRepository.saveScan(product);
       await get().loadAll();
     } catch (error) {
       console.error(`Failed to add product ${product.ean}:`, error);
