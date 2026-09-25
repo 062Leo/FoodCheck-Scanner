@@ -8,7 +8,7 @@ describe('fetchWithTimeout', () => {
   it('aborts a hanging request after the timeout', async () => {
     jest.useFakeTimers();
     global.fetch = jest.fn(
-      (_url: unknown, init?: { signal?: AbortSignal }) =>
+      (_url: unknown, init?: { signal?: AbortSignal | null }) =>
         new Promise((_resolve, reject) => {
           init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
         })

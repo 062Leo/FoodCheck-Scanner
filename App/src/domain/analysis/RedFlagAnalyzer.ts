@@ -7,12 +7,12 @@ import { IngredientParser } from './IngredientParser';
 import { IngredientTaxonomy } from './IngredientTaxonomy';
 import { getAllSearchTerms, resolveIngredientKey } from '../rules/ingredientTranslations';
 import {
+  IngredientStructure,
   findOccurrences,
   isENumberTerm,
   isStrictlyContained,
+  lowerCasePreservingLength,
   normalizeENumberSpacing,
-  segmentIndexAt,
-  segmentSpans,
   type TextSpan,
 } from './IngredientMatching';
 
@@ -20,8 +20,8 @@ type AnalyzerRule = RedFlagRule | FilterRule;
 
 /**
  * Rule keys that name a functional class ("Emulgator", "Farbstoff" …) rather than a
- * substance. EU labels always name the class together with the substance, so a class
- * label only counts when nothing more specific was found in the same ingredient.
+ * substance. EU labels name the class together with the substance, so a class label
+ * only counts when nothing more specific was found in the same ingredient.
  */
 const CLASS_LABEL_KEYS = new Set(
   [
@@ -29,6 +29,8 @@ const CLASS_LABEL_KEYS = new Set(
     'Anti Caking Agent',
     'Anti Foaming Agent',
     'Antioxidant',
+    'Artificial Colors',
+    'Artificial Sweeteners',
     'Bulking Agent',
     'Carrier Solvent',
     'Color',
@@ -40,6 +42,7 @@ const CLASS_LABEL_KEYS = new Set(
     'Foaming Agent',
     'Gelling Agent',
     'Humectant',
+    'Natural Flavor Enhancer',
     'Packaging Gas',
     'Propellants',
     'Stabiliser',
@@ -52,7 +55,8 @@ const COLOUR_CONTEXT = /farbstoff|colou?r|colorant|kleurstof|barwnik|corante/i;
 
 /**
  * Words that are also ordinary foods: "Amaranth" is a grain and "Karamell" a sweet,
- * but both are colour names too. They only count in a colour context.
+ * but both are colour names too. They only count in a colour context within the
+ * same ingredient.
  */
 const CONTEXT_BOUND_KEYS: Record<string, RegExp> = {
   amaranth: COLOUR_CONTEXT,
@@ -61,6 +65,9 @@ const CONTEXT_BOUND_KEYS: Record<string, RegExp> = {
 const CONTEXT_BOUND_E_NUMBERS: Record<string, RegExp> = {
   E123: COLOUR_CONTEXT,
 };
+
+/** E-number families whose members are interchangeable label variants (caramel colours). */
+const MERGEABLE_FAMILIES = new Set(['E150']);
 
 const NUTRIENT_FIELDS: Record<NutrientKey, keyof ProductNutriments> = {
   sugars_100g: 'sugars100g',
@@ -75,15 +82,22 @@ interface Candidate {
   canonicalKey: string;
   category: string;
   severity: RedFlagSeverity;
+  eNumber?: string;
+  isClassLabel: boolean;
   occurrences: TextSpan[];
 }
 
-interface LocatedFinding {
+interface Located {
+  candidate: Candidate;
   finding: RedFlagFinding;
+  occurrences: TextSpan[];
   position: number;
-  segment: number;
-  identity: string;
-  isClassLabel: boolean;
+}
+
+/** Keys and E-numbers whitelisted by "ok" rules for the current text. */
+interface Whitelist {
+  keys: Set<string>;
+  eNumbers: Set<string>;
 }
 
 export class RedFlagAnalyzer {
@@ -106,23 +120,31 @@ export class RedFlagAnalyzer {
   ): RedFlagFinding[] {
     const activeRules = rules ?? this.defaultRules;
     const text = normalizeENumberSpacing(ingredientsText ?? '');
-    const lowerText = text.toLowerCase();
-    const blocked = this.collectBlockedKeys(activeRules, lowerText, nutriments);
+    const lowerText = lowerCasePreservingLength(text);
+    const whitelist = this.collectWhitelist(activeRules);
 
     const ingredientFindings = lowerText.trim()
-      ? this.analyzeIngredientRules(activeRules, text, lowerText, blocked)
+      ? this.analyzeIngredientRules(activeRules, text, lowerText, whitelist)
       : [];
-    const nutrientFindings = this.analyzeNutrientRules(activeRules, nutriments, blocked);
+    const nutrientFindings = this.analyzeNutrientRules(activeRules, nutriments);
 
     return [...ingredientFindings, ...nutrientFindings];
   }
 
-  analyzeTaxonomy(ingredientsText: string): RedFlagFinding[] {
+  /**
+   * Flags medium/high-risk additives from the built-in taxonomy. Additives
+   * whitelisted by an "ok" rule in `rules` are skipped.
+   */
+  analyzeTaxonomy(ingredientsText: string, rules?: AnalyzerRule[]): RedFlagFinding[] {
     if (!ingredientsText || ingredientsText.trim().length === 0) {
       return [];
     }
 
-    const tokens = this.parser.parse(normalizeENumberSpacing(ingredientsText));
+    const text = normalizeENumberSpacing(ingredientsText);
+    const whitelist = rules
+      ? this.collectWhitelist(rules)
+      : { keys: new Set<string>(), eNumbers: new Set<string>() };
+    const tokens = this.parser.parse(text);
     const findings: RedFlagFinding[] = [];
     const seenENumbers = new Set<string>();
 
@@ -136,7 +158,7 @@ export class RedFlagAnalyzer {
       }
 
       const eNumber = this.taxonomy.normalizeENumber(additive.eNumber);
-      if (seenENumbers.has(eNumber)) {
+      if (seenENumbers.has(eNumber) || whitelist.eNumbers.has(eNumber)) {
         continue;
       }
 
@@ -157,7 +179,7 @@ export class RedFlagAnalyzer {
     return findings;
   }
 
-  /** The E-number a finding refers to, if the taxonomy knows it. */
+  /** The E-number a term refers to, if the taxonomy knows it. */
   resolveENumber(term: string): string | undefined {
     if (isENumberTerm(term)) {
       return this.taxonomy.normalizeENumber(term);
@@ -170,15 +192,17 @@ export class RedFlagAnalyzer {
     rules: AnalyzerRule[],
     text: string,
     lowerText: string,
-    blocked: Set<string>
+    whitelist: Whitelist
   ): RedFlagFinding[] {
-    const candidates = this.collectCandidates(rules, lowerText, blocked);
-    const segments = segmentSpans(text);
+    const structure = new IngredientStructure(text);
+    const candidates = this.collectCandidates(rules, text, lowerText, whitelist);
     const allOccurrences = candidates.flatMap((candidate) =>
       candidate.occurrences.map((span) => ({ candidate, span }))
     );
 
-    const located: LocatedFinding[] = [];
+    // 1. Drop occurrences inside a longer match of another rule and context-bound
+    //    words outside their context.
+    const located: Located[] = [];
     for (const candidate of candidates) {
       const context = CONTEXT_BOUND_KEYS[candidate.canonicalKey.toLowerCase()];
       const surviving = candidate.occurrences.filter((span) => {
@@ -187,90 +211,127 @@ export class RedFlagAnalyzer {
         );
         if (covered) return false;
         if (!context) return true;
-        const segment = segments[segmentIndexAt(segments, span.start)];
-        return context.test(text.slice(segment.start, segment.end));
+        const item = structure.itemAt(span.start);
+        return context.test(text.slice(item.start, item.end));
       });
       if (surviving.length === 0) continue;
 
       const first = surviving.reduce((a, b) => (b.start < a.start ? b : a));
-      const matchedText = text.substring(first.start, first.end);
-      const eNumber = this.resolveENumber(candidate.key) ?? this.resolveENumber(matchedText);
-
       located.push({
+        candidate,
+        occurrences: surviving,
+        position: first.start,
         finding: {
-          ingredient: matchedText,
+          ingredient: text.substring(first.start, first.end),
           category: candidate.category,
           severity: candidate.severity,
           canonicalKey: candidate.canonicalKey,
-          ...(eNumber ? { eNumber } : {}),
+          ...(candidate.eNumber ? { eNumber: candidate.eNumber } : {}),
         },
-        position: first.start,
-        segment: segmentIndexAt(segments, first.start),
-        identity: eNumber ?? `key:${candidate.canonicalKey.toLowerCase()}`,
-        isClassLabel: CLASS_LABEL_KEYS.has(candidate.canonicalKey.toLowerCase()),
       });
     }
-
     located.sort((a, b) => a.position - b.position);
 
-    // One finding per substance: the same E-number anywhere in the list, or the same
-    // E-number family (E150a/E150d …) within one ingredient, counts once.
-    const seenIdentities = new Set<string>();
-    const unique = located.filter((entry) => {
-      const family = entry.finding.eNumber?.match(/^E\d+/)?.[0];
-      const familyKey = family ? `${entry.segment}:${family}` : undefined;
-      if (seenIdentities.has(entry.identity) || (familyKey && seenIdentities.has(familyKey))) {
+    // 2. One finding per substance: the same E-number anywhere in the list counts once;
+    //    within one ingredient a key without suffix and its suffixed form, or variants
+    //    of an interchangeable family (E150a–d), count once.
+    const seenENumbers = new Set<string>();
+    const seenKeys = new Set<string>();
+    const familiesByItem = new Map<string, Set<string>>();
+    const unique = located.filter(({ candidate, position }) => {
+      const eNumber = candidate.eNumber;
+      const keyId = candidate.canonicalKey.toLowerCase();
+      if ((eNumber && seenENumbers.has(eNumber)) || (!eNumber && seenKeys.has(keyId))) {
         return false;
       }
-      seenIdentities.add(entry.identity);
-      if (familyKey) seenIdentities.add(familyKey);
+      if (eNumber) {
+        const family = eNumber.match(/^E\d+/)?.[0] ?? eNumber;
+        const hasSuffix = family !== eNumber;
+        const item = structure.itemAt(position);
+        const itemKey = `${item.start}:${item.end}`;
+        const families = familiesByItem.get(itemKey) ?? new Set<string>();
+        const unsuffixedSeen = families.has(`${family}|bare`);
+        const suffixedSeen = families.has(`${family}|suffixed`);
+        if (
+          (hasSuffix && unsuffixedSeen) ||
+          (!hasSuffix && suffixedSeen) ||
+          (MERGEABLE_FAMILIES.has(family) && (unsuffixedSeen || suffixedSeen))
+        ) {
+          return false;
+        }
+        families.add(`${family}|${hasSuffix ? 'suffixed' : 'bare'}`);
+        familiesByItem.set(itemKey, families);
+        seenENumbers.add(eNumber);
+      } else {
+        seenKeys.add(keyId);
+      }
       return true;
     });
 
-    const specificSegments = new Set(unique.filter((e) => !e.isClassLabel).map((e) => e.segment));
+    // 3. A class label counts only if at least one of its occurrences stands in an
+    //    ingredient without a more specific finding.
+    const specificSpans = unique
+      .filter((entry) => !entry.candidate.isClassLabel)
+      .flatMap((entry) => entry.occurrences);
     return unique
-      .filter((entry) => !entry.isClassLabel || !specificSegments.has(entry.segment))
+      .filter((entry) => {
+        if (!entry.candidate.isClassLabel) return true;
+        return entry.occurrences.some((span) => {
+          const item = structure.itemAt(span.start);
+          return !specificSpans.some((s) => s.start >= item.start && s.end <= item.end);
+        });
+      })
       .map((entry) => entry.finding);
   }
 
   private collectCandidates(
     rules: AnalyzerRule[],
+    text: string,
     lowerText: string,
-    blocked: Set<string>
+    whitelist: Whitelist
   ): Candidate[] {
     const candidates: Candidate[] = [];
+
+    const add = (
+      key: string,
+      canonicalKey: string,
+      category: string,
+      severity: RedFlagSeverity,
+      occurrences: TextSpan[]
+    ) => {
+      if (occurrences.length === 0 || this.isWhitelistedKey(key, whitelist)) return;
+      const first = occurrences.reduce((a, b) => (b.start < a.start ? b : a));
+      const eNumber =
+        this.resolveENumber(key) ?? this.resolveENumber(text.substring(first.start, first.end));
+      if (eNumber && whitelist.eNumbers.has(eNumber)) return;
+      candidates.push({
+        key,
+        canonicalKey,
+        category,
+        severity,
+        eNumber,
+        isClassLabel: CLASS_LABEL_KEYS.has(canonicalKey.toLowerCase()),
+        occurrences,
+      });
+    };
 
     for (const rule of rules) {
       if (this.isFilterRule(rule)) {
         if (rule.severity !== 'red_flag' || rule.type !== 'ingredient') continue;
-        if (this.isBlocked(rule.key, blocked)) continue;
-
         const occurrences = getAllSearchTerms(rule.key, rule.translations).flatMap((term) =>
           findOccurrences(lowerText, term)
         );
-        if (occurrences.length === 0) continue;
-
-        candidates.push({
-          key: rule.key,
-          canonicalKey: rule.key,
-          category: rule.category,
-          severity: 'critical',
-          occurrences,
-        });
+        add(rule.key, rule.key, rule.category, 'critical', occurrences);
         continue;
       }
 
-      if (this.isBlocked(rule.searchTerm, blocked)) continue;
-      const occurrences = findOccurrences(lowerText, rule.searchTerm);
-      if (occurrences.length === 0) continue;
-
-      candidates.push({
-        key: rule.searchTerm,
-        canonicalKey: resolveIngredientKey(rule.searchTerm),
-        category: rule.category,
-        severity: rule.severity,
-        occurrences,
-      });
+      add(
+        rule.searchTerm,
+        resolveIngredientKey(rule.searchTerm),
+        rule.category,
+        rule.severity,
+        findOccurrences(lowerText, rule.searchTerm)
+      );
     }
 
     return candidates;
@@ -278,25 +339,24 @@ export class RedFlagAnalyzer {
 
   private analyzeNutrientRules(
     rules: AnalyzerRule[],
-    nutriments: ProductNutriments | undefined,
-    blocked: Set<string>
+    nutriments: ProductNutriments | undefined
   ): RedFlagFinding[] {
     if (!nutriments) return [];
 
+    const nutrientRules = rules.filter(
+      (rule): rule is FilterRule => this.isFilterRule(rule) && rule.type === 'nutrient'
+    );
+    // An "ok" nutrient rule only whitelists while its own condition holds.
+    const whitelisted = new Set(
+      nutrientRules
+        .filter((rule) => rule.severity === 'ok' && this.nutrientRuleMatches(rule, nutriments))
+        .map((rule) => rule.key)
+    );
+
     const findings: RedFlagFinding[] = [];
-    for (const rule of rules) {
-      if (!this.isFilterRule(rule) || rule.type !== 'nutrient' || rule.severity !== 'red_flag') {
-        continue;
-      }
-      const value = this.nutrientValue(nutriments, rule.key);
-      if (value === undefined || this.isBlocked(rule.key, blocked)) continue;
-      if (
-        rule.operator == null ||
-        rule.threshold == null ||
-        !this.matchesThreshold(value, rule.operator, rule.threshold)
-      ) {
-        continue;
-      }
+    for (const rule of nutrientRules) {
+      if (rule.severity !== 'red_flag' || whitelisted.has(rule.key)) continue;
+      if (!this.nutrientRuleMatches(rule, nutriments)) continue;
 
       findings.push({
         ingredient: rule.key,
@@ -305,50 +365,58 @@ export class RedFlagAnalyzer {
         canonicalKey: rule.key,
         nutrient: {
           key: rule.key as NutrientKey,
-          value,
-          operator: rule.operator,
-          threshold: rule.threshold,
+          value: this.nutrientValue(nutriments, rule.key)!,
+          operator: rule.operator!,
+          threshold: rule.threshold!,
         },
       });
     }
     return findings;
   }
 
+  private nutrientRuleMatches(rule: FilterRule, nutriments: ProductNutriments): boolean {
+    const value = this.nutrientValue(nutriments, rule.key);
+    if (value === undefined || rule.operator == null || rule.threshold == null) return false;
+    return this.matchesThreshold(value, rule.operator, rule.threshold);
+  }
+
   /**
-   * An "ok" rule whitelists a term: while the term is present, red-flag rules for the
-   * same ingredient (in any language) are ignored.
+   * An "ok" ingredient rule whitelists an ingredient: red-flag rules for the same
+   * ingredient (in any language) or the same E-number are ignored.
    */
-  private collectBlockedKeys(
-    rules: AnalyzerRule[],
-    lowerText: string,
-    nutriments: ProductNutriments | undefined
-  ): Set<string> {
-    const blocked = new Set<string>();
+  private collectWhitelist(rules: AnalyzerRule[]): Whitelist {
+    const whitelist: Whitelist = { keys: new Set(), eNumbers: new Set() };
 
     for (const rule of rules) {
-      if (!this.isFilterRule(rule) || rule.severity !== 'ok') continue;
+      if (!this.isFilterRule(rule) || rule.severity !== 'ok' || rule.type !== 'ingredient') {
+        continue;
+      }
+      const canonical = resolveIngredientKey(rule.key);
+      whitelist.keys.add(this.normalizeKey(rule.key));
+      whitelist.keys.add(this.normalizeKey(canonical));
 
-      if (rule.type === 'ingredient') {
-        const present = getAllSearchTerms(rule.key, rule.translations).some(
-          (term) => findOccurrences(lowerText, term).length > 0
-        );
-        if (present) {
-          blocked.add(this.normalizeKey(rule.key));
-          blocked.add(this.normalizeKey(resolveIngredientKey(rule.key)));
+      const terms = [
+        rule.key,
+        ...getAllSearchTerms(rule.key, rule.translations),
+        ...getAllSearchTerms(canonical),
+      ];
+      for (const term of terms) {
+        const eNumber = this.resolveENumber(term);
+        if (eNumber) {
+          whitelist.eNumbers.add(eNumber);
+          break;
         }
-      } else if (nutriments && this.nutrientValue(nutriments, rule.key) !== undefined) {
-        blocked.add(this.normalizeKey(rule.key));
       }
     }
 
-    return blocked;
+    return whitelist;
   }
 
-  private isBlocked(key: string, blocked: Set<string>): boolean {
-    if (blocked.size === 0) return false;
+  private isWhitelistedKey(key: string, whitelist: Whitelist): boolean {
+    if (whitelist.keys.size === 0) return false;
     return (
-      blocked.has(this.normalizeKey(key)) ||
-      blocked.has(this.normalizeKey(resolveIngredientKey(key)))
+      whitelist.keys.has(this.normalizeKey(key)) ||
+      whitelist.keys.has(this.normalizeKey(resolveIngredientKey(key)))
     );
   }
 

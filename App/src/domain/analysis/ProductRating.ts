@@ -27,7 +27,7 @@ export class ProductRating {
       product.nutriments
     );
     const taxonomyFlags = ingredientsText
-      ? this.redFlagAnalyzer.analyzeTaxonomy(ingredientsText)
+      ? this.redFlagAnalyzer.analyzeTaxonomy(ingredientsText, activeRules)
       : [];
     const redFlags = this.mergeFindings(keywordFlags, taxonomyFlags);
 

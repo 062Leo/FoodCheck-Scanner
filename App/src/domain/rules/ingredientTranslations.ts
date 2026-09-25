@@ -3970,7 +3970,14 @@ function parseTranslationJson(json: string): Record<string, string> {
   try {
     const parsed = JSON.parse(json) as unknown;
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, string>;
+      // Only non-empty strings are usable terms; anything else would match everywhere
+      // or crash the matcher.
+      return Object.fromEntries(
+        Object.entries(parsed as Record<string, unknown>).filter(
+          (entry): entry is [string, string] =>
+            typeof entry[1] === 'string' && entry[1].trim().length > 1
+        )
+      );
     }
   } catch {
     // ignore parse errors

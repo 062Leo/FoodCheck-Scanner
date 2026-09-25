@@ -130,7 +130,11 @@ function mapOffProduct(ean: string, p: Record<string, unknown>): Product {
     ean,
     name: typeof p.product_name === 'string' ? p.product_name.trim() : '',
     brand: p.brands as string | undefined,
-    ingredientsText: (p.ingredients_text_de as string) || (p.ingredients_text as string),
+    ingredientsText:
+      (p.ingredients_text_de as string) ||
+      (p.ingredients_text as string) ||
+      (p.ingredients_text_en as string) ||
+      Object.values(ingredientsTextByLang).find((text) => text.trim().length > 0),
     ingredientsTextDe: p.ingredients_text_de as string | undefined,
     ingredientsTextEn: p.ingredients_text_en as string | undefined,
     ingredientsTextByLang,

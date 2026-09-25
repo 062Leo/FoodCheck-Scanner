@@ -355,7 +355,7 @@
     "4000000000014 Eistee mit E-Nummern": {
       "status": "Critical",
       "nova": 4,
-      "redFlags": ["critical|E-Nummern|E330|E330", "critical|E-Nummern|E211|E211"]
+      "redFlags": ["critical|E-Nummern|E211|E211"]
     },
     "4000000000015 Ohne Daten": {
       "status": "Unknown",
