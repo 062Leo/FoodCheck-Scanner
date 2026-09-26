@@ -47,45 +47,6 @@ export class OcrPreprocessor {
     };
   }
 
-  static getCropGuidance(
-    width: number,
-    height: number
-  ): {
-    aspectRatio: string;
-    suggestion: string;
-    isLandscape: boolean;
-  } {
-    const ratio = width / height;
-    const isLandscape = ratio > 1.2;
-
-    if (ratio > 2.5) {
-      return {
-        aspectRatio: `${Math.round(ratio * 10) / 10}:1`,
-        suggestion: 'Sehr breit – ideal für Zutatenlisten',
-        isLandscape,
-      };
-    }
-    if (ratio < 0.6) {
-      return {
-        aspectRatio: `1:${Math.round((1 / ratio) * 10) / 10}`,
-        suggestion: 'Sehr schmal – ideal für Nährwerttabellen',
-        isLandscape,
-      };
-    }
-    if (ratio > 1.2) {
-      return {
-        aspectRatio: `${Math.round(ratio * 10) / 10}:1`,
-        suggestion: 'Querformat – gut für Textbreite',
-        isLandscape,
-      };
-    }
-    return {
-      aspectRatio: `${Math.round(ratio * 10) / 10}:1`,
-      suggestion: 'Quadratisch – möglichst nah am Text zuschneiden',
-      isLandscape,
-    };
-  }
-
   static estimateQuality(text: string): {
     score: number;
     issues: string[];

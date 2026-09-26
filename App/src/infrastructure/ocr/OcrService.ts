@@ -28,47 +28,6 @@ function resolveScript(selection: OcrScriptSelection): TextRecognitionScript {
   return selection === 'auto' ? DEFAULT_SCRIPT : selection;
 }
 
-function isLetterLike(ch: string): boolean {
-  return /[A-Za-z\u00C0-\u024F\u0370-\u03FF\u1F00-\u1FFF]/.test(ch);
-}
-
-function cleanupOcrText(text: string): string {
-  const lines = text.split(/\r?\n/);
-  const cleanedLines: string[] = [];
-
-  for (const line of lines) {
-    const tokens = line.split(/\s+/).filter(Boolean);
-    const kept: string[] = [];
-
-    for (const token of tokens) {
-      const letters = Array.from(token).filter((ch) => isLetterLike(ch)).length;
-      const digits = Array.from(token).filter((ch) => /\d/.test(ch)).length;
-      const other = token.length - letters - digits;
-
-      const hasLetter = letters > 0;
-      const isMostlyNoise = token.length >= 4 && !hasLetter && digits === 0;
-      const tooManyOther = token.length >= 4 && other / token.length > 0.5;
-
-      if (isMostlyNoise || tooManyOther) {
-        continue;
-      }
-
-      kept.push(token);
-    }
-
-    cleanedLines.push(kept.join(' '));
-  }
-
-  return cleanedLines
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-export function cleanupOcrTextPublic(text: string): string {
-  return cleanupOcrText(text);
-}
-
 /**
  * Service for optical character recognition (OCR) and nutrient data parsing.
  */
@@ -138,10 +97,6 @@ export class OcrService {
         error
       );
     }
-  }
-
-  static cleanIngredientsText(rawOcrText: string): string {
-    return cleanupOcrText(rawOcrText);
   }
 
   /** Parses a recognised nutrition table. See parseNutritionLabel. */

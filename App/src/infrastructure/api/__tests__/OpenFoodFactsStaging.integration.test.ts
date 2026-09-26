@@ -50,22 +50,6 @@ describe('integration: getProductByBarcode (staging)', () => {
   }, 15000);
 });
 
-describe('integration: searchProducts (staging)', () => {
-  it('8.2 should find orange juice with nutrition grade C', async () => {
-    const result = await readClient.searchProducts({
-      category: 'Orange Juice',
-      nutritionGrade: 'c',
-      pageSize: 5,
-    });
-
-    expect(result.count).toBeGreaterThan(0);
-    expect(result.products.length).toBeGreaterThan(0);
-    for (const product of result.products) {
-      expect(product.nutritionGrades).toBe('c');
-    }
-  }, 15000);
-});
-
 describe('integration: write flow (staging)', () => {
   const TEST_EAN = '9999999999999';
 

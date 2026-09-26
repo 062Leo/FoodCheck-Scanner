@@ -24,11 +24,4 @@ export class TranslationRouter implements Translator {
   async setProvider(provider: TranslationProvider): Promise<void> {
     await SecureStore.setItemAsync(PROVIDER_KEY, provider);
   }
-
-  async needsKey(): Promise<boolean> {
-    const provider = await this.getProvider();
-    if (provider === 'mymemory') return false;
-    const key = await this.deeplClient.getApiKey();
-    return !key;
-  }
 }

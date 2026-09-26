@@ -63,8 +63,4 @@ export class RobotoffClient {
 
     return insights;
   }
-
-  clearCache(): void {
-    this.inMemoryCache.clear();
-  }
 }

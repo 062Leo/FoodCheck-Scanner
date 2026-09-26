@@ -86,10 +86,3 @@ export interface Product {
   manufacturingPlaces?: string;
   stores?: string;
 }
-
-export function getMissingScoreTags(product: Product): string[] {
-  if (!product.miscTags) return [];
-  return product.miscTags.filter(
-    (tag) => tag.startsWith('en:nutriscore-missing-') || tag.startsWith('en:ecoscore-')
-  );
-}

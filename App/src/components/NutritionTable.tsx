@@ -1,17 +1,10 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { ProductNutriments } from '../types/Product';
-import { useTranslation } from '../i18n/useTranslation';
+import { formatNumber, useTranslation } from '../i18n/useTranslation';
 import type { TranslationKey } from '../i18n/translations';
+import { colors, radius, spacing, typography } from '../ui/theme';
 
-type NutrientKey = keyof ProductNutriments;
-
-interface NutritionRow {
-  labelKey: TranslationKey;
-  key: NutrientKey;
-  unit: string;
-}
-
-const NUTRIENT_ROWS: NutritionRow[] = [
+const NUTRIENT_ROWS: { labelKey: TranslationKey; key: keyof ProductNutriments; unit: string }[] = [
   { labelKey: 'product.nutritionEnergy', key: 'energyKcal100g', unit: 'kcal' },
   { labelKey: 'product.nutritionFat', key: 'fat100g', unit: 'g' },
   { labelKey: 'product.nutritionSaturatedFat', key: 'saturatedFat100g', unit: 'g' },
@@ -22,110 +15,70 @@ const NUTRIENT_ROWS: NutritionRow[] = [
   { labelKey: 'product.nutritionSalt', key: 'salt100g', unit: 'g' },
 ];
 
-interface NutritionTableProps {
+/** Full nutrition table per 100 g; only rows with a value. */
+export function NutritionTable({
+  nutriments,
+  servingSize,
+}: {
   nutriments: ProductNutriments;
   servingSize?: string;
-}
+}) {
+  const { t, language } = useTranslation();
+  const rows = NUTRIENT_ROWS.filter((row) => nutriments[row.key] != null);
+  if (rows.length === 0) return null;
 
-export function NutritionTable({ nutriments, servingSize }: NutritionTableProps) {
-  const { t } = useTranslation();
-  const hasAnyValue = NUTRIENT_ROWS.some((row) => nutriments[row.key] !== undefined);
-  if (!hasAnyValue) return null;
+  const format = (value: number) =>
+    value > 0 && value < 0.1 ? `< ${formatNumber(0.1, language)}` : formatNumber(value, language);
 
   return (
     <View style={styles.container}>
       <View style={styles.table}>
         <View style={styles.headerRow}>
-          <Text style={[styles.cell, styles.headerCell, styles.labelCell]}>
+          <Text style={[styles.cell, styles.header, styles.labelCell]}>
             {t('product.nutritionHeader')}
           </Text>
-          <Text style={[styles.cell, styles.headerCell, styles.valueCell]}>
+          <Text style={[styles.cell, styles.header, styles.valueCell]}>
             {t('product.nutritionPer100g')}
           </Text>
         </View>
-
-        {NUTRIENT_ROWS.map((row, index) => {
-          const value = nutriments[row.key];
-          if (value == null) return null;
-
-          return (
-            <View key={row.key} style={[styles.row, index % 2 === 1 && styles.rowAlt]}>
-              <Text style={[styles.cell, styles.labelCell, styles.labelText]}>
-                {t(row.labelKey)}
-              </Text>
-              <Text style={[styles.cell, styles.valueCell, styles.valueText]}>
-                {formatNumber(value)} {row.unit}
-              </Text>
-            </View>
-          );
-        })}
+        {rows.map((row, index) => (
+          <View
+            key={row.key}
+            style={[styles.row, index % 2 === 1 && styles.rowAlt]}
+            accessible
+            accessibilityLabel={`${t(row.labelKey)}: ${format(nutriments[row.key]!)} ${row.unit}`}
+          >
+            <Text style={[styles.cell, styles.labelCell, styles.label]}>{t(row.labelKey)}</Text>
+            <Text style={[styles.cell, styles.valueCell, styles.value]}>
+              {format(nutriments[row.key]!)} {row.unit}
+            </Text>
+          </View>
+        ))}
       </View>
-
-      {servingSize && (
-        <Text style={styles.servingNote}>
+      {servingSize ? (
+        <Text style={styles.note}>
           {t('product.nutritionServingSize')}: {servingSize}
         </Text>
-      )}
+      ) : null}
     </View>
   );
 }
 
-function formatNumber(value: number): string {
-  const formatted = value % 1 === 0 ? value.toString() : value.toFixed(1);
-  if (value < 0.1 && value > 0) return '< 0.1';
-  return formatted;
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  table: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#1E1E1E',
-  },
+  container: { gap: spacing.sm },
+  table: { borderRadius: radius.sm, overflow: 'hidden', backgroundColor: colors.surfaceSunken },
   headerRow: {
     flexDirection: 'row',
-    backgroundColor: '#2A2A2A',
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-    paddingVertical: 8,
+    backgroundColor: colors.surfaceRaised,
+    paddingVertical: spacing.sm,
   },
-  row: {
-    flexDirection: 'row',
-    paddingVertical: 6,
-  },
-  rowAlt: {
-    backgroundColor: '#1A1A1A',
-  },
-  cell: {
-    paddingHorizontal: 12,
-    fontSize: 13,
-  },
-  headerCell: {
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  labelCell: {
-    flex: 2,
-  },
-  valueCell: {
-    flex: 1,
-    textAlign: 'right',
-  },
-  labelText: {
-    color: '#BDBDBD',
-  },
-  valueText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontVariant: ['tabular-nums'],
-  },
-  servingNote: {
-    color: '#757575',
-    fontSize: 11,
-    marginTop: 8,
-    textAlign: 'right',
-  },
+  row: { flexDirection: 'row', paddingVertical: spacing.sm },
+  rowAlt: { backgroundColor: colors.bg },
+  cell: { ...typography.body, paddingHorizontal: spacing.md },
+  header: { fontWeight: '700', color: colors.text },
+  labelCell: { flex: 2 },
+  valueCell: { flex: 1, textAlign: 'right' },
+  label: { color: colors.textSecondary },
+  value: { color: colors.text, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  note: { ...typography.caption, color: colors.textMuted, textAlign: 'right' },
 });

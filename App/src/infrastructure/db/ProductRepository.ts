@@ -244,24 +244,4 @@ export class ProductRepository {
       );
     }
   }
-
-  async searchByName(query: string): Promise<ProductSummary[]> {
-    try {
-      const database = await getDatabase();
-      return await database.getAllAsync<ProductSummary>(
-        `
-          SELECT ${SUMMARY_COLUMNS}
-          FROM products
-          WHERE name LIKE $query COLLATE NOCASE
-             OR brands LIKE $query COLLATE NOCASE
-             OR ean LIKE $query
-          ORDER BY scanned_at DESC
-          LIMIT 50;
-        `,
-        { $query: `%${query}%` }
-      );
-    } catch (error) {
-      throw new Error(`Failed to search products: ${getErrorMessage(error)}`, { cause: error });
-    }
-  }
 }
