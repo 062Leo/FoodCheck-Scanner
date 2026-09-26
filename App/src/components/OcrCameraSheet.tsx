@@ -27,13 +27,14 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '../i18n/useTranslation';
-import { OcrService } from '../infrastructure/ocr/OcrService';
+import { OcrError, OcrService } from '../infrastructure/ocr/OcrService';
 import { OcrPreprocessor } from '../infrastructure/ocr/OcrPreprocessor';
 import { OffOcrClient, OffOcrError } from '../infrastructure/api/OffOcrClient';
 import { WRITE_HOST } from '../infrastructure/api/config';
 import {
   mapSelectionToImage,
   normalizeIngredientsOcrText,
+  type CropRegion,
   type Rect,
   type Size,
 } from '../domain/ocr/ocrGeometry';
@@ -68,6 +69,9 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const requestRef = useRef(0);
+  /** Region used for the on-device result; the cloud gets exactly the same image. */
+  const regionRef = useRef<CropRegion | null>(null);
+  const cloudAbortRef = useRef<AbortController | null>(null);
 
   const [phase, setPhase] = useState<Phase>('camera');
   const [photo, setPhoto] = useState<Photo | null>(null);
@@ -82,6 +86,8 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
 
   const reset = useCallback(() => {
     requestRef.current++;
+    cloudAbortRef.current?.abort();
+    regionRef.current = null;
     setPhase('camera');
     setPhoto(null);
     setSelection(null);
@@ -144,12 +150,12 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
     }
   };
 
-  /** The photo, cropped to the selection if one was drawn. */
-  const croppedUri = async (current: Photo, useSelection: boolean): Promise<string> => {
-    const region =
-      useSelection && selection && viewSize
-        ? mapSelectionToImage(selection, viewSize, current)
-        : null;
+  /** The selection in image pixels, or null when none was drawn or it is too small. */
+  const selectedRegion =
+    photo && selection && viewSize ? mapSelectionToImage(selection, viewSize, photo) : null;
+
+  /** The photo, cropped to `region` if given. */
+  const croppedUri = async (current: Photo, region: CropRegion | null): Promise<string> => {
     if (!region) return current.uri;
     const cropped = await ImageManipulator.manipulateAsync(current.uri, [{ crop: region }], {
       compress: 0.9,
@@ -169,13 +175,20 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
 
   const recognizeOnDevice = async (useSelection: boolean) => {
     if (!photo) return;
+    const region = useSelection ? selectedRegion : null;
+    if (useSelection && !region) return;
+    regionRef.current = region;
     const request = ++requestRef.current;
     setPhase('recognizing');
     try {
-      const uri = await croppedUri(photo, useSelection);
+      const uri = await croppedUri(photo, region);
       const recognized = await OcrService.recognizeText(uri);
       finishRecognition(request, recognized, 'device');
-    } catch {
+    } catch (error) {
+      if (error instanceof OcrError && error.code === 'no-text') {
+        finishRecognition(request, '', 'device');
+        return;
+      }
       if (request !== requestRef.current) return;
       setEngine('device');
       setErrorKey('ocr.error.device');
@@ -186,19 +199,23 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
   const recognizeInCloud = async () => {
     if (!photo) return;
     const request = ++requestRef.current;
+    const abort = new AbortController();
+    cloudAbortRef.current = abort;
     setPhase('recognizing');
     try {
-      const uri = (await OcrPreprocessor.preprocess(await croppedUri(photo, true))).uri;
+      const uri = (await OcrPreprocessor.preprocess(await croppedUri(photo, regionRef.current)))
+        .uri;
       const recognized = await cloudClient.extractText(
         barcode,
         uri,
         mode === 'ingredients' ? 'ingredients' : 'nutrition',
-        lang ?? language
+        lang ?? language,
+        abort.signal
       );
       finishRecognition(request, recognized, 'cloud');
     } catch (error) {
       if (request !== requestRef.current) return;
-      setEngine('cloud');
+      // The text field still holds the on-device result, so the engine stays 'device'.
       setErrorKey(
         error instanceof OffOcrError && error.code === 'no-credentials'
           ? 'ocr.error.noCredentials'
@@ -334,7 +351,7 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
             </View>
             <View style={[styles.bottomBar, { paddingBottom: insets.bottom + spacing.lg }]}>
               <Text style={styles.hint}>
-                {selection ? t('ocr.crop.hint.ok') : t('ocr.crop.hint.empty')}
+                {selectedRegion ? t('ocr.crop.hint.ok') : t('ocr.crop.hint.empty')}
               </Text>
               <View style={styles.row}>
                 <Button
@@ -347,7 +364,7 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
                   title={t('ocr.useSelection')}
                   icon="scan-outline"
                   onPress={() => void recognizeOnDevice(true)}
-                  disabled={!selection}
+                  disabled={!selectedRegion}
                   style={styles.flex}
                 />
               </View>
@@ -364,6 +381,7 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
               variant="ghost"
               onPress={() => {
                 requestRef.current++;
+                cloudAbortRef.current?.abort();
                 setPhase('crop');
               }}
             />

@@ -6,7 +6,9 @@ import { OcrPreprocessor } from './OcrPreprocessor';
 export class OcrError extends Error {
   constructor(
     message: string,
-    public readonly cause?: unknown
+    public readonly cause?: unknown,
+    /** 'no-text': the photo was read but contains no text (blurry, wrong side). */
+    public readonly code: 'no-text' | 'failed' = 'failed'
   ) {
     super(message);
     this.name = 'OcrError';
@@ -60,7 +62,7 @@ export class OcrService {
       const text = result.text?.trim() ?? '';
 
       if (!text) {
-        throw new OcrError(`No text recognized in image using ${script} OCR`);
+        throw new OcrError(`No text recognized in image using ${script} OCR`, undefined, 'no-text');
       }
 
       // Calculate average confidence from blocks

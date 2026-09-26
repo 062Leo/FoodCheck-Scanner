@@ -22,9 +22,19 @@ jest.mock('expo-image-manipulator', () => ({
 }));
 
 const mockRecognize = jest.fn();
-jest.mock('../../infrastructure/ocr/OcrService', () => ({
-  OcrService: { recognizeText: (...args: unknown[]) => mockRecognize(...args) },
-}));
+jest.mock('../../infrastructure/ocr/OcrService', () => {
+  class OcrError extends Error {
+    code: string;
+    constructor(message: string, _detail?: unknown, code = 'failed') {
+      super(message);
+      this.code = code;
+    }
+  }
+  return {
+    OcrError,
+    OcrService: { recognizeText: (...args: unknown[]) => mockRecognize(...args) },
+  };
+});
 const mockCloud = jest.fn();
 jest.mock('../../infrastructure/api/OffOcrClient', () => ({
   ...jest.requireActual('../../infrastructure/api/OffOcrClient'),
@@ -92,8 +102,74 @@ describe('OcrCameraSheet', () => {
     await act(async () => buttons.find((b) => b.text === 'Hochladen')?.onPress?.());
 
     await waitFor(() =>
-      expect(mockCloud).toHaveBeenCalledWith('3017624010701', expect.any(String), 'nutrition', 'de')
+      expect(mockCloud).toHaveBeenCalledWith(
+        '3017624010701',
+        expect.any(String),
+        'nutrition',
+        'de',
+        expect.anything()
+      )
     );
     await waitFor(() => expect(screen.getByTestId('ocr-text').props.value).toBe('Fett 3 g'));
+  });
+
+  it('says so when the photo contains no text', async () => {
+    const { OcrError } = jest.requireMock('../../infrastructure/ocr/OcrService');
+    mockRecognize.mockRejectedValue(new OcrError('empty', undefined, 'no-text'));
+    render(
+      <OcrCameraSheet
+        visible
+        mode="ingredients"
+        barcode="1"
+        onConfirm={jest.fn()}
+        onCancel={jest.fn()}
+      />
+    );
+
+    await photographAndRecognise();
+
+    expect(await screen.findByText(/Kein Text erkannt/)).toBeTruthy();
+    expect(screen.queryByText(/Texterkennung auf dem Gerät ist nicht möglich/)).toBeNull();
+  });
+
+  it('cancels a running cloud recognition and keeps the device result on failure', async () => {
+    mockRecognize.mockResolvedValue('Fett 3 g');
+    let signal: AbortSignal | undefined;
+    mockCloud.mockImplementation(
+      (_code: string, _uri: string, _field: string, _lang: string, abort: AbortSignal) => {
+        signal = abort;
+        return new Promise((_resolve, reject) =>
+          abort.addEventListener('abort', () => reject(new Error('cancelled')))
+        );
+      }
+    );
+    const alert = jest.spyOn(Alert, 'alert');
+    alert.mockClear();
+    render(
+      <OcrCameraSheet
+        visible
+        mode="nutriments"
+        barcode="3017624010701"
+        onConfirm={jest.fn()}
+        onCancel={jest.fn()}
+      />
+    );
+    await photographAndRecognise();
+    fireEvent.press(await screen.findByText('Stattdessen von Open Food Facts erkennen lassen'));
+    const buttons = alert.mock.calls[0][2] as { text: string; onPress?: () => void }[];
+    await act(async () => buttons.find((b) => b.text === 'Hochladen')?.onPress?.());
+
+    fireEvent.press(await screen.findByText('Abbrechen'));
+    expect(signal?.aborted).toBe(true);
+
+    fireEvent.press(await screen.findByText('Ganzes Foto'));
+    mockCloud.mockRejectedValue(new Error('HTTP 500'));
+    fireEvent.press(await screen.findByText('Stattdessen von Open Food Facts erkennen lassen'));
+    const retry = alert.mock.calls.at(-1)![2] as { text: string; onPress?: () => void }[];
+    await act(async () => retry.find((b) => b.text === 'Hochladen')?.onPress?.());
+
+    expect(await screen.findByText(/das Foto hat das Handy nicht verlassen/)).toBeTruthy();
+    expect(screen.getByText('Stattdessen von Open Food Facts erkennen lassen')).toBeTruthy();
+    expect(screen.getByTestId('ocr-text').props.value).toBe('Fett 3 g');
   });
 });

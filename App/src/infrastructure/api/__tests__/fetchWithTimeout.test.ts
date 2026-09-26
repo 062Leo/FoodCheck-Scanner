@@ -21,6 +21,21 @@ describe('fetchWithTimeout', () => {
     await expect(request).rejects.toMatchObject({ reason: 'timeout' });
   });
 
+  it('stops when the caller cancels', async () => {
+    global.fetch = jest.fn(
+      (_url: unknown, init?: { signal?: AbortSignal | null }) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+        })
+    );
+    const caller = new AbortController();
+
+    const request = fetchWithTimeout('https://example.test', { signal: caller.signal }, 5000);
+    caller.abort();
+
+    await expect(request).rejects.toMatchObject({ name: 'NetworkError', reason: 'cancelled' });
+  });
+
   it('reports an unreachable network', async () => {
     global.fetch = jest.fn().mockRejectedValue(new TypeError('Network request failed'));
 
