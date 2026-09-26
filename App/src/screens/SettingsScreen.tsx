@@ -196,6 +196,13 @@ export default function SettingsScreen() {
               />
             ))}
           </View>
+          <View style={styles.divider} />
+          <ListRow
+            icon="language-outline"
+            title={t('settings.translation')}
+            description={t('settings.translationHint')}
+            onPress={() => router.push('/settings/api-key')}
+          />
         </Group>
 
         <Group title={t('settings.offAccount')}>
@@ -215,13 +222,6 @@ export default function SettingsScreen() {
                 <Button title={t('settings.logout')} variant="ghost" onPress={logout} />
               ) : undefined
             }
-          />
-          <View style={styles.divider} />
-          <ListRow
-            icon="language-outline"
-            title={t('settings.translation')}
-            description={t('settings.translationHint')}
-            onPress={() => router.push('/settings/api-key')}
           />
         </Group>
 
