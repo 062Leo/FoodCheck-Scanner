@@ -19,6 +19,7 @@ A React Native (Expo) mobile app that scans food barcodes and instantly evaluate
 - Traffic-light rating: OK / Warning / Critical, plus Unknown when there isn't enough data to judge a product
 - Red-flag detection for unhealthy ingredients (palm oil, glucose syrup, additives, etc.) and a built-in additive-risk database
 - Nova Score classification (1 = unprocessed, 4 = ultra-processed)
+- Personal allergen profile (14 EU allergens): the scan card and product page warn when a product contains or may contain one of them
 
 **Product Management**
 - Full product catalog stored locally with SQLite — works offline

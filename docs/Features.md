@@ -145,11 +145,17 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 
 | Gruppe | Beschreibung |
 |-------------|-------------|
-| **Bewertung** | Filter-Regeln mit Anzahl der aktiven Regeln |
-| **Sprache** | DE ↔ EN (App-UI umschaltbar) |
-| **Open Food Facts Konto** | Login/Logout für Produktbeiträge, zeigt den Zielserver; darunter der Zugang zur Übersetzungs-Einstellung |
+| **Bewertung** | Filter-Regeln mit Anzahl der aktiven Regeln; **Meine Allergene** (persönliches Profil) |
+| **Sprache** | DE ↔ EN (App-UI umschaltbar); darunter der Zugang zur Übersetzungs-Einstellung |
+| **Open Food Facts Konto** | Login/Logout für Produktbeiträge, zeigt den Zielserver |
 | **Datenbank-Backup** | Speicherort wählen (Android), Backup erstellen, automatisches Backup, Wiederherstellen |
 | **Hilfe & Info** | Anleitung & Über FoodCheck |
+
+### Meine Allergene (`/settings/allergens`)
+- Auswahl aus den 14 EU-Allergenen, gespeichert in der Datenbank (Teil jedes Backups)
+- Scan-Karte (inkl. Screenreader-Ansage) und Produktseite warnen bei „Enthält …“ und „Kann Spuren enthalten …“ laut Open Food Facts
+- Hinweis: Grundlage sind die OFF-Angaben (`allergens_tags`, `traces`); keine Warnung heißt nicht unbedenklich
+- Die Ampel-Bewertung bleibt davon unberührt
 
 ### Übersetzungs-Einstellung (`/settings/api-key`)
 - **Provider-Wahl**: DeepL vs MyMemory
@@ -226,7 +232,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 
 ## Testing
 
-- **43 Test-Suiten**, **359 Tests**, alle erfolgreich (`npx jest --maxWorkers=2 --silent`)
+- **49 Test-Suiten**, **411 Tests**, alle erfolgreich (`npx jest --maxWorkers=2 --silent`)
 - Datenbank- und Repository-Tests laufen gegen echtes SQLite (`node:sqlite`-Testdouble), nicht gegen String-Vergleichs-Mocks
 - **Golden-Ratings**: 32 Referenzprodukte mit fest hinterlegtem Bewertungsergebnis, damit Änderungen an der Bewertungslogik als bewusster, überprüfbarer Diff sichtbar werden
 - Getestete Module: Analyse (RedFlagAnalyzer, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating), Services (Lookup, Edit, Re-Rating), API-Clients, Repositories/Migrationen, Backup, OCR, Übersetzungen, Screens/Features
