@@ -229,13 +229,14 @@ export default function SettingsScreen() {
           <ListRow
             icon="folder-outline"
             title={t('settings.backupPath')}
-            description={hasBackupFolder ? backupDirLabel : t('settings.backupPathNone')}
-            onPress={Platform.OS === 'android' ? () => void pickFolder() : undefined}
-            end={
-              Platform.OS === 'android' ? undefined : (
-                <Text style={styles.muted}>{t('settings.backupIosHint')}</Text>
-              )
+            description={
+              Platform.OS !== 'android'
+                ? t('settings.backupIosHint')
+                : hasBackupFolder
+                  ? backupDirLabel
+                  : t('settings.backupPathNone')
             }
+            onPress={Platform.OS === 'android' ? () => void pickFolder() : undefined}
           />
           <View style={styles.divider} />
           <View style={styles.backupActions}>

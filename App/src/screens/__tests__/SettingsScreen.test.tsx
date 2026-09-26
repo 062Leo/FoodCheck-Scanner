@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { mockRouter } from '../../testing/screenMocks';
 import { useTestDatabase } from '../../testing/testDatabase';
@@ -41,11 +42,20 @@ describe('SettingsScreen', () => {
   });
 
   it('keeps backup actions disabled until a folder is chosen', async () => {
+    jest.replaceProperty(Platform, 'OS', 'android');
     render(<SettingsScreen />);
 
     const button = await screen.findByText('Backup erstellen');
     expect(screen.getByText('Kein Ordner gewählt')).toBeTruthy();
     fireEvent.press(button);
     expect(screen.queryByText('Backup gespeichert.')).toBeNull();
+  });
+
+  it('explains on iOS that folder backups are Android-only', async () => {
+    jest.replaceProperty(Platform, 'OS', 'ios');
+    render(<SettingsScreen />);
+
+    expect(await screen.findByText(/nur unter Android/)).toBeTruthy();
+    expect(screen.queryByText('Kein Ordner gewählt')).toBeNull();
   });
 });
