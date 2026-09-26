@@ -32,6 +32,9 @@ describe('allergenList', () => {
 
   it('splits the traces field', () => {
     expect(allergenList('en:milk,en:peanuts', de)).toBe('Milch, Erdnüsse');
+    expect(allergenList('milk, nuts, Sesame seeds', de)).toBe(
+      'Milch, Schalenfrüchte (Nüsse), Sesam'
+    );
     expect(allergenList(undefined, de)).toBe('');
   });
 });

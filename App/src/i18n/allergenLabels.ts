@@ -23,7 +23,11 @@ const ALLERGEN_TRANSLATION_KEYS: Record<string, TranslationKey> = {
 export function allergenLabel(tag: string, t: TranslateFn): string {
   const trimmed = tag.trim();
   const prefix = /^[a-z]{2}:/.exec(trimmed);
-  if (!prefix) return trimmed; // free text, e.g. from the traces field
+  if (!prefix) {
+    // Free text, e.g. the traces field ("milk, nuts, soybeans"): translate exact allergen names only.
+    const known = ALLERGEN_TRANSLATION_KEYS[trimmed.toLowerCase().replace(/\s+/g, '-')];
+    return known ? t(known) : trimmed;
+  }
   const id = trimmed.slice(prefix[0].length);
   const key = prefix[0] === 'en:' ? ALLERGEN_TRANSLATION_KEYS[id] : undefined;
   if (key) return t(key);
