@@ -311,10 +311,10 @@ const de = {
   // Filter
   'filter.title': 'Filter-Regeln',
   'filter.subtitle': '{{n}} Regeln in {{m}} Kategorien',
-  'filter.searchPlaceholder': 'Kategorie, Zutat oder Regel suchen…',
+  'filter.searchPlaceholder': 'Zutat oder Kategorie suchen',
   'filter.add': 'Neu',
   'filter.favoritesHeader': 'Meine wichtigsten',
-  'filter.empty': 'Noch keine Regeln',
+  'filter.empty': 'Keine Regeln',
   'filter.emptyHint': 'Füge eine Ingredient- oder Nutrient-Regel hinzu.',
   'filter.deleteTitle': 'Regel löschen?',
   'filter.deleteMsg': '"{{key}}" wirklich entfernen?',
@@ -334,8 +334,8 @@ const de = {
   'filter.field.severity': 'Bewertung',
   'filter.field.categoryNutrient': 'Kategorie',
   'filter.field.categoryNutrientPlaceholder': 'z. B. Nährwerte',
-  'filter.severity.flag': 'RED FLAG',
-  'filter.severity.ok': 'OK',
+  'filter.severity.flag': 'Red Flag',
+  'filter.severity.ok': 'Erlaubt',
   'filter.type.ingredient': 'ZUTAT',
   'filter.type.nutrient': 'NÄHRWERT',
   'filter.type.flag': 'FLAG',
@@ -343,8 +343,8 @@ const de = {
   'filter.picker.category': 'Kategorie auswählen',
   'filter.picker.nutrient': 'Nährwert auswählen',
   'filter.validation.ingredient': 'Bitte einen Zutatenbegriff eingeben.',
-  'filter.validation.category': 'Bitte eine Kategorie auswählen.',
-  'filter.validation.threshold': 'Bitte einen gültigen Grenzwert eingeben.',
+  'filter.validation.category': 'Bitte eine Kategorie wählen.',
+  'filter.validation.threshold': 'Bitte einen gültigen Grenzwert eingeben (z. B. 12,5).',
   'filter.loading': 'Lade Regeln…',
   'filter.defaultNutrientCategory': 'Nährwerte',
   'filter.missing': 'Fehlt',
@@ -551,6 +551,17 @@ const de = {
     'MyMemory funktioniert ohne Key (etwa 5 000 Wörter pro Tag). Mit kostenlosem Key von mymemory.translated.net sind es etwa 10 000 Wörter pro Tag.',
   'api.help.deepl':
     'DeepL braucht einen Key: auf deepl.com/pro-api den kostenlosen Plan „DeepL API Free“ wählen (Kreditkarte nötig) und den Authentication Key kopieren. Er endet auf „:fx“.',
+  'filter.intro':
+    '{{n}} Regeln. Treffer in der Zutatenliste zählen als Red Flag; mit „Erlaubt“ nimmst du Zutaten von der Bewertung aus.',
+  'filter.keywordHint': 'In beliebiger Sprache; wird für die Suche automatisch übersetzt.',
+  'filter.severity.flagHint': 'Ein Treffer zählt als Red Flag (ab 3 wird es „Kritisch“).',
+  'filter.severity.okHint':
+    'Diese Zutat wird nie als Red Flag gezählt – auch nicht über ihre E-Nummer.',
+  'filter.operator.gt': 'mehr als',
+  'filter.operator.lt': 'weniger als',
+  'filter.operator.eq': 'genau',
+  'filter.saved': 'Regel gespeichert – Katalog wird neu bewertet.',
+  'filter.saveFailed': 'Regel konnte nicht gespeichert werden.',
 };
 
 type Translations = typeof de;
@@ -849,10 +860,10 @@ const en: Translations = {
 
   'filter.title': 'Filter Rules',
   'filter.subtitle': '{{n}} rules in {{m}} categories',
-  'filter.searchPlaceholder': 'Search category, ingredient or rule…',
+  'filter.searchPlaceholder': 'Search ingredient or category',
   'filter.add': 'New',
   'filter.favoritesHeader': 'My Priorities',
-  'filter.empty': 'No rules yet',
+  'filter.empty': 'No rules',
   'filter.emptyHint': 'Add an ingredient or nutrient rule.',
   'filter.deleteTitle': 'Delete rule?',
   'filter.deleteMsg': 'Really remove "{{key}}"?',
@@ -872,17 +883,17 @@ const en: Translations = {
   'filter.field.severity': 'Rating',
   'filter.field.categoryNutrient': 'Category',
   'filter.field.categoryNutrientPlaceholder': 'e.g. Nutrition',
-  'filter.severity.flag': 'RED FLAG',
-  'filter.severity.ok': 'OK',
+  'filter.severity.flag': 'Red flag',
+  'filter.severity.ok': 'Allowed',
   'filter.type.ingredient': 'INGREDIENT',
   'filter.type.nutrient': 'NUTRIENT',
   'filter.type.flag': 'FLAG',
   'filter.uncategorized': 'Uncategorized',
   'filter.picker.category': 'Select Category',
   'filter.picker.nutrient': 'Select Nutrient',
-  'filter.validation.ingredient': 'Please enter an ingredient keyword.',
-  'filter.validation.category': 'Please select a category.',
-  'filter.validation.threshold': 'Please enter a valid threshold.',
+  'filter.validation.ingredient': 'Please enter an ingredient.',
+  'filter.validation.category': 'Please choose a category.',
+  'filter.validation.threshold': 'Please enter a valid threshold (e.g. 12.5).',
   'filter.loading': 'Loading rules…',
   'filter.defaultNutrientCategory': 'Nutrition',
   'filter.missing': 'Missing',
@@ -1085,6 +1096,17 @@ const en: Translations = {
     'MyMemory works without a key (about 5,000 words per day). With a free key from mymemory.translated.net it is about 10,000 words per day.',
   'api.help.deepl':
     'DeepL needs a key: choose the free “DeepL API Free” plan on deepl.com/pro-api (credit card required) and copy the authentication key. It ends with “:fx”.',
+  'filter.intro':
+    '{{n}} rules. Matches in the ingredient list count as red flags; “Allowed” excludes ingredients from the rating.',
+  'filter.keywordHint': 'In any language; translated automatically for matching.',
+  'filter.severity.flagHint': 'A match counts as a red flag (3 or more make it “Critical”).',
+  'filter.severity.okHint':
+    'This ingredient never counts as a red flag – not even via its E-number.',
+  'filter.operator.gt': 'more than',
+  'filter.operator.lt': 'less than',
+  'filter.operator.eq': 'exactly',
+  'filter.saved': 'Rule saved – the catalog is being re-rated.',
+  'filter.saveFailed': 'The rule could not be saved.',
 };
 
 export type TranslationKey = keyof typeof de;

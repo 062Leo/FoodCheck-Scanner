@@ -27,6 +27,7 @@ export const CATEGORY_TRANSLATION_KEYS: Record<string, TranslationKey> = {
   'Sonstige Zusatzstoffe': 'filter.preset.other',
   'Kritische Öle': 'product.category.criticalOils',
   Zucker: 'product.category.sugar',
+  Nährwerte: 'filter.defaultNutrientCategory',
   // Additive function classes (taxonomy)
   Farbstoff: 'filter.preset.colors',
   Konservierungsstoff: 'filter.preset.preservatives',
