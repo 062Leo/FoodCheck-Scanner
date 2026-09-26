@@ -3,8 +3,11 @@ import { getErrorMessage } from '../../shared/errors';
 import type { ProductSummary } from '../../types/Product';
 
 export class FavoritesRepository {
-  /** Idempotent: adding an existing favorite is a no-op. */
-  async add(productId: number): Promise<void> {
+  /**
+   * Idempotent: adding an existing favorite is a no-op. `addedAt` puts a favorite back at its
+   * old position, e.g. when a removal is undone.
+   */
+  async add(productId: number, addedAt: string = new Date().toISOString()): Promise<void> {
     try {
       const database = await getDatabase();
       await database.runAsync(
@@ -14,7 +17,7 @@ export class FavoritesRepository {
         `,
         {
           $product_id: productId,
-          $added_at: new Date().toISOString(),
+          $added_at: addedAt,
         }
       );
     } catch (error) {
@@ -73,6 +76,23 @@ export class FavoritesRepository {
     } catch (error) {
       throw new Error(
         `Failed to check favorite state for product ${productId}: ${getErrorMessage(error)}`,
+        { cause: error }
+      );
+    }
+  }
+
+  /** When the product was made a favorite, or null if it is none. */
+  async findAddedAt(productId: number): Promise<string | null> {
+    try {
+      const database = await getDatabase();
+      const favorite = await database.getFirstAsync<{ added_at: string }>(
+        'SELECT added_at FROM favorites WHERE product_id = $product_id LIMIT 1;',
+        { $product_id: productId }
+      );
+      return favorite?.added_at ?? null;
+    } catch (error) {
+      throw new Error(
+        `Failed to read favorite state for product ${productId}: ${getErrorMessage(error)}`,
         { cause: error }
       );
     }

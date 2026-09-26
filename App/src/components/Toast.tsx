@@ -21,22 +21,56 @@ const ICONS = {
 
 const ACCENTS = { success: colors.accent, error: colors.danger, info: colors.info };
 
+/** Screen reader users need time to move focus to an action such as "Undo". */
+const SCREEN_READER_ACTION_DURATION = 10000;
+
+/**
+ * Callers render a new toast with a new `key`, so every toast gets its own timer even when
+ * the text repeats.
+ */
 export function Toast({ message, type, duration = 3500, onDismiss, action }: ToastProps) {
   const insets = useSafeAreaInsets();
   const slide = useRef(new Animated.Value(0)).current;
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
+  const hasAction = action !== undefined;
 
   useEffect(() => {
     AccessibilityInfo.announceForAccessibility(message);
-    Animated.timing(slide, { toValue: 1, duration: 250, useNativeDriver: true }).start();
-    const timer = setTimeout(() => {
-      Animated.timing(slide, { toValue: 0, duration: 250, useNativeDriver: true }).start(() =>
-        onDismissRef.current?.()
-      );
-    }, duration);
-    return () => clearTimeout(timer);
-  }, [message, duration, slide]);
+    const show = Animated.timing(slide, { toValue: 1, duration: 250, useNativeDriver: true });
+    show.start();
+    let hide: Animated.CompositeAnimation | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let active = true;
+
+    const startTimer = (ms: number) => {
+      timer = setTimeout(() => {
+        hide = Animated.timing(slide, { toValue: 0, duration: 250, useNativeDriver: true });
+        // Only a finished slide-out dismisses; a stopped one belongs to a replaced toast.
+        hide.start(({ finished }) => {
+          if (finished) onDismissRef.current?.();
+        });
+      }, ms);
+    };
+
+    if (hasAction) {
+      AccessibilityInfo.isScreenReaderEnabled()
+        .catch(() => false)
+        .then((enabled) => {
+          if (active)
+            startTimer(enabled ? Math.max(duration, SCREEN_READER_ACTION_DURATION) : duration);
+        });
+    } else {
+      startTimer(duration);
+    }
+
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+      show.stop();
+      hide?.stop();
+    };
+  }, [message, duration, hasAction, slide]);
 
   const translateY = slide.interpolate({ inputRange: [0, 1], outputRange: [-120, 0] });
 
@@ -48,10 +82,14 @@ export function Toast({ message, type, duration = 3500, onDismiss, action }: Toa
       <Pressable
         style={[styles.content, { borderLeftColor: ACCENTS[type] }]}
         onPress={() => onDismissRef.current?.()}
-        accessibilityRole="alert"
+        // With an action, message and button stay separate so screen readers can reach the button.
+        accessible={!action}
+        accessibilityRole={action ? undefined : 'alert'}
       >
         <Ionicons name={ICONS[type]} size={22} color={ACCENTS[type]} />
-        <Text style={styles.message}>{message}</Text>
+        <Text style={styles.message} accessibilityRole={action ? 'alert' : undefined}>
+          {message}
+        </Text>
         {action ? (
           <Pressable
             onPress={() => {
@@ -59,6 +97,7 @@ export function Toast({ message, type, duration = 3500, onDismiss, action }: Toa
               onDismissRef.current?.();
             }}
             accessibilityRole="button"
+            accessibilityLabel={action.label}
             hitSlop={8}
             style={styles.action}
           >

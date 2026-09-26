@@ -239,9 +239,14 @@ export default function CatalogScreen() {
 
       {actions.toast && (
         <Toast
+          key={actions.toast.id}
           message={actions.toast.message}
-          type="info"
-          action={{ label: t('common.undo'), onPress: actions.toast.undo }}
+          type={actions.toast.type}
+          action={
+            actions.toast.undo
+              ? { label: t('common.undo'), onPress: actions.toast.undo }
+              : undefined
+          }
           onDismiss={actions.clearToast}
         />
       )}

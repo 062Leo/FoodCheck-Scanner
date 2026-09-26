@@ -103,6 +103,44 @@ describe('CatalogScreen', () => {
     expect(await new FavoritesRepository().isFavorite(2)).toBe(true);
   });
 
+  it('offers undo for the latest of two quick deletions', async () => {
+    const alert = jest.spyOn(Alert, 'alert');
+    render(<CatalogScreen />);
+
+    for (const name of ['Cola', 'Brot']) {
+      alert.mockClear();
+      fireEvent(await screen.findByText(name), 'longPress');
+      const buttons = alert.mock.calls[0][2] as AlertButton[];
+      await act(async () => buttons.find((b) => b.text === 'Löschen')?.onPress?.());
+      await waitFor(() => expect(screen.queryByText(name)).toBeNull());
+    }
+
+    await act(async () => fireEvent.press(screen.getByText('Rückgängig')));
+
+    expect(await screen.findByText('Brot')).toBeTruthy();
+    expect(screen.queryByText('Cola')).toBeNull();
+  });
+
+  it('reports a failed deletion instead of pretending it worked', async () => {
+    const alert = jest.spyOn(Alert, 'alert');
+    alert.mockClear();
+    const failing = jest
+      .spyOn(ProductRepository.prototype, 'deleteByEan')
+      .mockRejectedValueOnce(new Error('database is locked'));
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    render(<CatalogScreen />);
+
+    fireEvent(await screen.findByText('Cola'), 'longPress');
+    const buttons = alert.mock.calls[0][2] as AlertButton[];
+    await act(async () => buttons.find((b) => b.text === 'Löschen')?.onPress?.());
+
+    expect(await screen.findByText('Produkt konnte nicht gelöscht werden.')).toBeTruthy();
+    expect(screen.queryByText('Rückgängig')).toBeNull();
+    expect(screen.getByText('Cola')).toBeTruthy();
+    failing.mockRestore();
+    consoleError.mockRestore();
+  });
+
   it('opens a product without counting a scan', async () => {
     render(<CatalogScreen />);
 

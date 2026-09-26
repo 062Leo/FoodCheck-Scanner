@@ -11,19 +11,49 @@ import { useCatalogStore } from '../../store/catalogStore';
 const products = new ProductRepository();
 const favorites = new FavoritesRepository();
 
-export interface UndoToast {
+export interface ListToast {
+  /** New for every toast, so a repeated message restarts its timer. */
+  id: number;
   message: string;
-  undo: () => void;
+  type: 'info' | 'error';
+  undo?: () => Promise<void>;
 }
+
+let nextToastId = 1;
 
 /** Open, favorite, edit and delete actions shared by the catalog and favorites lists. */
 export function useProductListActions(t: TranslateFn) {
   const router = useRouter();
   const favoriteList = useCatalogStore((s) => s.favorites);
   const toggleFavorite = useCatalogStore((s) => s.toggleFavorite);
-  const [toast, setToast] = useState<UndoToast | null>(null);
+  const [toast, setToast] = useState<ListToast | null>(null);
 
   const favoriteIds = useMemo(() => new Set(favoriteList.map((f) => f.id)), [favoriteList]);
+
+  const showToast = useCallback((next: Omit<ListToast, 'id'>) => {
+    setToast({ ...next, id: nextToastId++ });
+  }, []);
+
+  /** Runs an undo and reports when it could not be applied. */
+  const undoable = useCallback(
+    (message: string, undo: () => Promise<void>) => {
+      showToast({
+        message,
+        type: 'info',
+        undo: async () => {
+          try {
+            await undo();
+          } catch (error) {
+            console.error('Undo failed:', error);
+            showToast({ message: t('catalog.undoFailed'), type: 'error' });
+          } finally {
+            await useCatalogStore.getState().loadAll();
+          }
+        },
+      });
+    },
+    [showToast, t]
+  );
 
   const open = useCallback(
     (product: ProductSummary) => {
@@ -34,36 +64,35 @@ export function useProductListActions(t: TranslateFn) {
 
   const onToggleFavorite = useCallback(
     async (product: ProductSummary) => {
-      if (product.id === undefined) return;
-      const wasFavorite = favoriteIds.has(product.id);
-      await toggleFavorite(product.id);
-      if (wasFavorite) {
-        setToast({
-          message: t('favorites.removed'),
-          undo: () => void toggleFavorite(product.id!),
-        });
+      const productId = product.id;
+      if (productId === undefined) return;
+      const addedAt = favoriteIds.has(productId) ? await favorites.findAddedAt(productId) : null;
+      await toggleFavorite(productId);
+      if (addedAt) {
+        undoable(t('favorites.removed'), () => favorites.add(productId, addedAt));
       }
     },
-    [favoriteIds, t, toggleFavorite]
+    [favoriteIds, t, toggleFavorite, undoable]
   );
 
   const remove = useCallback(
     async (product: ProductSummary) => {
-      const record = await products.findByEan(product.ean);
-      if (!record) return;
-      const wasFavorite = record.id !== undefined && (await favorites.isFavorite(record.id));
-      await products.deleteByEan(product.ean);
-      await useCatalogStore.getState().loadAll();
-      setToast({
-        message: t('catalog.deleted'),
-        undo: async () => {
+      try {
+        const record = await products.findByEan(product.ean);
+        if (!record) return;
+        const addedAt = record.id !== undefined ? await favorites.findAddedAt(record.id) : null;
+        await products.deleteByEan(product.ean);
+        await useCatalogStore.getState().loadAll();
+        undoable(t('catalog.deleted'), async () => {
           await products.restore(record);
-          if (wasFavorite && record.id !== undefined) await favorites.add(record.id);
-          await useCatalogStore.getState().loadAll();
-        },
-      });
+          if (addedAt && record.id !== undefined) await favorites.add(record.id, addedAt);
+        });
+      } catch (error) {
+        console.error(`Failed to delete product ${product.ean}:`, error);
+        showToast({ message: t('catalog.deleteFailed'), type: 'error' });
+      }
     },
-    [t]
+    [showToast, t, undoable]
   );
 
   const more = useCallback(

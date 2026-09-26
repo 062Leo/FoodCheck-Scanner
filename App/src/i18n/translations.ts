@@ -483,6 +483,8 @@ const de = {
   'catalog.summary.scans': '{{count}} Scans',
   'catalog.summary.scansOne': '1 Scan',
   'edit.ocrFilledOne': '1 Wert aus dem Foto übernommen – bitte prüfen.',
+  'catalog.deleteFailed': 'Produkt konnte nicht gelöscht werden.',
+  'catalog.undoFailed': 'Rückgängig machen ist fehlgeschlagen.',
 };
 
 type Translations = typeof de;
@@ -950,6 +952,8 @@ const en: Translations = {
   'catalog.summary.scans': '{{count}} scans',
   'catalog.summary.scansOne': '1 scan',
   'edit.ocrFilledOne': '1 value taken from the photo – please check.',
+  'catalog.deleteFailed': 'The product could not be deleted.',
+  'catalog.undoFailed': 'Undo failed.',
 };
 
 export type TranslationKey = keyof typeof de;

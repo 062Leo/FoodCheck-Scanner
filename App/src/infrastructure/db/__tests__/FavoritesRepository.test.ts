@@ -22,6 +22,19 @@ describe('FavoritesRepository (SQLite)', () => {
     expect(await favorites.isFavorite(1)).toBe(false);
   });
 
+  it('puts a favorite back at its old position', async () => {
+    await favorites.add(1, '2026-01-01T00:00:00.000Z');
+    await favorites.add(2, '2026-02-01T00:00:00.000Z');
+    const addedAt = await favorites.findAddedAt(1);
+
+    await favorites.remove(1);
+    await favorites.add(1, addedAt!);
+
+    expect(addedAt).toBe('2026-01-01T00:00:00.000Z');
+    expect((await favorites.findAll()).map((p) => p.name)).toEqual(['Zwei', 'Eins']);
+    expect(await favorites.findAddedAt(99)).toBeNull();
+  });
+
   it('adding the same favorite twice keeps a single row', async () => {
     await favorites.add(1);
     await favorites.add(1);
