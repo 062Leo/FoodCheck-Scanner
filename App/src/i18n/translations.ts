@@ -488,6 +488,17 @@ const de = {
   'settings.filterCountOne': '1 Regel – bestimmt, was als Red Flag zählt',
   'filter.introOne':
     '1 Regel. Treffer in der Zutatenliste zählen als Red Flag; mit „Erlaubt“ nimmst du Zutaten von der Bewertung aus.',
+  'allergenProfile.title': 'Meine Allergene',
+  'allergenProfile.none': 'Keine ausgewählt',
+  'allergenProfile.intro':
+    'Wähle, worauf du achten musst. Scan-Ergebnis und Produktseite warnen dich, wenn ein Produkt laut Open Food Facts einen dieser Stoffe enthält oder Spuren davon enthalten kann.',
+  'allergenProfile.disclaimer':
+    'Die Warnung beruht auf den Angaben bei Open Food Facts, die unvollständig oder falsch sein können. Keine Warnung heißt nicht, dass ein Produkt unbedenklich ist – prüfe immer die Verpackung.',
+  'allergenProfile.saveFailed': 'Auswahl konnte nicht gespeichert werden.',
+  'allergenWarning.contains': 'Enthält {{list}}',
+  'allergenWarning.traces': 'Kann Spuren enthalten: {{list}}',
+  'allergenWarning.title': 'Achtung – auf deiner Allergenliste',
+  'allergenWarning.source': 'Laut Open Food Facts – bitte Verpackung prüfen.',
 };
 
 type Translations = typeof de;
@@ -960,6 +971,17 @@ const en: Translations = {
   'settings.filterCountOne': '1 rule – decides what counts as a red flag',
   'filter.introOne':
     '1 rule. Matches in the ingredient list count as red flags; “Allowed” excludes ingredients from the rating.',
+  'allergenProfile.title': 'My allergens',
+  'allergenProfile.none': 'None selected',
+  'allergenProfile.intro':
+    'Choose what you need to avoid. The scan result and the product page warn you when, according to Open Food Facts, a product contains one of these or may contain traces of it.',
+  'allergenProfile.disclaimer':
+    'The warning relies on Open Food Facts data, which can be incomplete or wrong. No warning does not mean a product is safe – always check the package.',
+  'allergenProfile.saveFailed': 'The selection could not be saved.',
+  'allergenWarning.contains': 'Contains {{list}}',
+  'allergenWarning.traces': 'May contain traces: {{list}}',
+  'allergenWarning.title': 'Caution – on your allergen list',
+  'allergenWarning.source': 'According to Open Food Facts – please check the package.',
 };
 
 export type TranslationKey = keyof typeof de;

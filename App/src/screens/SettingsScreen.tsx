@@ -7,6 +7,8 @@ import { BackupError, BackupService } from '../infrastructure/db/BackupService';
 import { OffAccountSetup } from '../components/OffAccountSetup';
 import { useLanguageStore } from '../store/languageStore';
 import { useFilterStore } from '../store/filterStore';
+import { useAllergenStore } from '../store/allergenStore';
+import { allergenName } from '../i18n/allergenLabels';
 import { reloadStores } from '../store/reloadStores';
 import { useTranslation, type TranslateFn } from '../i18n/useTranslation';
 import { LANGUAGES, type SupportedLanguage } from '../i18n/translations';
@@ -45,6 +47,7 @@ export default function SettingsScreen() {
   const { t, language } = useTranslation();
   const setLanguage = useLanguageStore((s) => s.setLanguage);
   const ruleCount = useFilterStore((s) => s.rules.length);
+  const allergenProfile = useAllergenStore((s) => s.profile);
   const [offUsername, setOffUsername] = useState<string | null>(null);
   const [showOffSetup, setShowOffSetup] = useState(false);
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
@@ -186,6 +189,17 @@ export default function SettingsScreen() {
                 : t('settings.filterCount', { count: ruleCount })
             }
             onPress={() => router.push('/settings/filters')}
+          />
+          <View style={styles.divider} />
+          <ListRow
+            icon="warning-outline"
+            title={t('allergenProfile.title')}
+            description={
+              allergenProfile.length > 0
+                ? allergenProfile.map((allergen) => allergenName(allergen, t)).join(', ')
+                : t('allergenProfile.none')
+            }
+            onPress={() => router.push('/settings/allergens')}
           />
         </Group>
 

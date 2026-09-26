@@ -3,6 +3,7 @@ import { Linking } from 'react-native';
 import { mockRouter } from '../../testing/screenMocks';
 import { useTestDatabase } from '../../testing/testDatabase';
 import { useFilterStore } from '../../store/filterStore';
+import { useAllergenStore } from '../../store/allergenStore';
 import { rateProduct } from '../../domain/analysis/rateProduct';
 import { SEEDED_RULES } from '../../domain/analysis/__fixtures__/goldenRuleSets';
 import type { Product } from '../../types/Product';
@@ -62,6 +63,7 @@ describe('ScannerScreen', () => {
     mockRequestPermission.mockReset();
     mockPermission.current = { granted: true, canAskAgain: true };
     useFilterStore.setState({ rules: SEEDED_RULES, isInitialized: true });
+    useAllergenStore.setState({ profile: [] });
     mockLookup.mockResolvedValue({
       status: 'found',
       product,
@@ -88,6 +90,27 @@ describe('ScannerScreen', () => {
       pathname: '/result',
       params: { ean: EAN, source: 'recent' },
     });
+  });
+
+  it('warns on the scan card about allergens from the profile', async () => {
+    useAllergenStore.setState({ profile: ['gluten', 'milk'] });
+    const withAllergens = { ...product, allergensTags: ['en:gluten'], traces: 'en:milk' };
+    mockLookup.mockResolvedValue({
+      status: 'found',
+      product: withAllergens,
+      rating: rateProduct(withAllergens, SEEDED_RULES),
+      record: null,
+      source: 'network',
+      networkFailed: false,
+      isStale: false,
+    });
+    render(<ScannerScreen />);
+
+    scan(EAN);
+
+    expect(await screen.findByText('Enthält Gluten')).toBeTruthy();
+    expect(screen.getByText('Kann Spuren enthalten: Milch')).toBeTruthy();
+    expect(screen.getByLabelText(/Enthält Gluten/)).toBeTruthy();
   });
 
   it('ignores misreads with a wrong check digit', async () => {

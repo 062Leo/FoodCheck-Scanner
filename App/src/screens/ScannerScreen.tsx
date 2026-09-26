@@ -8,6 +8,7 @@ import { useTranslation } from '../i18n/useTranslation';
 import { subscribeToConnectivity } from '../infrastructure/network/connectivity';
 import { useScanSession, type ScanCard } from '../features/scanner/useScanSession';
 import { ScanResultCard, scanCardAnnouncement } from '../features/scanner/ScanResultCard';
+import { useAllergenStore } from '../store/allergenStore';
 import { ManualEntrySheet } from '../features/scanner/ManualEntrySheet';
 import { Button, EmptyState, IconButton } from '../ui/components';
 import { colors, radius, spacing, typography } from '../ui/theme';
@@ -24,7 +25,11 @@ export default function ScannerScreen() {
   const [torch, setTorch] = useState(false);
   const [offline, setOffline] = useState(false);
   const [manualEntry, setManualEntry] = useState(false);
-  const announce = useCallback((scanCard: ScanCard) => scanCardAnnouncement(scanCard, t), [t]);
+  const allergenProfile = useAllergenStore((s) => s.profile);
+  const announce = useCallback(
+    (scanCard: ScanCard) => scanCardAnnouncement(scanCard, t, allergenProfile),
+    [t, allergenProfile]
+  );
   const { card, onBarcode, submitManual, dismiss, retry } = useScanSession(announce);
 
   useFocusEffect(

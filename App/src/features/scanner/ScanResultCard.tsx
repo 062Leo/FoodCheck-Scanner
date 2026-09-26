@@ -6,9 +6,16 @@ import { Button, IconButton } from '../../ui/components';
 import { STATUS_ICONS, reasonText, statusLabel } from '../../ui/status';
 import { colors, radius, spacing, typography } from '../../ui/theme';
 import type { ScanCard } from './useScanSession';
+import { matchAllergens, type EuAllergen } from '../../domain/allergens/allergenProfile';
+import { allergenWarningLines } from '../allergens/AllergenWarning';
+import { useAllergenStore } from '../../store/allergenStore';
 
 /** Text read out by screen readers when a scan result arrives. */
-export function scanCardAnnouncement(card: ScanCard, t: TranslateFn): string {
+export function scanCardAnnouncement(
+  card: ScanCard,
+  t: TranslateFn,
+  allergenProfile: readonly EuAllergen[] = []
+): string {
   if (card.phase === 'loading') return t('scanner.searching', { ean: card.ean });
   if (card.phase === 'failed') {
     return card.reason === 'offline'
@@ -18,11 +25,15 @@ export function scanCardAnnouncement(card: ScanCard, t: TranslateFn): string {
         : t('scanner.errorResult');
   }
   const { product, rating } = card.data;
-  return t('scanner.cardA11y', {
-    name: displayProductName(product.name, t('product.unknown')),
-    status: statusLabel(rating.status, t),
-    reason: rating.reasons.length > 0 ? reasonText(rating.reasons[0], t) : '',
-  });
+  const allergens = allergenWarningLines(matchAllergens(product, allergenProfile), t);
+  return [
+    t('scanner.cardA11y', {
+      name: displayProductName(product.name, t('product.unknown')),
+      status: statusLabel(rating.status, t),
+      reason: rating.reasons.length > 0 ? reasonText(rating.reasons[0], t) : '',
+    }),
+    ...allergens,
+  ].join('. ');
 }
 
 /** Result of the last scan, shown on top of the camera. */
@@ -41,6 +52,8 @@ export function ScanResultCard({
   onRetry: () => void;
   onClose: () => void;
 }) {
+  const allergenProfile = useAllergenStore((s) => s.profile);
+
   if (card.phase === 'loading') {
     return (
       <View style={styles.card} testID="scan-card">
@@ -82,6 +95,7 @@ export function ScanResultCard({
   const status = rating.status;
   const name = displayProductName(product.name, t('product.unknown'));
   const reason = rating.reasons.length > 0 ? reasonText(rating.reasons[0], t) : '';
+  const allergens = allergenWarningLines(matchAllergens(product, allergenProfile), t);
 
   return (
     <View
@@ -91,11 +105,7 @@ export function ScanResultCard({
       <Pressable
         onPress={onOpen}
         accessibilityRole="button"
-        accessibilityLabel={t('scanner.cardA11y', {
-          name,
-          status: statusLabel(status, t),
-          reason,
-        })}
+        accessibilityLabel={scanCardAnnouncement(card, t, allergenProfile)}
         accessibilityHint={t('scanner.details')}
         style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       >
@@ -112,6 +122,14 @@ export function ScanResultCard({
               {reason}
             </Text>
           ) : null}
+          {allergens.map((line) => (
+            <View key={line} style={styles.allergen} testID="scan-card-allergen">
+              <Ionicons name="warning" size={16} color={colors.danger} />
+              <Text style={styles.allergenText} numberOfLines={2}>
+                {line}
+              </Text>
+            </View>
+          ))}
         </View>
         <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
       </Pressable>
@@ -140,4 +158,6 @@ const styles = StyleSheet.create({
   body: { ...typography.body, color: colors.text, flexShrink: 1 },
   caption: { ...typography.caption, color: colors.textMuted },
   closeCorner: { position: 'absolute', top: 0, right: 0 },
+  allergen: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  allergenText: { ...typography.caption, color: colors.text, fontWeight: '700', flexShrink: 1 },
 });

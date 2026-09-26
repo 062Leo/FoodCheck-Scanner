@@ -4,6 +4,7 @@ import { productRecord, useTestDatabase } from '../../testing/testDatabase';
 import { ProductRepository } from '../../infrastructure/db/ProductRepository';
 import { useFilterStore } from '../../store/filterStore';
 import { useCatalogStore } from '../../store/catalogStore';
+import { useAllergenStore } from '../../store/allergenStore';
 import { rateProduct } from '../../domain/analysis/rateProduct';
 import { SEEDED_RULES } from '../../domain/analysis/__fixtures__/goldenRuleSets';
 import type { LookupResult } from '../../services/ProductLookupService';
@@ -57,6 +58,7 @@ describe('ProductScreen', () => {
     mockLookup.mockReset();
     mockLookupLocal.mockReset();
     useFilterStore.setState({ rules: SEEDED_RULES, isInitialized: true });
+    useAllergenStore.setState({ profile: [] });
     await new ProductRepository().saveScan(productRecord({ ean: EAN }));
   });
 
@@ -82,6 +84,27 @@ describe('ProductScreen', () => {
 
     expect(await screen.findByText(/Milch, Schalenfrüchte \(Nüsse\)/)).toBeTruthy();
     expect(screen.getByText(/Erdnüsse/)).toBeTruthy();
+  });
+
+  it('warns about allergens from the profile, and only about those', async () => {
+    useAllergenStore.setState({ profile: ['milk', 'celery'] });
+    mockLookup.mockResolvedValue(found({ ...limo, allergensTags: ['en:milk', 'en:nuts'] }));
+
+    render(<ProductScreen />);
+
+    expect(await screen.findByTestId('allergen-warning')).toBeTruthy();
+    expect(screen.getByText('Enthält Milch')).toBeTruthy();
+    expect(screen.queryByText(/Sellerie/)).toBeNull();
+  });
+
+  it('shows no allergen warning without a matching profile entry', async () => {
+    useAllergenStore.setState({ profile: ['celery'] });
+    mockLookup.mockResolvedValue(found({ ...limo, allergensTags: ['en:milk'] }));
+
+    render(<ProductScreen />);
+
+    await screen.findByText('Zitronenlimo');
+    expect(screen.queryByTestId('allergen-warning')).toBeNull();
   });
 
   it('counts a product opened from the catalog as a view', async () => {

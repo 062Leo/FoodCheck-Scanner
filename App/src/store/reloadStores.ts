@@ -1,3 +1,4 @@
+import { useAllergenStore } from './allergenStore';
 import { useCatalogStore } from './catalogStore';
 import { useFilterStore } from './filterStore';
 
@@ -6,4 +7,5 @@ export async function reloadStores(): Promise<void> {
   useFilterStore.setState({ isInitialized: false, rules: [] });
   await useFilterStore.getState().loadRules();
   await useCatalogStore.getState().loadAll();
+  await useAllergenStore.getState().loadProfile();
 }

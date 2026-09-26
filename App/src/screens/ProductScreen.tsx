@@ -13,6 +13,7 @@ import { useProductDetails, type FoundProduct } from '../features/product/usePro
 import { useRobotoffInsights } from '../features/product/useRobotoffInsights';
 import { FindingsList } from '../features/product/FindingsList';
 import { IngredientsSection } from '../features/product/IngredientsSection';
+import { AllergenWarning } from '../features/allergens/AllergenWarning';
 import { SkeletonLoadingScreen } from '../components/SkeletonLoading';
 import { Accordion } from '../components/Accordion';
 import { NutritionTable } from '../components/NutritionTable';
@@ -187,6 +188,8 @@ function ProductDetails({
         </View>
 
         <StatusHero status={rating.status} reasons={rating.reasons} t={t} footnote={footnote} />
+
+        <AllergenWarning product={product} t={t} />
 
         {!hasIngredients && (
           <Card style={styles.missingCard}>
