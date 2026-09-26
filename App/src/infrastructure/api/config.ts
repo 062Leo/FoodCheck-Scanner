@@ -1,6 +1,5 @@
 export const APP_NAME = 'FoodCheck';
 export const APP_VERSION = '1.0';
-export const APP_EMAIL = 'foodcheck@example.com';
 
 /**
  * Set to `true` during development/testing to use the OFF staging environment
@@ -43,7 +42,8 @@ export const WRITE_IMAGES_URL =
 /** Host name shown to the user before anything is sent. */
 export const WRITE_HOST = WRITE_BASE_URL.replace(/^https?:\/\//, '');
 
-export const USER_AGENT = `${APP_NAME}/${APP_VERSION} (${APP_EMAIL})`;
+/** Identifies the app to Open Food Facts; deliberately without a contact address. */
+export const USER_AGENT = `${APP_NAME}/${APP_VERSION}`;
 
 /** HTTP Basic Auth header value for staging (off:off base64-encoded). */
 export const STAGING_AUTH = 'Basic b2ZmOm9mZg==';
