@@ -23,7 +23,7 @@ const de = {
   'settings.loginPrompt': 'Melde dich an, um Produktdaten an Open Food Facts zu senden.',
   'settings.login': 'Anmelden',
   'settings.language': 'Sprache',
-  'settings.filter': 'Filter',
+  'settings.filter': 'Filter-Regeln',
   'settings.filterHint': 'Zutaten- und Nährwertregeln verwalten',
   'settings.deepl': 'Übersetzung (DeepL API Key)',
   'settings.deeplHint': 'Eigenen DeepL Free API Key hinterlegen',
@@ -34,7 +34,7 @@ const de = {
   'settings.backupLast': 'Letztes Backup: {{date}}',
   'settings.backupNever': 'Noch kein Backup',
   'settings.backupAuto': 'Automatisches Backup',
-  'settings.backupAutoHint': 'Täglich bei App-Start',
+  'settings.backupAutoHint': 'Höchstens einmal täglich beim App-Start',
   'settings.backupSuccess': 'Backup gespeichert:\n{{path}}',
   'settings.backupPath': 'Speicherort',
   'settings.backupPathNone': 'Kein Ordner gewählt',
@@ -50,24 +50,24 @@ const de = {
   'settings.restoreConfirmMsg': 'Alle aktuellen Daten werden durch das Backup ersetzt. Fortfahren?',
   'settings.restoreSuccess': 'Backup erfolgreich wiederhergestellt.',
   'settings.restoreEmpty': 'Keine Backup-Dateien gefunden.',
-  'settings.howToUse': 'Anleitung',
-  'settings.howToUseHint': 'Lerne wie die App funktioniert',
+  'settings.howToUse': 'Anleitung & Über FoodCheck',
+  'settings.howToUseHint': 'So funktionieren Scan und Bewertung, Datenschutz, Version',
   'settings.about': 'Über FoodCheck',
   'settings.aboutHint': 'App-Info, Version & Credits',
 
   // HowToUse
   'howToUse.scanner':
-    'Scanner: Richte die Kamera auf einen Barcode (EAN-8/EAN-13). Der Scan erfolgt automatisch.',
+    'Halte den Barcode in den Rahmen. Das Ergebnis erscheint als Karte über der Kamera – du kannst direkt das nächste Produkt scannen. Tippe auf die Karte für alle Details. Geht die Kamera nicht, tippe „Barcode eingeben“.',
   'howToUse.result':
-    'Ergebnis: Sieh dir Red Flags, NOVA-Score, Nährwerte und Zutaten an. Tippe auf ★ um das Produkt zu favorisieren.',
+    'Oben siehst du die Ampel und warum sie so ausfällt. Darunter: gefundene Red Flags, NOVA, Nährwerte, Allergene und Zutaten. Mit ☆ merkst du ein Produkt vor.',
   'howToUse.catalog':
-    'Katalog: Durchsuche alle gescannten Produkte. Filtere nach Status oder sortiere nach Datum, Name oder Bewertung.',
+    'Alle gescannten Produkte, auch offline. Filtere nach Ampel, suche nach Name, Marke oder EAN, sortiere z. B. „kritische zuerst“. Lange drücken zum Bearbeiten oder Löschen.',
   'howToUse.favorites':
     'Favoriten: Hier erscheinen alle Produkte, die du mit ★ markiert hast. Zum Entfernen erneut auf ★ tippen.',
   'howToUse.edit':
-    'Bearbeiten: Tippe auf ✎ im Ergebnis, um Zutaten & Nährwerte zu ergänzen und an Open Food Facts zu senden.',
+    'Fehlen Angaben, fotografiere Zutatenliste oder Nährwerttabelle – die Erkennung läuft auf dem Gerät. Speichern bleibt lokal; „An Open Food Facts senden“ veröffentlicht die Angaben nach Rückfrage.',
   'howToUse.backup':
-    'Backup: Sichere deine Daten regelmäßig über den Backup-Bereich. So bleiben sie bei einem Gerätewechsel erhalten.',
+    'Wähle einen Ordner und sichere die Datenbank regelmäßig (auch automatisch). Beim Wiederherstellen wird die Datei geprüft; bei Problemen bleiben deine bisherigen Daten erhalten.',
 
   // About
   'about.version': 'Version',
@@ -78,10 +78,10 @@ const de = {
     'Alle Produktdaten stammen von Open Food Facts, der freien Lebensmitteldatenbank. FoodCheck ist ein unabhängiger Client.',
   'about.technology': 'Technologie',
   'about.technologyText':
-    'Entwickelt mit React Native und Expo. Texterkennung via ML Kit. Übersetzungen via DeepL & MyMemory.',
+    'React Native und Expo. Texterkennung auf dem Gerät mit ML Kit. Übersetzungen über DeepL oder MyMemory.',
   'about.dataPrivacy': 'Datenschutz',
   'about.dataPrivacyText':
-    'Alle Daten bleiben lokal auf deinem Gerät. Es werden keine personenbezogenen Daten gesammelt oder an Dritte weitergegeben.',
+    'FoodCheck hat kein eigenes Backend und kein Tracking. Katalog, Favoriten, Regeln und Backups bleiben auf deinem Gerät. Nach außen geht nur: der gescannte Barcode an Open Food Facts (Produktdaten und Vorschläge), Zutatentexte an MyMemory bzw. DeepL, wenn du übersetzen lässt, und Angaben oder Fotos, die du ausdrücklich an Open Food Facts sendest.',
   'about.footer': 'Gemacht mit ❤️ für bewusste Ernährung.',
 
   // Scanner
@@ -528,6 +528,29 @@ const de = {
   'favorites.emptyTitle': 'Noch keine Favoriten',
   'favorites.removed': 'Aus Favoriten entfernt',
   'common.undo': 'Rückgängig',
+  'settings.group.rating': 'Bewertung',
+  'settings.group.help': 'Hilfe & Info',
+  'settings.filterCount': '{{count}} Regeln – bestimmen, was als Red Flag zählt',
+  'settings.loggedInAsName': 'Angemeldet als {{name}}',
+  'settings.translation': 'Übersetzung',
+  'settings.translationHint': 'Dienst und API-Schlüssel für Zutaten-Übersetzungen',
+  'settings.backupDone': 'Backup gespeichert.',
+  'howToUse.resultTitle': 'Ergebnis',
+  'about.rating.title': 'So entsteht die Ampel',
+  'about.rating.critical': 'Hochverarbeitet (NOVA 4) oder mindestens 3 Red Flags.',
+  'about.rating.warning': 'Verarbeitet (NOVA 3) oder 1–2 Red Flags.',
+  'about.rating.ok': 'Keine Red Flags und NOVA 1–2 bzw. nicht bekannt.',
+  'about.rating.unknown': 'Weder Zutaten noch NOVA noch Nährwerte bekannt – keine Aussage möglich.',
+  'about.rating.note':
+    'Red Flags sind Zutaten aus deinen Filter-Regeln (einstellbar) und bedenkliche Zusatzstoffe. Die Ampel ist eine Orientierung, keine Ernährungsberatung.',
+  'api.provider': 'Übersetzungsdienst',
+  'api.noKeyDeepL': 'Kein Key – DeepL übersetzt nur mit Key',
+  'api.saveFailed': 'Konnte nicht gespeichert werden',
+  'api.storedSecurely': 'Wird verschlüsselt nur auf diesem Gerät gespeichert.',
+  'api.help.mymemory':
+    'MyMemory funktioniert ohne Key (etwa 5 000 Wörter pro Tag). Mit kostenlosem Key von mymemory.translated.net sind es etwa 10 000 Wörter pro Tag.',
+  'api.help.deepl':
+    'DeepL braucht einen Key: auf deepl.com/pro-api den kostenlosen Plan „DeepL API Free“ wählen (Kreditkarte nötig) und den Authentication Key kopieren. Er endet auf „:fx“.',
 };
 
 type Translations = typeof de;
@@ -548,7 +571,7 @@ const en: Translations = {
   'settings.loginPrompt': 'Log in to send product data to Open Food Facts.',
   'settings.login': 'Login',
   'settings.language': 'Language',
-  'settings.filter': 'Filters',
+  'settings.filter': 'Filter rules',
   'settings.filterHint': 'Manage ingredient and nutrition rules',
   'settings.deepl': 'Translation (DeepL API Key)',
   'settings.deeplHint': 'Enter your own DeepL Free API Key',
@@ -559,7 +582,7 @@ const en: Translations = {
   'settings.backupLast': 'Last backup: {{date}}',
   'settings.backupNever': 'No backup yet',
   'settings.backupAuto': 'Automatic Backup',
-  'settings.backupAutoHint': 'Daily on app start',
+  'settings.backupAutoHint': 'At most once a day when the app starts',
   'settings.backupSuccess': 'Backup saved to:\n{{path}}',
   'settings.backupPath': 'Storage Location',
   'settings.backupPathNone': 'No folder selected',
@@ -575,24 +598,24 @@ const en: Translations = {
   'settings.restoreConfirmMsg': 'All current data will be replaced by the backup. Continue?',
   'settings.restoreSuccess': 'Backup restored successfully.',
   'settings.restoreEmpty': 'No backup files found.',
-  'settings.howToUse': 'How To Use',
-  'settings.howToUseHint': 'Learn how to use the app',
+  'settings.howToUse': 'Guide & about FoodCheck',
+  'settings.howToUseHint': 'How scanning and rating work, privacy, version',
   'settings.about': 'About FoodCheck',
   'settings.aboutHint': 'App info, version & credits',
 
   // HowToUse
   'howToUse.scanner':
-    'Scanner: Point the camera at a barcode (EAN-8/EAN-13). Scanning is automatic.',
+    'Hold the barcode inside the frame. The result appears as a card above the camera – you can scan the next product right away. Tap the card for all details. If the camera does not work, tap “Enter barcode”.',
   'howToUse.result':
-    'Result: View red flags, NOVA score, nutrition & ingredients. Tap ★ to favorite the product.',
+    'At the top you see the traffic light and why. Below: red flags found, NOVA, nutrition, allergens and ingredients. Tap ☆ to keep a product as favorite.',
   'howToUse.catalog':
-    'Catalog: Browse all scanned products. Filter by status or sort by date, name or rating.',
+    'All scanned products, also offline. Filter by traffic light, search by name, brand or EAN, sort e.g. “critical first”. Long press to edit or delete.',
   'howToUse.favorites':
     'Favorites: All products you marked with ★ appear here. Tap ★ again to remove them.',
   'howToUse.edit':
-    'Edit: Tap ✎ on the result to add ingredients & nutrition and send to Open Food Facts.',
+    'If details are missing, photograph the ingredient list or nutrition table – recognition runs on the device. Saving stays local; “Send to Open Food Facts” publishes the details after confirmation.',
   'howToUse.backup':
-    'Backup: Regularly save your data via the backup section. Keeps your data safe when switching devices.',
+    'Choose a folder and back up the database regularly (also automatically). When restoring, the file is checked; if anything goes wrong your previous data is kept.',
 
   // About
   'about.version': 'Version',
@@ -603,10 +626,10 @@ const en: Translations = {
     'All product data comes from Open Food Facts, the free food database. FoodCheck is an independent client.',
   'about.technology': 'Technology',
   'about.technologyText':
-    'Built with React Native and Expo. Text recognition via ML Kit. Translations via DeepL & MyMemory.',
+    'React Native and Expo. On-device text recognition with ML Kit. Translations via DeepL or MyMemory.',
   'about.dataPrivacy': 'Privacy',
   'about.dataPrivacyText':
-    'All data stays locally on your device. No personal data is collected or shared with third parties.',
+    'FoodCheck has no backend of its own and no tracking. Catalog, favorites, rules and backups stay on your device. Only this leaves it: the scanned barcode to Open Food Facts (product data and suggestions), ingredient texts to MyMemory or DeepL when you translate, and details or photos you explicitly send to Open Food Facts.',
   'about.footer': 'Made with ❤️ for conscious nutrition.',
 
   'scanner.loading': 'Loading...',
@@ -1038,6 +1061,30 @@ const en: Translations = {
   'favorites.emptyTitle': 'No favorites yet',
   'favorites.removed': 'Removed from favorites',
   'common.undo': 'Undo',
+  'settings.group.rating': 'Rating',
+  'settings.group.help': 'Help & info',
+  'settings.filterCount': '{{count}} rules – decide what counts as a red flag',
+  'settings.loggedInAsName': 'Logged in as {{name}}',
+  'settings.translation': 'Translation',
+  'settings.translationHint': 'Service and API key for ingredient translations',
+  'settings.backupDone': 'Backup saved.',
+  'howToUse.resultTitle': 'Result',
+  'about.rating.title': 'How the traffic light works',
+  'about.rating.critical': 'Ultra-processed (NOVA 4) or at least 3 red flags.',
+  'about.rating.warning': 'Processed (NOVA 3) or 1–2 red flags.',
+  'about.rating.ok': 'No red flags and NOVA 1–2 or not known.',
+  'about.rating.unknown':
+    'Neither ingredients nor NOVA nor nutrition are known – no statement possible.',
+  'about.rating.note':
+    'Red flags are ingredients from your filter rules (adjustable) and questionable additives. The traffic light is guidance, not dietary advice.',
+  'api.provider': 'Translation service',
+  'api.noKeyDeepL': 'No key – DeepL only translates with a key',
+  'api.saveFailed': 'Could not be saved',
+  'api.storedSecurely': 'Stored encrypted on this device only.',
+  'api.help.mymemory':
+    'MyMemory works without a key (about 5,000 words per day). With a free key from mymemory.translated.net it is about 10,000 words per day.',
+  'api.help.deepl':
+    'DeepL needs a key: choose the free “DeepL API Free” plan on deepl.com/pro-api (credit card required) and copy the authentication key. It ends with “:fx”.',
 };
 
 export type TranslationKey = keyof typeof de;

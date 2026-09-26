@@ -69,39 +69,51 @@ describe('MyMemoryClient', () => {
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ responseData: { translatedText: 'Hello World' } }),
+        json: async () => ({
+          responseStatus: 200,
+          responseData: { translatedText: 'Hello World' },
+        }),
       });
 
       const result = await client.translate('Hallo Welt');
 
       expect(result).toBe('Hello World');
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('autodetect|en'));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('autodetect|en'),
+        expect.anything()
+      );
     });
 
     it('should call MyMemory API with key when stored', async () => {
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('mm-key');
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ responseData: { translatedText: 'Good day' } }),
+        json: async () => ({ responseStatus: 200, responseData: { translatedText: 'Good day' } }),
       });
 
       const result = await client.translate('Guten Tag');
 
       expect(result).toBe('Good day');
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('&key=mm-key'));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('&key=mm-key'),
+        expect.anything()
+      );
     });
 
     it('should use custom target language', async () => {
       (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ responseData: { translatedText: 'Bonjour' } }),
+        json: async () => ({ responseStatus: 200, responseData: { translatedText: 'Bonjour' } }),
       });
 
       const result = await client.translate('Hallo', 'fr');
 
       expect(result).toBe('Bonjour');
-      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('autodetect|fr'));
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('autodetect|fr'),
+        expect.anything()
+      );
     });
 
     it('should return original text when API response is not ok', async () => {
@@ -133,5 +145,20 @@ describe('MyMemoryClient', () => {
 
       expect(result).toBe('Hallo');
     });
+  });
+
+  it('returns the original text when MyMemory reports an error with HTTP 200', async () => {
+    (SecureStore.getItemAsync as jest.Mock).mockResolvedValue(null);
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        responseStatus: 429,
+        responseData: {
+          translatedText: 'MYMEMORY WARNING: YOU USED ALL AVAILABLE FREE TRANSLATIONS',
+        },
+      }),
+    });
+
+    await expect(new MyMemoryClient().translate('Zucker', 'EN')).resolves.toBe('Zucker');
   });
 });

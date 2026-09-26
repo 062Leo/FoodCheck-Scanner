@@ -13,10 +13,10 @@ interface SettingsState {
   isLoading: boolean;
   loadSettings: () => Promise<void>;
   setProvider: (provider: TranslationProvider) => Promise<void>;
-  saveDeepLKey: (key: string) => Promise<void>;
-  deleteDeepLKey: () => Promise<void>;
-  saveMyMemoryKey: (key: string) => Promise<void>;
-  deleteMyMemoryKey: () => Promise<void>;
+  saveDeepLKey: (key: string) => Promise<boolean>;
+  deleteDeepLKey: () => Promise<boolean>;
+  saveMyMemoryKey: (key: string) => Promise<boolean>;
+  deleteMyMemoryKey: () => Promise<boolean>;
 }
 
 const router = new TranslationRouter();
@@ -50,8 +50,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   },
 
   setProvider: async (provider) => {
-    await router.setProvider(provider);
     set({ provider });
+    await router.setProvider(provider).catch((error) => {
+      console.error('Failed to store translation provider:', error);
+    });
   },
 
   saveDeepLKey: async (key) => {
@@ -59,8 +61,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     try {
       await deepLClient.saveApiKey(key);
       set({ hasDeepLKey: true });
+      return true;
     } catch (error) {
       console.error('Failed to save DeepL key:', error);
+      return false;
     } finally {
       set({ isLoading: false });
     }
@@ -71,8 +75,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     try {
       await deepLClient.deleteApiKey();
       set({ hasDeepLKey: false });
+      return true;
     } catch (error) {
       console.error('Failed to delete DeepL key:', error);
+      return false;
     } finally {
       set({ isLoading: false });
     }
@@ -83,8 +89,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     try {
       await myMemoryClient.saveApiKey(key);
       set({ hasMyMemoryKey: true });
+      return true;
     } catch (error) {
       console.error('Failed to save MyMemory key:', error);
+      return false;
     } finally {
       set({ isLoading: false });
     }
@@ -95,8 +103,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     try {
       await myMemoryClient.deleteApiKey();
       set({ hasMyMemoryKey: false });
+      return true;
     } catch (error) {
       console.error('Failed to delete MyMemory key:', error);
+      return false;
     } finally {
       set({ isLoading: false });
     }

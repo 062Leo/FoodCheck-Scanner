@@ -231,6 +231,53 @@ export function EmptyState({
   );
 }
 
+/** Row in a settings-style list: icon, title, optional description, chevron or custom end. */
+export function ListRow({
+  icon,
+  title,
+  description,
+  onPress,
+  end,
+  testID,
+}: {
+  icon?: IconName;
+  title: string;
+  description?: string;
+  onPress?: () => void;
+  end?: ReactNode;
+  testID?: string;
+}) {
+  const content = (
+    <>
+      {icon ? <Ionicons name={icon} size={22} color={colors.textSecondary} /> : null}
+      <View style={styles.rowText}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        {description ? <Text style={styles.rowDescription}>{description}</Text> : null}
+      </View>
+      {end ??
+        (onPress ? <Ionicons name="chevron-forward" size={20} color={colors.textMuted} /> : null)}
+    </>
+  );
+  if (!onPress) {
+    return (
+      <View style={styles.row} testID={testID}>
+        {content}
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={description ? `${title}. ${description}` : title}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      testID={testID}
+    >
+      {content}
+    </Pressable>
+  );
+}
+
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
@@ -305,6 +352,19 @@ const styles = StyleSheet.create({
   emptyTitle: { ...typography.subtitle, color: colors.text, textAlign: 'center' },
   emptyMessage: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
   emptyAction: { marginTop: spacing.md },
+  row: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
+  },
+  rowPressed: { backgroundColor: colors.surfaceRaised },
+  rowText: { flex: 1, gap: 2 },
+  rowTitle: { ...typography.body, color: colors.text },
+  rowDescription: { ...typography.caption, color: colors.textMuted },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

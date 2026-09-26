@@ -1,105 +1,105 @@
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { useTranslation } from '../i18n/useTranslation';
+import type { TranslationKey } from '../i18n/translations';
+import { Accordion } from '../components/Accordion';
+import { Card, ScreenHeader, SectionTitle } from '../ui/components';
+import { StatusBadge } from '../ui/status';
+import { colors, radius, spacing, typography } from '../ui/theme';
+import type { ScanStatus } from '../types/ScanResult';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const iconImage = require('../../assets/icon.png');
 
-const APP_VERSION = '1.0.0';
+const RATING_RULES: { status: ScanStatus; text: TranslationKey }[] = [
+  { status: 'Critical', text: 'about.rating.critical' },
+  { status: 'Warning', text: 'about.rating.warning' },
+  { status: 'OK', text: 'about.rating.ok' },
+  { status: 'Unknown', text: 'about.rating.unknown' },
+];
+
+const HOW_TO: { title: TranslationKey; text: TranslationKey }[] = [
+  { title: 'tab.scanner', text: 'howToUse.scanner' },
+  { title: 'howToUse.resultTitle', text: 'howToUse.result' },
+  { title: 'catalog.title', text: 'howToUse.catalog' },
+  { title: 'edit.title', text: 'howToUse.edit' },
+  { title: 'settings.backup', text: 'howToUse.backup' },
+];
 
 export default function AboutScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
+  const version = Constants.expoConfig?.version ?? '';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Image source={iconImage} style={styles.icon} />
+    <View style={styles.container}>
+      <ScreenHeader
+        title={t('settings.about')}
+        onBack={() => router.back()}
+        backLabel={t('common.back')}
+      />
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.hero}>
+          <Image source={iconImage} style={styles.icon} accessibilityIgnoresInvertColors />
+          <Text style={styles.appName}>FoodCheck</Text>
+          <Text style={styles.muted}>
+            {t('about.version')} {version}
+          </Text>
+          <Text style={styles.body}>{t('about.description')}</Text>
+        </View>
 
-      <Text style={styles.appName}>FoodCheck</Text>
-      <Text style={styles.version}>
-        {t('about.version')} {APP_VERSION}
-      </Text>
+        <View style={styles.section}>
+          <SectionTitle>{t('about.rating.title')}</SectionTitle>
+          <Card style={styles.ratingCard}>
+            {RATING_RULES.map(({ status, text }) => (
+              <View key={status} style={styles.ratingRow}>
+                <StatusBadge status={status} t={t} />
+                <Text style={styles.body}>{t(text)}</Text>
+              </View>
+            ))}
+            <Text style={styles.muted}>{t('about.rating.note')}</Text>
+          </Card>
+        </View>
 
-      <Text style={styles.description}>{t('about.description')}</Text>
+        <View style={styles.section}>
+          <SectionTitle>{t('settings.howToUse')}</SectionTitle>
+          <Accordion
+            items={HOW_TO.map(({ title, text }) => ({
+              title: t(title),
+              content: <Text style={styles.body}>{t(text)}</Text>,
+            }))}
+          />
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('about.dataSource')}</Text>
-        <Text style={styles.sectionText}>{t('about.dataSourceText')}</Text>
-      </View>
+        <View style={styles.section}>
+          <SectionTitle>{t('about.dataPrivacy')}</SectionTitle>
+          <Text style={styles.body}>{t('about.dataPrivacyText')}</Text>
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('about.technology')}</Text>
-        <Text style={styles.sectionText}>{t('about.technologyText')}</Text>
-      </View>
+        <View style={styles.section}>
+          <SectionTitle>{t('about.dataSource')}</SectionTitle>
+          <Text style={styles.body}>{t('about.dataSourceText')}</Text>
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('about.dataPrivacy')}</Text>
-        <Text style={styles.sectionText}>{t('about.dataPrivacyText')}</Text>
-      </View>
-
-      <Text style={styles.footer}>{t('about.footer')}</Text>
-    </ScrollView>
+        <View style={styles.section}>
+          <SectionTitle>{t('about.technology')}</SectionTitle>
+          <Text style={styles.body}>{t('about.technologyText')}</Text>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0d0d0d',
-  },
-  content: {
-    paddingTop: 32,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    alignItems: 'center',
-  },
-  icon: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
-    marginBottom: 16,
-  },
-  appName: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  version: {
-    color: '#757575',
-    fontSize: 14,
-    marginBottom: 24,
-  },
-  description: {
-    color: '#BDBDBD',
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-    marginBottom: 32,
-    paddingHorizontal: 12,
-  },
-  section: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-  },
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  sectionText: {
-    color: '#9E9E9E',
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  footer: {
-    color: '#555555',
-    fontSize: 12,
-    marginTop: 24,
-    textAlign: 'center',
-  },
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: spacing.lg, gap: spacing.xl, paddingBottom: spacing.xxl },
+  hero: { alignItems: 'center', gap: spacing.sm },
+  icon: { width: 88, height: 88, borderRadius: radius.lg },
+  appName: { ...typography.headline, color: colors.text },
+  section: { gap: spacing.xs },
+  body: { ...typography.body, color: colors.textSecondary, flexShrink: 1 },
+  muted: { ...typography.caption, color: colors.textMuted },
+  ratingCard: { gap: spacing.md },
+  ratingRow: { gap: spacing.xs },
 });
