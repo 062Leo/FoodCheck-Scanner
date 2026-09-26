@@ -264,20 +264,20 @@ const de = {
   'ocr.mode.ingredients': 'Zutatenliste scannen',
   'ocr.mode.nutrition': 'Nährwerttabelle scannen',
   'ocr.hint.focus': 'Zum Fokussieren tippen',
-  'ocr.crop.select': 'Bereich auswählen',
-  'ocr.crop.hint.empty': 'Rechteck ziehen oder direkt extrahieren',
-  'ocr.crop.hint.ok': 'Rechteck OK – oder neu ziehen',
+  'ocr.crop.select': 'Bereich wählen',
+  'ocr.crop.hint.empty': 'Optional: Rahmen um den Text ziehen',
+  'ocr.crop.hint.ok': 'Rahmen gesetzt – zum Ändern neu ziehen',
   'ocr.extract': 'Extrahieren →',
-  'ocr.review.title': 'Extrahierter Text',
+  'ocr.review.title': 'Erkannter Text',
   'ocr.review.subtitle': 'Google Cloud Vision (Open Food Facts)',
   'ocr.review.errorTitle': '⚠ Texterkennung fehlgeschlagen',
   'ocr.review.emptyTitle': 'Kein Text erkannt',
   'ocr.review.emptyMsg':
     'Probiere einen engeren Zuschnitt, bessere Beleuchtung oder ein anderes OCR-Script.',
-  'ocr.review.placeholder': 'Kein Text erkannt – manuell eingeben',
+  'ocr.review.placeholder': 'Text hier eingeben oder korrigieren',
   'ocr.review.recrop': '↩ Neu zuschneiden',
-  'ocr.review.retake': '📷 Neu aufnehmen',
-  'ocr.review.confirm': '✓ Bestätigen',
+  'ocr.review.retake': 'Neu aufnehmen',
+  'ocr.review.confirm': 'Übernehmen',
 
   // Off Account Setup
   'off.title': 'Open Food Facts Konto einrichten',
@@ -491,6 +491,26 @@ const de = {
   'a11y.showPassword': 'Passwort anzeigen',
   'a11y.hidePassword': 'Passwort verbergen',
   'common.loading': 'Wird geladen',
+  'ocr.capture': 'Foto aufnehmen',
+  'ocr.hint.capture': 'Text gerade und formatfüllend aufnehmen',
+  'ocr.useWhole': 'Ganzes Foto',
+  'ocr.useSelection': 'Ausschnitt erkennen',
+  'ocr.recognizing': 'Text wird erkannt …',
+  'ocr.review.engineDevice': 'Auf dem Gerät erkannt – das Foto hat das Handy nicht verlassen.',
+  'ocr.review.engineCloud': 'Von Open Food Facts erkannt.',
+  'ocr.cloud.button': 'Stattdessen von Open Food Facts erkennen lassen',
+  'ocr.cloud.consentTitle': 'Foto hochladen?',
+  'ocr.cloud.consentBody':
+    'Das Foto wird unter deinem Konto öffentlich auf {{host}} hochgeladen und kann dort als Produktbild erscheinen. Die Texterkennung erfolgt auf den Servern von Open Food Facts.',
+  'ocr.cloud.consentAccept': 'Hochladen',
+  'ocr.error.device':
+    'Texterkennung auf dem Gerät ist nicht möglich. Tippe den Text ein oder nutze Open Food Facts.',
+  'ocr.error.noText':
+    'Kein Text erkannt. Versuche ein schärferes Foto mit mehr Licht oder einen engeren Ausschnitt.',
+  'ocr.error.noCredentials': 'Dafür brauchst du ein Open-Food-Facts-Konto (Einstellungen).',
+  'ocr.error.cloud':
+    'Open Food Facts konnte den Text nicht liefern. Bitte später erneut versuchen.',
+  'ocr.error.capture': 'Foto konnte nicht aufgenommen werden.',
 };
 
 type Translations = typeof de;
@@ -746,19 +766,19 @@ const en: Translations = {
   'ocr.mode.ingredients': 'Scan Ingredient List',
   'ocr.mode.nutrition': 'Scan Nutrition Table',
   'ocr.hint.focus': 'Tap to focus',
-  'ocr.crop.select': 'Select Area',
-  'ocr.crop.hint.empty': 'Drag to select or extract directly',
-  'ocr.crop.hint.ok': 'Rectangle OK – or redraw',
+  'ocr.crop.select': 'Select area',
+  'ocr.crop.hint.empty': 'Optional: drag a frame around the text',
+  'ocr.crop.hint.ok': 'Frame set – drag again to change it',
   'ocr.extract': 'Extract →',
-  'ocr.review.title': 'Extracted Text',
+  'ocr.review.title': 'Recognised text',
   'ocr.review.subtitle': 'Google Cloud Vision (Open Food Facts)',
   'ocr.review.errorTitle': '⚠ Text recognition failed',
   'ocr.review.emptyTitle': 'No text recognized',
   'ocr.review.emptyMsg': 'Try a tighter crop, better lighting, or a different OCR script.',
-  'ocr.review.placeholder': 'No text recognized – enter manually',
+  'ocr.review.placeholder': 'Type or correct the text here',
   'ocr.review.recrop': '↩ Recrop',
-  'ocr.review.retake': '📷 Retake',
-  'ocr.review.confirm': '✓ Confirm',
+  'ocr.review.retake': 'Retake',
+  'ocr.review.confirm': 'Use text',
 
   'off.title': 'Set up Open Food Facts account',
   'off.description': 'To contribute products, you need a free Open Food Facts account.',
@@ -966,6 +986,25 @@ const en: Translations = {
   'a11y.showPassword': 'Show password',
   'a11y.hidePassword': 'Hide password',
   'common.loading': 'Loading',
+  'ocr.capture': 'Take photo',
+  'ocr.hint.capture': 'Keep the text straight and fill the frame',
+  'ocr.useWhole': 'Whole photo',
+  'ocr.useSelection': 'Recognise selection',
+  'ocr.recognizing': 'Recognising text …',
+  'ocr.review.engineDevice': 'Recognised on the device – the photo did not leave the phone.',
+  'ocr.review.engineCloud': 'Recognised by Open Food Facts.',
+  'ocr.cloud.button': 'Let Open Food Facts recognise it instead',
+  'ocr.cloud.consentTitle': 'Upload photo?',
+  'ocr.cloud.consentBody':
+    "The photo will be uploaded publicly to {{host}} under your account and may appear there as a product image. Text recognition runs on Open Food Facts' servers.",
+  'ocr.cloud.consentAccept': 'Upload',
+  'ocr.error.device':
+    'On-device recognition is not available. Type the text or use Open Food Facts.',
+  'ocr.error.noText':
+    'No text recognised. Try a sharper photo with more light or a tighter selection.',
+  'ocr.error.noCredentials': 'This needs an Open Food Facts account (settings).',
+  'ocr.error.cloud': 'Open Food Facts could not return the text. Please try again later.',
+  'ocr.error.capture': 'The photo could not be taken.',
 };
 
 export type TranslationKey = keyof typeof de;

@@ -21,6 +21,8 @@ export const colors = {
   accent: '#4CAF50',
   onAccent: '#0B1F0C',
   accentSubtle: '#1A2E1A',
+  /** Translucent fill for selections drawn on photos. */
+  selectionFill: 'rgba(76,175,80,0.15)',
 
   danger: '#EF5350',
   dangerSubtle: '#3A1D1D',
