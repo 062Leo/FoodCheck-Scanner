@@ -26,7 +26,7 @@ Scan the QR code with Expo Go, or connect a device via USB.
 - Grant camera permission when prompted; if you denied it permanently, the app links to the system settings.
 - Point the barcode (EAN-8/EAN-13/UPC-A) into the frame ("Barcode in den Rahmen halten") — scanning is automatic and the check digit filters out misreads.
 - The result appears as a card over the camera (name, status, main reason) while the camera keeps running, so you can scan the next product right away.
-- If a product declares an allergen from **Settings → Meine Allergene / My allergens**, the card shows it in an extra line ("Enthält Milch", "Kann Spuren enthalten: Erdnüsse").
+- Optional: with **Settings → Allergen-Warnung / Allergen warning** switched on (off by default), a product that declares an allergen from **Meine Allergene / My allergens** shows it in an extra line ("Enthält Milch", "Kann Spuren enthalten: Erdnüsse").
 - Tap the card to open the full Product screen; the close button dismisses it without leaving the scanner.
 - No camera, or the code won't scan? Use **"Barcode eingeben" / "Enter barcode"** to type it in manually.
 - The offline badge ("Offline – nur gespeicherte Produkte") appears whenever there is no network; a lookup then falls back to a previously saved product if there is one.
@@ -34,7 +34,7 @@ Scan the QR code with Expo Go, or connect a device via USB.
 ## 4. Product Screen
 
 - **Traffic-light banner** at the top: OK, Warning, Critical, or Unknown (not enough data), together with the reason (e.g. Nova level, number of red flags, missing ingredient list).
-- **Allergen warning** right below the banner when the product contains, or may contain traces of, an allergen from your profile (based on Open Food Facts data — always check the package).
+- **Allergen warning** (only when switched on in the settings) right below the banner when the product contains, or may contain traces of, an allergen from your profile (based on Open Food Facts data — always check the package).
 - Shows: product name, brand, red flags found, Nova score, Nutri-Score (if available), full nutrition table, allergens, multi-language ingredients, image gallery.
 - **Star icon** (top right): toggle favorite.
 - **Edit icon** (top right): opens the Edit Product screen for corrections or contributing new data to Open Food Facts.
@@ -108,7 +108,7 @@ npx eas-cli build --platform android --profile production
 
 ```bash
 cd App
-npm test                 # Jest (49 suites, 411 tests)
+npm test                 # Jest (49 suites, 414 tests)
 npm run test:integration # Open Food Facts staging integration tests (opt-in)
 npm run typecheck        # TypeScript type-check
 npm run lint             # ESLint

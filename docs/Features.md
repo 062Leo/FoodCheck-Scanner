@@ -145,13 +145,14 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 
 | Gruppe | Beschreibung |
 |-------------|-------------|
-| **Bewertung** | Filter-Regeln mit Anzahl der aktiven Regeln; **Meine Allergene** (persönliches Profil) |
+| **Bewertung** | Filter-Regeln mit Anzahl der aktiven Regeln; Schalter **Allergen-Warnung** (standardmäßig aus), darunter **Meine Allergene**, solange sie an ist |
 | **Sprache** | DE ↔ EN (App-UI umschaltbar); darunter der Zugang zur Übersetzungs-Einstellung |
 | **Open Food Facts Konto** | Login/Logout für Produktbeiträge, zeigt den Zielserver |
 | **Datenbank-Backup** | Speicherort wählen (Android), Backup erstellen, automatisches Backup, Wiederherstellen |
 | **Hilfe & Info** | Anleitung & Über FoodCheck |
 
 ### Meine Allergene (`/settings/allergens`)
+- Optional: nur aktiv, wenn der Schalter „Allergen-Warnung“ in den Einstellungen an ist (standardmäßig aus); aus = keine Warnungen, keine Hinweise
 - Auswahl aus den 14 EU-Allergenen, gespeichert in der Datenbank (Teil jedes Backups)
 - Scan-Karte (inkl. Screenreader-Ansage) und Produktseite warnen bei „Enthält …“ und „Kann Spuren enthalten …“ laut Open Food Facts
 - Hinweis: Grundlage sind die OFF-Angaben (`allergens_tags`, `traces`); keine Warnung heißt nicht unbedenklich
@@ -232,7 +233,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 
 ## Testing
 
-- **49 Test-Suiten**, **411 Tests**, alle erfolgreich (`npx jest --maxWorkers=2 --silent`)
+- **49 Test-Suiten**, **414 Tests**, alle erfolgreich (`npx jest --maxWorkers=2 --silent`)
 - Datenbank- und Repository-Tests laufen gegen echtes SQLite (`node:sqlite`-Testdouble), nicht gegen String-Vergleichs-Mocks
 - **Golden-Ratings**: 32 Referenzprodukte mit fest hinterlegtem Bewertungsergebnis, damit Änderungen an der Bewertungslogik als bewusster, überprüfbarer Diff sichtbar werden
 - Getestete Module: Analyse (RedFlagAnalyzer, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating), Services (Lookup, Edit, Re-Rating), API-Clients, Repositories/Migrationen, Backup, OCR, Übersetzungen, Screens/Features
