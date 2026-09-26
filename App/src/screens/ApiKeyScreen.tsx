@@ -92,7 +92,10 @@ export default function ApiKeyScreen() {
                   key={option.id}
                   label={option.label}
                   selected={provider === option.id}
-                  onPress={() => void store().setProvider(option.id)}
+                  onPress={() => {
+                    if (option.id !== provider) setInput('');
+                    void store().setProvider(option.id);
+                  }}
                 />
               ))}
             </View>
@@ -114,6 +117,7 @@ export default function ApiKeyScreen() {
             value={input}
             onChangeText={setInput}
             hint={t('api.storedSecurely')}
+            secret
           />
           <Button
             title={t('api.saveKey')}
