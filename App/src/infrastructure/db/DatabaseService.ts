@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import { seedRules } from '../../domain/rules/seedRules';
 import { getErrorMessage } from '../../shared/errors';
@@ -153,7 +154,8 @@ export async function migrateSchema(database: SQLite.SQLiteDatabase): Promise<vo
       withTransactionAsync?: (fn: (tx: SQLite.SQLiteDatabase) => Promise<void>) => Promise<void>;
     };
 
-    if (typeof dbAny.withExclusiveTransactionAsync === 'function') {
+    // Exclusive transactions are not available in expo-sqlite on the web.
+    if (Platform.OS !== 'web' && typeof dbAny.withExclusiveTransactionAsync === 'function') {
       await dbAny.withExclusiveTransactionAsync(migrate);
       return;
     }
