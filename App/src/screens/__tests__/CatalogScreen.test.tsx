@@ -65,6 +65,15 @@ describe('CatalogScreen', () => {
     await waitFor(() => expect(listNames()).toEqual(['Cola']));
   });
 
+  it('uses the singular for a single product', async () => {
+    await repository.deleteByEan('4000000000002');
+    await repository.deleteByEan('4000000000003');
+
+    render(<CatalogScreen />);
+
+    expect(await screen.findByText('1 Produkt · 1 Scan · 0 % hochverarbeitet')).toBeTruthy();
+  });
+
   it('searches instantly by brand', async () => {
     render(<CatalogScreen />);
     await screen.findByText('Cola');

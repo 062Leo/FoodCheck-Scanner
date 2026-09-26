@@ -201,7 +201,10 @@ export default function EditProductScreen() {
     const count = form.applyNutrition(parseNutritionLabel(text));
     setToast(
       count > 0
-        ? { message: t('edit.ocrFilled', { count }), type: 'info' }
+        ? {
+            message: count === 1 ? t('edit.ocrFilledOne') : t('edit.ocrFilled', { count }),
+            type: 'info',
+          }
         : { message: t('edit.ocrNothing'), type: 'error' }
     );
   };

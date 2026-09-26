@@ -145,8 +145,14 @@ export default function CatalogScreen() {
       {products.length > 0 && (
         <Text style={styles.summary}>
           {t('catalog.summary', {
-            products: counts.all,
-            scans: counts.scans,
+            products:
+              counts.all === 1
+                ? t('catalog.summary.productsOne')
+                : t('catalog.summary.products', { count: counts.all }),
+            scans:
+              counts.scans === 1
+                ? t('catalog.summary.scansOne')
+                : t('catalog.summary.scans', { count: counts.scans }),
             share: Math.round(counts.ultraProcessedShare * 100),
           })}
         </Text>

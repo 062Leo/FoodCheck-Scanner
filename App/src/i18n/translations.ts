@@ -413,7 +413,7 @@ const de = {
   'ocr.error.cloud':
     'Open Food Facts konnte den Text nicht liefern. Bitte später erneut versuchen.',
   'ocr.error.capture': 'Foto konnte nicht aufgenommen werden.',
-  'catalog.summary': '{{products}} Produkte · {{scans}} Scans · {{share}} % hochverarbeitet',
+  'catalog.summary': '{{products}} · {{scans}} · {{share}} % hochverarbeitet',
   'catalog.filter.reset': 'Filter zurücksetzen',
   'catalog.sort.title': 'Sortieren nach',
   'catalog.sort.recent': 'Zuletzt gescannt',
@@ -478,6 +478,11 @@ const de = {
   'allergen.sulphites': 'Schwefeldioxid und Sulfite',
   'allergen.lupin': 'Lupinen',
   'allergen.molluscs': 'Weichtiere',
+  'catalog.summary.products': '{{count}} Produkte',
+  'catalog.summary.productsOne': '1 Produkt',
+  'catalog.summary.scans': '{{count}} Scans',
+  'catalog.summary.scansOne': '1 Scan',
+  'edit.ocrFilledOne': '1 Wert aus dem Foto übernommen – bitte prüfen.',
 };
 
 type Translations = typeof de;
@@ -875,7 +880,7 @@ const en: Translations = {
   'ocr.error.noCredentials': 'This needs an Open Food Facts account (settings).',
   'ocr.error.cloud': 'Open Food Facts could not return the text. Please try again later.',
   'ocr.error.capture': 'The photo could not be taken.',
-  'catalog.summary': '{{products}} products · {{scans}} scans · {{share}} % ultra-processed',
+  'catalog.summary': '{{products}} · {{scans}} · {{share}} % ultra-processed',
   'catalog.filter.reset': 'Reset filter',
   'catalog.sort.title': 'Sort by',
   'catalog.sort.recent': 'Recently scanned',
@@ -940,6 +945,11 @@ const en: Translations = {
   'allergen.sulphites': 'Sulphur dioxide and sulphites',
   'allergen.lupin': 'Lupin',
   'allergen.molluscs': 'Molluscs',
+  'catalog.summary.products': '{{count}} products',
+  'catalog.summary.productsOne': '1 product',
+  'catalog.summary.scans': '{{count}} scans',
+  'catalog.summary.scansOne': '1 scan',
+  'edit.ocrFilledOne': '1 value taken from the photo – please check.',
 };
 
 export type TranslationKey = keyof typeof de;
