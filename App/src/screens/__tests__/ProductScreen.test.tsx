@@ -73,6 +73,17 @@ describe('ProductScreen', () => {
     expect(mockLookup).toHaveBeenCalledWith(EAN, 'scan', SEEDED_RULES);
   });
 
+  it('names allergens and traces in the app language', async () => {
+    mockLookup.mockResolvedValue(
+      found({ ...limo, allergensTags: ['en:milk', 'en:nuts'], traces: 'en:peanuts' })
+    );
+
+    render(<ProductScreen />);
+
+    expect(await screen.findByText(/Milch, Schalenfrüchte \(Nüsse\)/)).toBeTruthy();
+    expect(screen.getByText(/Erdnüsse/)).toBeTruthy();
+  });
+
   it('counts a product opened from the catalog as a view', async () => {
     mockRouter.params = { ean: EAN };
     mockLookup.mockResolvedValue(found(limo));

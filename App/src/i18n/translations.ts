@@ -464,6 +464,20 @@ const de = {
   'filter.operator.eq': 'genau',
   'filter.saved': 'Regel gespeichert – Katalog wird neu bewertet.',
   'filter.saveFailed': 'Regel konnte nicht gespeichert werden.',
+  'allergen.gluten': 'Gluten',
+  'allergen.crustaceans': 'Krebstiere',
+  'allergen.eggs': 'Eier',
+  'allergen.fish': 'Fisch',
+  'allergen.peanuts': 'Erdnüsse',
+  'allergen.soybeans': 'Soja',
+  'allergen.milk': 'Milch',
+  'allergen.nuts': 'Schalenfrüchte (Nüsse)',
+  'allergen.celery': 'Sellerie',
+  'allergen.mustard': 'Senf',
+  'allergen.sesame': 'Sesam',
+  'allergen.sulphites': 'Schwefeldioxid und Sulfite',
+  'allergen.lupin': 'Lupinen',
+  'allergen.molluscs': 'Weichtiere',
 };
 
 type Translations = typeof de;
@@ -912,6 +926,20 @@ const en: Translations = {
   'filter.operator.eq': 'exactly',
   'filter.saved': 'Rule saved – the catalog is being re-rated.',
   'filter.saveFailed': 'The rule could not be saved.',
+  'allergen.gluten': 'Gluten',
+  'allergen.crustaceans': 'Crustaceans',
+  'allergen.eggs': 'Eggs',
+  'allergen.fish': 'Fish',
+  'allergen.peanuts': 'Peanuts',
+  'allergen.soybeans': 'Soy',
+  'allergen.milk': 'Milk',
+  'allergen.nuts': 'Tree nuts',
+  'allergen.celery': 'Celery',
+  'allergen.mustard': 'Mustard',
+  'allergen.sesame': 'Sesame',
+  'allergen.sulphites': 'Sulphur dioxide and sulphites',
+  'allergen.lupin': 'Lupin',
+  'allergen.molluscs': 'Molluscs',
 };
 
 export type TranslationKey = keyof typeof de;

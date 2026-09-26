@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import type { Product } from '../types/Product';
 import { useTranslation, formatNumber, type TranslateFn } from '../i18n/useTranslation';
 import type { SupportedLanguage } from '../i18n/translations';
+import { allergenList } from '../i18n/allergenLabels';
 import { useCatalogStore } from '../store/catalogStore';
 import { displayProductName } from '../domain/product/productName';
 import { useProductDetails, type FoundProduct } from '../features/product/useProductDetails';
@@ -218,13 +219,13 @@ function ProductDetails({
               {product.allergensTags && product.allergensTags.length > 0 ? (
                 <Text style={styles.bodyText}>
                   <Text style={styles.bold}>{t('product.contains')}: </Text>
-                  {product.allergensTags.map(formatTag).join(', ')}
+                  {allergenList(product.allergensTags, t)}
                 </Text>
               ) : null}
               {product.traces ? (
                 <Text style={styles.bodyText}>
                   <Text style={styles.bold}>{t('product.traces')}: </Text>
-                  {product.traces}
+                  {allergenList(product.traces, t)}
                 </Text>
               ) : null}
             </Card>
@@ -386,11 +387,6 @@ function InfoRow({ label, value }: { label: string; value?: string }) {
       <Text style={styles.infoValue}>{value}</Text>
     </View>
   );
-}
-
-function formatTag(tag: string): string {
-  const name = tag.replace(/^[a-z]{2}:/, '').replace(/-/g, ' ');
-  return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 function galleryImages(product: Product, t: TranslateFn) {
