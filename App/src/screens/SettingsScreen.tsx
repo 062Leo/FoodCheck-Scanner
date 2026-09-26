@@ -49,6 +49,7 @@ export default function SettingsScreen() {
   const ruleCount = useFilterStore((s) => s.rules.length);
   const allergenProfile = useAllergenStore((s) => s.profile);
   const allergenStatus = useAllergenStore((s) => s.status);
+  const allergenWarning = useAllergenStore((s) => s.enabled);
   const [offUsername, setOffUsername] = useState<string | null>(null);
   const [showOffSetup, setShowOffSetup] = useState(false);
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
@@ -194,16 +195,39 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
           <ListRow
             icon="warning-outline"
-            title={t('allergenProfile.title')}
+            title={t('allergenWarning.setting')}
             description={
               allergenStatus === 'error'
                 ? t('allergenProfile.loadFailed')
-                : allergenProfile.length > 0
-                  ? allergenProfile.map((allergen) => allergenName(allergen, t)).join(', ')
-                  : t('allergenProfile.none')
+                : t('allergenWarning.settingHint')
             }
-            onPress={() => router.push('/settings/allergens')}
+            end={
+              <Switch
+                value={allergenWarning}
+                onValueChange={(value) => void useAllergenStore.getState().setEnabled(value)}
+                disabled={allergenStatus !== 'ready'}
+                trackColor={{ false: colors.borderStrong, true: colors.accentSubtle }}
+                thumbColor={allergenWarning ? colors.accent : colors.textMuted}
+                accessibilityLabel={t('allergenWarning.setting')}
+                testID="allergen-warning-switch"
+              />
+            }
           />
+          {allergenWarning && (
+            <>
+              <View style={styles.divider} />
+              <ListRow
+                icon="list-outline"
+                title={t('allergenProfile.title')}
+                description={
+                  allergenProfile.length > 0
+                    ? allergenProfile.map((allergen) => allergenName(allergen, t)).join(', ')
+                    : t('allergenProfile.none')
+                }
+                onPress={() => router.push('/settings/allergens')}
+              />
+            </>
+          )}
         </Group>
 
         <Group title={t('settings.language')}>

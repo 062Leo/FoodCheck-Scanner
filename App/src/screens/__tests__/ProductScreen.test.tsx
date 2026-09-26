@@ -58,7 +58,7 @@ describe('ProductScreen', () => {
     mockLookup.mockReset();
     mockLookupLocal.mockReset();
     useFilterStore.setState({ rules: SEEDED_RULES, isInitialized: true });
-    useAllergenStore.setState({ profile: [] });
+    useAllergenStore.setState({ enabled: false, profile: [] });
     await new ProductRepository().saveScan(productRecord({ ean: EAN }));
   });
 
@@ -87,7 +87,7 @@ describe('ProductScreen', () => {
   });
 
   it('warns about allergens from the profile, and only about those', async () => {
-    useAllergenStore.setState({ profile: ['milk', 'celery'] });
+    useAllergenStore.setState({ enabled: true, profile: ['milk', 'celery'] });
     mockLookup.mockResolvedValue(found({ ...limo, allergensTags: ['en:milk', 'en:nuts'] }));
 
     render(<ProductScreen />);
@@ -98,7 +98,7 @@ describe('ProductScreen', () => {
   });
 
   it('says when a product has no allergen information at all', async () => {
-    useAllergenStore.setState({ profile: ['milk'] });
+    useAllergenStore.setState({ enabled: true, profile: ['milk'] });
     mockLookup.mockResolvedValue(found(limo));
 
     render(<ProductScreen />);
@@ -107,8 +107,19 @@ describe('ProductScreen', () => {
     expect(screen.queryByTestId('allergen-warning')).toBeNull();
   });
 
+  it('shows nothing about allergens while the warning is switched off', async () => {
+    useAllergenStore.setState({ enabled: false, profile: ['milk'] });
+    mockLookup.mockResolvedValue(found({ ...limo, allergensTags: ['en:milk'] }));
+
+    render(<ProductScreen />);
+
+    await screen.findByText('Zitronenlimo');
+    expect(screen.queryByTestId('allergen-warning')).toBeNull();
+    expect(screen.queryByTestId('allergen-no-data')).toBeNull();
+  });
+
   it('shows no allergen warning without a matching profile entry', async () => {
-    useAllergenStore.setState({ profile: ['celery'] });
+    useAllergenStore.setState({ enabled: true, profile: ['celery'] });
     mockLookup.mockResolvedValue(found({ ...limo, allergensTags: ['en:milk'] }));
 
     render(<ProductScreen />);

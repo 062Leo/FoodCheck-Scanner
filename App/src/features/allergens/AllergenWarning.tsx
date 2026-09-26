@@ -8,12 +8,12 @@ import {
   matchAllergens,
   type AllergenMatch,
 } from '../../domain/allergens/allergenProfile';
-import { useAllergenStore } from '../../store/allergenStore';
+import { selectActiveProfile, useAllergenStore } from '../../store/allergenStore';
 import { colors, radius, spacing, typography } from '../../ui/theme';
 
 /** Allergens from the user's profile that the product declares. */
 export function useAllergenMatch(product: Product): AllergenMatch {
-  const profile = useAllergenStore((s) => s.profile);
+  const profile = useAllergenStore(selectActiveProfile);
   return matchAllergens(product, profile);
 }
 

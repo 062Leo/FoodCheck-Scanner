@@ -1,4 +1,4 @@
-import { useAllergenStore } from '../allergenStore';
+import { selectActiveProfile, useAllergenStore } from '../allergenStore';
 import * as DatabaseService from '../../infrastructure/db/DatabaseService';
 import { useTestDatabase } from '../../testing/testDatabase';
 
@@ -9,7 +9,7 @@ describe('allergenStore', () => {
 
   beforeEach(async () => {
     jest.restoreAllMocks();
-    useAllergenStore.setState({ profile: [], status: 'loading' });
+    useAllergenStore.setState({ enabled: false, profile: [], status: 'loading' });
     await useAllergenStore.getState().loadProfile();
   });
 
@@ -59,5 +59,19 @@ describe('allergenStore', () => {
     expect(await DatabaseService.getMetaValue(DatabaseService.META_ALLERGEN_PROFILE)).toBe(
       '["milk"]'
     );
+  });
+
+  it('is off by default and warns about nothing until switched on', async () => {
+    await useAllergenStore.getState().toggle('milk');
+
+    expect(useAllergenStore.getState().enabled).toBe(false);
+    expect(selectActiveProfile(useAllergenStore.getState())).toEqual([]);
+
+    expect(await useAllergenStore.getState().setEnabled(true)).toBe(true);
+    useAllergenStore.setState({ enabled: false });
+    await useAllergenStore.getState().loadProfile();
+
+    expect(useAllergenStore.getState().enabled).toBe(true);
+    expect(selectActiveProfile(useAllergenStore.getState())).toEqual(['milk']);
   });
 });

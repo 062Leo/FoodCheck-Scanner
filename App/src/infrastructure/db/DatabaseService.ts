@@ -53,6 +53,8 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
 
 /** The user's allergen profile (JSON list of EU allergen ids). */
 export const META_ALLERGEN_PROFILE = 'allergen_profile';
+/** 'true' when the allergen warning is switched on (off by default). */
+export const META_ALLERGEN_WARNING = 'allergen_warning_enabled';
 
 export async function getMetaValue(key: string): Promise<string | null> {
   const database = await getDatabase();

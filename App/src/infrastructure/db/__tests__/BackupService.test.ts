@@ -15,6 +15,7 @@ import {
   getMetaValue,
   setMetaValue,
   META_ALLERGEN_PROFILE,
+  META_ALLERGEN_WARNING,
 } from '../DatabaseService';
 import { ProductRepository } from '../ProductRepository';
 import { productRecord } from '../../../testing/testDatabase';
@@ -111,10 +112,12 @@ describe('BackupService with real files', () => {
   it('keeps the allergen profile when the backup has none', async () => {
     const backupUri = await BackupService.createBackup();
     await setMetaValue(META_ALLERGEN_PROFILE, '["milk"]');
+    await setMetaValue(META_ALLERGEN_WARNING, 'true');
 
     await BackupService.restoreFromUri(backupUri);
 
     expect(await getMetaValue(META_ALLERGEN_PROFILE)).toBe('["milk"]');
+    expect(await getMetaValue(META_ALLERGEN_WARNING)).toBe('true');
   });
 
   it('takes the allergen profile from the backup when it has one', async () => {

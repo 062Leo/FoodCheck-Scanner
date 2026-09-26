@@ -64,7 +64,7 @@ describe('ScannerScreen', () => {
     mockRequestPermission.mockReset();
     mockPermission.current = { granted: true, canAskAgain: true };
     useFilterStore.setState({ rules: SEEDED_RULES, isInitialized: true });
-    useAllergenStore.setState({ profile: [] });
+    useAllergenStore.setState({ enabled: false, profile: [] });
     mockLookup.mockResolvedValue({
       status: 'found',
       product,
@@ -94,7 +94,7 @@ describe('ScannerScreen', () => {
   });
 
   it('warns on the scan card about allergens from the profile', async () => {
-    useAllergenStore.setState({ profile: ['gluten', 'milk'] });
+    useAllergenStore.setState({ enabled: true, profile: ['gluten', 'milk'] });
     const withAllergens = { ...product, allergensTags: ['en:gluten'], traces: 'en:milk' };
     mockLookup.mockResolvedValue({
       status: 'found',
@@ -118,7 +118,7 @@ describe('ScannerScreen', () => {
   });
 
   it('does not vibrate "all good" for an OK product with a profile allergen', async () => {
-    useAllergenStore.setState({ profile: ['milk'] });
+    useAllergenStore.setState({ enabled: true, profile: ['milk'] });
     const water = {
       ean: EAN,
       name: 'Milchbrötchen',

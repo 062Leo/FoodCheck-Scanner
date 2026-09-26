@@ -10,6 +10,7 @@ import {
   getMetaValue,
   initDatabase,
   META_ALLERGEN_PROFILE,
+  META_ALLERGEN_WARNING,
   resetDatabaseState,
   setMetaValue,
 } from './DatabaseService';
@@ -29,7 +30,7 @@ const DEVICE_META_KEYS = [META_BACKUP_URI, META_AUTO_BACKUP, META_LAST_BACKUP];
  * Kept when the restored file does not have them, e.g. a backup made before the allergen
  * profile existed must not silently switch the allergen warnings off.
  */
-const KEEP_IF_MISSING_META_KEYS = [META_ALLERGEN_PROFILE];
+const KEEP_IF_MISSING_META_KEYS = [META_ALLERGEN_PROFILE, META_ALLERGEN_WARNING];
 
 /** Base64 of "SQLite format 3", the first 15 bytes of every SQLite database file. */
 const SQLITE_HEADER_BASE64 = 'U1FMaXRlIGZvcm1hdCAz';

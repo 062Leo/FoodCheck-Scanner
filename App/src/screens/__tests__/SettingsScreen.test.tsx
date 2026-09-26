@@ -4,6 +4,7 @@ import { mockRouter } from '../../testing/screenMocks';
 import { useTestDatabase } from '../../testing/testDatabase';
 import { useFilterStore } from '../../store/filterStore';
 import { useLanguageStore } from '../../store/languageStore';
+import { useAllergenStore } from '../../store/allergenStore';
 import { SEEDED_RULES } from '../../domain/analysis/__fixtures__/goldenRuleSets';
 import SettingsScreen from '../SettingsScreen';
 
@@ -57,5 +58,18 @@ describe('SettingsScreen', () => {
 
     expect(await screen.findByText(/nur unter Android/)).toBeTruthy();
     expect(screen.queryByText('Kein Ordner gewählt')).toBeNull();
+  });
+
+  it('offers the allergen list only when the warning is switched on', async () => {
+    await useAllergenStore.getState().loadProfile();
+    render(<SettingsScreen />);
+
+    expect(await screen.findByText('Allergen-Warnung')).toBeTruthy();
+    expect(screen.queryByText('Meine Allergene')).toBeNull();
+
+    fireEvent(screen.getByTestId('allergen-warning-switch'), 'valueChange', true);
+
+    expect(await screen.findByText('Meine Allergene')).toBeTruthy();
+    expect(useAllergenStore.getState().enabled).toBe(true);
   });
 });

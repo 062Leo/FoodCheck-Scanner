@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { hasAllergenMatch, matchAllergens } from '../../domain/allergens/allergenProfile';
-import { useAllergenStore } from '../../store/allergenStore';
+import { selectActiveProfile, useAllergenStore } from '../../store/allergenStore';
 import { normalizeBarcode } from '../../domain/barcode/barcode';
 import {
   ProductLookupService,
@@ -26,7 +26,9 @@ function feedback(result: LookupResult): void {
   // A product with an allergen from the profile never gets the "all good" vibration.
   const allergen =
     result.status === 'found' &&
-    hasAllergenMatch(matchAllergens(result.product, useAllergenStore.getState().profile));
+    hasAllergenMatch(
+      matchAllergens(result.product, selectActiveProfile(useAllergenStore.getState()))
+    );
   const type =
     result.status !== 'found'
       ? Haptics.NotificationFeedbackType.Error

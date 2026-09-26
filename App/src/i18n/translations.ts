@@ -502,6 +502,8 @@ const de = {
   'allergenWarning.noData': 'Keine Allergenangaben bei Open Food Facts – bitte Verpackung prüfen.',
   'allergenProfile.loadFailed':
     'Deine Allergenauswahl konnte nicht geladen werden. Warnungen sind deshalb aus.',
+  'allergenWarning.setting': 'Allergen-Warnung',
+  'allergenWarning.settingHint': 'Warnt beim Scannen vor Allergenen aus deiner Liste',
 };
 
 type Translations = typeof de;
@@ -988,6 +990,8 @@ const en: Translations = {
   'allergenWarning.noData':
     'No allergen information on Open Food Facts – please check the package.',
   'allergenProfile.loadFailed': 'Your allergen selection could not be loaded, so warnings are off.',
+  'allergenWarning.setting': 'Allergen warning',
+  'allergenWarning.settingHint': 'Warns about allergens from your list when scanning',
 };
 
 export type TranslationKey = keyof typeof de;

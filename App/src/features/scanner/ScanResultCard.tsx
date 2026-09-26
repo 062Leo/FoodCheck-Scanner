@@ -12,7 +12,7 @@ import {
   type EuAllergen,
 } from '../../domain/allergens/allergenProfile';
 import { allergenAnnouncement } from '../allergens/AllergenWarning';
-import { useAllergenStore } from '../../store/allergenStore';
+import { selectActiveProfile, useAllergenStore } from '../../store/allergenStore';
 
 /** Text read out by screen readers when a scan result arrives. */
 export function scanCardAnnouncement(
@@ -56,7 +56,7 @@ export function ScanResultCard({
   onRetry: () => void;
   onClose: () => void;
 }) {
-  const allergenProfile = useAllergenStore((s) => s.profile);
+  const allergenProfile = useAllergenStore(selectActiveProfile);
 
   if (card.phase === 'loading') {
     return (
