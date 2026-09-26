@@ -18,8 +18,12 @@ export class ScanGate {
    * `explicit` (manual entry, retry) skips the repeat protection.
    */
   tryAcquire(code: string, now: number, explicit = false): boolean {
+    if (!explicit && code === this.lastCode && now < this.ignoreUntil) {
+      // Still in view: keep ignoring it for as long as the camera keeps seeing it.
+      this.ignoreUntil = now + this.repeatDelayMs;
+      return false;
+    }
     if (this.busy) return false;
-    if (!explicit && code === this.lastCode && now < this.ignoreUntil) return false;
     this.busy = true;
     this.lastCode = code;
     this.ignoreUntil = now + this.repeatDelayMs;
@@ -32,8 +36,15 @@ export class ScanGate {
     this.ignoreUntil = Math.max(this.ignoreUntil, now + this.repeatDelayMs);
   }
 
-  /** The user closed the result: allow the same code again after a short pause. */
+  /**
+   * The user closed the result: the same code is accepted again once it has been out
+   * of view for `pauseMs` (detections while it stays in view extend the pause).
+   */
   dismiss(now: number, pauseMs = 1500): void {
     this.ignoreUntil = now + pauseMs;
+  }
+
+  get isBusy(): boolean {
+    return this.busy;
   }
 }

@@ -441,7 +441,7 @@ const de = {
   'scanner.errorResult': 'Laden fehlgeschlagen.',
   'scanner.cardA11y': '{{name}}: {{status}}. {{reason}}',
   'manualEntry.title': 'Barcode eingeben',
-  'manualEntry.hint': 'Die 8 oder 13 Ziffern unter dem Strichcode',
+  'manualEntry.hint': 'Die 8, 12 oder 13 Ziffern unter dem Strichcode',
   'manualEntry.invalid': 'Ungültiger Barcode – bitte Ziffern prüfen.',
   'manualEntry.submit': 'Suchen',
   'manualEntry.cancel': 'Abbrechen',
@@ -490,6 +490,7 @@ const de = {
   'off.targetHint': 'Konto auf {{host}}',
   'a11y.showPassword': 'Passwort anzeigen',
   'a11y.hidePassword': 'Passwort verbergen',
+  'common.loading': 'Wird geladen',
 };
 
 type Translations = typeof de;
@@ -917,7 +918,7 @@ const en: Translations = {
   'scanner.errorResult': 'Loading failed.',
   'scanner.cardA11y': '{{name}}: {{status}}. {{reason}}',
   'manualEntry.title': 'Enter barcode',
-  'manualEntry.hint': 'The 8 or 13 digits below the barcode',
+  'manualEntry.hint': 'The 8, 12 or 13 digits below the barcode',
   'manualEntry.invalid': 'Invalid barcode – please check the digits.',
   'manualEntry.submit': 'Look up',
   'manualEntry.cancel': 'Cancel',
@@ -964,6 +965,7 @@ const en: Translations = {
   'off.targetHint': 'Account on {{host}}',
   'a11y.showPassword': 'Show password',
   'a11y.hidePassword': 'Hide password',
+  'common.loading': 'Loading',
 };
 
 export type TranslationKey = keyof typeof de;

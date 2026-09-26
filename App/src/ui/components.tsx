@@ -214,11 +214,18 @@ export function EmptyState({
   message?: string;
   action?: ReactNode;
 }) {
+  // Only the text is grouped for screen readers; the action stays separately focusable.
   return (
-    <View style={styles.empty} accessible accessibilityLabel={[title, message].join('. ')}>
-      <Ionicons name={icon} size={48} color={colors.textMuted} />
-      <Text style={styles.emptyTitle}>{title}</Text>
-      {message ? <Text style={styles.emptyMessage}>{message}</Text> : null}
+    <View style={styles.empty}>
+      <View
+        style={styles.emptyText}
+        accessible
+        accessibilityLabel={[title, message].filter(Boolean).join('. ')}
+      >
+        <Ionicons name={icon} size={48} color={colors.textMuted} />
+        <Text style={styles.emptyTitle}>{title}</Text>
+        {message ? <Text style={styles.emptyMessage}>{message}</Text> : null}
+      </View>
       {action ? <View style={styles.emptyAction}>{action}</View> : null}
     </View>
   );
@@ -294,6 +301,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxl,
     gap: spacing.sm,
   },
+  emptyText: { alignItems: 'center', gap: spacing.sm },
   emptyTitle: { ...typography.subtitle, color: colors.text, textAlign: 'center' },
   emptyMessage: { ...typography.body, color: colors.textMuted, textAlign: 'center' },
   emptyAction: { marginTop: spacing.md },

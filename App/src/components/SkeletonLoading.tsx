@@ -3,7 +3,7 @@ import { AccessibilityInfo, Animated, StyleSheet, View, type DimensionValue } fr
 import { colors, radius, spacing } from '../ui/theme';
 
 /** Placeholder shaped like the product screen while data loads. One shared pulse. */
-export function SkeletonLoadingScreen() {
+export function SkeletonLoadingScreen({ label }: { label?: string }) {
   const pulse = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export function SkeletonLoadingScreen() {
   );
 
   return (
-    <View style={styles.container} accessibilityRole="progressbar" accessibilityLabel="…">
+    <View style={styles.container} accessibilityRole="progressbar" accessibilityLabel={label}>
       <View style={styles.row}>
         {block(72, 72)}
         <View style={styles.column}>

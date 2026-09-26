@@ -1,10 +1,12 @@
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo';
 
-/** Offline when there is no connection or the internet is known to be unreachable. */
-export function isOnlineState(
-  state: Pick<NetInfoState, 'isConnected' | 'isInternetReachable'>
-): boolean {
-  return state.isConnected !== false && state.isInternetReachable !== false;
+/**
+ * Offline only when the device has no network at all. NetInfo's reachability probe
+ * (a Google endpoint) can fail on networks where Open Food Facts is reachable, so it
+ * does not stop requests; they have a timeout instead.
+ */
+export function isOnlineState(state: Pick<NetInfoState, 'isConnected'>): boolean {
+  return state.isConnected !== false;
 }
 
 export async function isOnline(): Promise<boolean> {

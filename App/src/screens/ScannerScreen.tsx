@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '../i18n/useTranslation';
 import { subscribeToConnectivity } from '../infrastructure/network/connectivity';
-import { useScanSession } from '../features/scanner/useScanSession';
-import { ScanResultCard } from '../features/scanner/ScanResultCard';
+import { useScanSession, type ScanCard } from '../features/scanner/useScanSession';
+import { ScanResultCard, scanCardAnnouncement } from '../features/scanner/ScanResultCard';
 import { ManualEntrySheet } from '../features/scanner/ManualEntrySheet';
 import { Button, EmptyState, IconButton } from '../ui/components';
 import { colors, radius, spacing, typography } from '../ui/theme';
@@ -24,7 +24,8 @@ export default function ScannerScreen() {
   const [torch, setTorch] = useState(false);
   const [offline, setOffline] = useState(false);
   const [manualEntry, setManualEntry] = useState(false);
-  const { card, onBarcode, submitManual, dismiss, retry } = useScanSession();
+  const announce = useCallback((scanCard: ScanCard) => scanCardAnnouncement(scanCard, t), [t]);
+  const { card, onBarcode, submitManual, dismiss, retry } = useScanSession(announce);
 
   useFocusEffect(
     useCallback(() => {

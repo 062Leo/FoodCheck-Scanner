@@ -9,7 +9,7 @@ import { productFromRecord } from './ProductLookupService';
  * Bump when the rating logic changes in a way that alters results, so stored
  * catalog ratings are recomputed on the next start.
  */
-export const RATING_LOGIC_VERSION = 2;
+export const RATING_LOGIC_VERSION = 3;
 
 const META_RATING_FINGERPRINT = 'rating_fingerprint';
 const RATING_BATCH_SIZE = 25;
@@ -42,7 +42,30 @@ export function ratingFingerprint(rules: FilterRule[]): string {
  * rules and rating logic.
  */
 export class CatalogRatingService {
+  private queue: Promise<unknown> = Promise.resolve();
+  private generation = 0;
+  private pendingForce = false;
+
   constructor(private readonly repository = new ProductRepository()) {}
+
+  /**
+   * Runs re-ratings one after another. Requests arriving while one runs are merged:
+   * only the latest runs, with the rules current at that moment, so quick successive
+   * rule changes cannot overtake each other and leave wrong traffic lights.
+   */
+  schedule(getRules: () => FilterRule[], force: boolean): Promise<number> {
+    const generation = ++this.generation;
+    this.pendingForce = this.pendingForce || force;
+    const run = this.queue.then(async () => {
+      if (generation !== this.generation) return 0;
+      const runForced = this.pendingForce;
+      this.pendingForce = false;
+      const rules = getRules();
+      return runForced ? this.rerateAll(rules) : this.rerateIfOutdated(rules);
+    });
+    this.queue = run.catch(() => 0);
+    return run;
+  }
 
   /** Re-rates every stored product. Returns the number of changed ratings. */
   async rerateAll(rules: FilterRule[]): Promise<number> {

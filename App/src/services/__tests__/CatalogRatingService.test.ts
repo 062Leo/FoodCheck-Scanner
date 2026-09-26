@@ -75,4 +75,14 @@ describe('CatalogRatingService', () => {
     expect(ratingFingerprint(SEEDED_RULES)).toBe(ratingFingerprint([...SEEDED_RULES].reverse()));
     expect(ratingFingerprint(SEEDED_RULES)).not.toBe(ratingFingerprint(changed));
   });
+
+  it('serialises quick rule changes so the latest rules win', async () => {
+    let rules = CUSTOMISED_RULES;
+    const first = service.schedule(() => rules, true);
+    rules = SEEDED_RULES;
+    const second = service.schedule(() => rules, true);
+    await Promise.all([first, second]);
+
+    expect(await ratings()).toEqual({ '4000000000001': 'Unknown', '4000000000002': 'OK' });
+  });
 });

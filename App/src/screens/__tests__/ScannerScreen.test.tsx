@@ -159,4 +159,21 @@ describe('ScannerScreen', () => {
     expect(mockRequestPermission).not.toHaveBeenCalled();
     expect(screen.getByText('Barcode eingeben')).toBeTruthy();
   });
+
+  it('looks up a typed barcode after a running camera lookup has finished', async () => {
+    let finishFirst: (value: unknown) => void = () => {};
+    mockLookup.mockImplementationOnce(() => new Promise((resolve) => (finishFirst = resolve)));
+    render(<ScannerScreen />);
+
+    scan('96385074');
+    fireEvent.press(screen.getByTestId('manual-entry-button'));
+    const input = await screen.findByTestId('manual-ean-input');
+    fireEvent.changeText(input, EAN);
+    fireEvent(input, 'submitEditing');
+    expect(mockLookup).toHaveBeenCalledTimes(1);
+
+    await act(async () => finishFirst({ status: 'not-found' }));
+
+    await waitFor(() => expect(mockLookup).toHaveBeenLastCalledWith(EAN, 'scan', SEEDED_RULES));
+  });
 });

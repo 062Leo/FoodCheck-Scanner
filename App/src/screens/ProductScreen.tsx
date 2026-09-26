@@ -49,7 +49,7 @@ export default function ProductScreen() {
     return (
       <View style={styles.container}>
         <ScreenHeader onBack={() => router.back()} backLabel={t('common.back')} />
-        <SkeletonLoadingScreen />
+        <SkeletonLoadingScreen label={t('common.loading')} />
       </View>
     );
   }

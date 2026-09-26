@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { normalizeBarcode } from '../../domain/barcode/barcode';
 import {
@@ -33,9 +34,11 @@ function feedback(result: LookupResult): void {
  * Scanning in a row: each accepted barcode is looked up and shown as a card on the
  * scanner; the camera keeps running so the next product can be scanned right away.
  */
-export function useScanSession() {
+export function useScanSession(announce?: (card: ScanCard) => string) {
   const [card, setCard] = useState<ScanCard | null>(null);
   const gate = useRef(new ScanGate()).current;
+  /** A barcode typed in while another lookup was still running. */
+  const pendingManual = useRef<string | null>(null);
 
   const lookup = useCallback(
     async (ean: string) => {
@@ -48,17 +51,24 @@ export function useScanSession() {
         .lookup(ean, 'scan', useFilterStore.getState().rules)
         .catch((): LookupResult => ({ status: 'error' }));
 
-      setCard(
+      const next: ScanCard =
         result.status === 'found'
           ? { ean, phase: 'ready', data: result }
-          : { ean, phase: 'failed', reason: result.status }
-      );
+          : { ean, phase: 'failed', reason: result.status };
+      setCard(next);
       feedback(result);
+      if (announce) AccessibilityInfo.announceForAccessibility(announce(next));
       gate.release(Date.now());
       void useCatalogStore.getState().loadAll();
+
+      const queued = pendingManual.current;
+      pendingManual.current = null;
+      if (queued && gate.tryAcquire(queued, Date.now(), true)) void lookupRef.current(queued);
     },
-    [gate]
+    [gate, announce]
   );
+  const lookupRef = useRef(lookup);
+  lookupRef.current = lookup;
 
   /** Called for every camera detection; ignores invalid codes and repeats. */
   const onBarcode = useCallback(
@@ -76,6 +86,7 @@ export function useScanSession() {
       const ean = normalizeBarcode(raw);
       if (!ean) return false;
       if (gate.tryAcquire(ean, Date.now(), true)) void lookup(ean);
+      else pendingManual.current = ean; // runs as soon as the current lookup is done
       return true;
     },
     [gate, lookup]

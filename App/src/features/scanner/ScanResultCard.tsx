@@ -7,6 +7,24 @@ import { STATUS_ICONS, reasonText, statusLabel } from '../../ui/status';
 import { colors, radius, spacing, typography } from '../../ui/theme';
 import type { ScanCard } from './useScanSession';
 
+/** Text read out by screen readers when a scan result arrives. */
+export function scanCardAnnouncement(card: ScanCard, t: TranslateFn): string {
+  if (card.phase === 'loading') return t('scanner.searching', { ean: card.ean });
+  if (card.phase === 'failed') {
+    return card.reason === 'offline'
+      ? t('scanner.offlineResult')
+      : card.reason === 'not-found'
+        ? t('scanner.notFoundResult')
+        : t('scanner.errorResult');
+  }
+  const { product, rating } = card.data;
+  return t('scanner.cardA11y', {
+    name: displayProductName(product.name, t('product.unknown')),
+    status: statusLabel(rating.status, t),
+    reason: rating.reasons.length > 0 ? reasonText(rating.reasons[0], t) : '',
+  });
+}
+
 /** Result of the last scan, shown on top of the camera. */
 export function ScanResultCard({
   card,
@@ -25,7 +43,7 @@ export function ScanResultCard({
 }) {
   if (card.phase === 'loading') {
     return (
-      <View style={styles.card} accessibilityLiveRegion="polite" testID="scan-card">
+      <View style={styles.card} testID="scan-card">
         <View style={styles.row}>
           <ActivityIndicator color={colors.accent} />
           <Text style={styles.body}>{t('scanner.searching', { ean: card.ean })}</Text>
@@ -42,7 +60,7 @@ export function ScanResultCard({
           ? t('scanner.notFoundResult')
           : t('scanner.errorResult');
     return (
-      <View style={styles.card} accessibilityLiveRegion="polite" testID="scan-card">
+      <View style={styles.card} testID="scan-card">
         <View style={styles.row}>
           <Ionicons name="help-circle" size={28} color={colors.textMuted} />
           <View style={styles.flex}>
@@ -68,7 +86,6 @@ export function ScanResultCard({
   return (
     <View
       style={[styles.card, styles.readyCard, { borderLeftColor: colors.status[status] }]}
-      accessibilityLiveRegion="polite"
       testID="scan-card"
     >
       <Pressable
