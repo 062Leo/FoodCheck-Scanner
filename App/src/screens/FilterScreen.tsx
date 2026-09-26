@@ -160,6 +160,8 @@ export default function FilterScreen() {
         sections={sections}
         keyExtractor={(rule) => String(rule.id)}
         stickySectionHeadersEnabled={false}
+        // Header and footer of every collapsed category fit into the first render.
+        initialNumToRender={48}
         renderSectionHeader={({ section }) => (
           <Pressable
             onPress={() => toggle(section.key)}
