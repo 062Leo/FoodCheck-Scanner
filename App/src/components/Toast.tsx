@@ -9,6 +9,8 @@ interface ToastProps {
   type: 'success' | 'error' | 'info';
   duration?: number;
   onDismiss?: () => void;
+  /** Optional action such as "Undo". */
+  action?: { label: string; onPress: () => void };
 }
 
 const ICONS = {
@@ -19,7 +21,7 @@ const ICONS = {
 
 const ACCENTS = { success: colors.accent, error: colors.danger, info: colors.info };
 
-export function Toast({ message, type, duration = 3500, onDismiss }: ToastProps) {
+export function Toast({ message, type, duration = 3500, onDismiss, action }: ToastProps) {
   const insets = useSafeAreaInsets();
   const slide = useRef(new Animated.Value(0)).current;
   const onDismissRef = useRef(onDismiss);
@@ -50,6 +52,19 @@ export function Toast({ message, type, duration = 3500, onDismiss }: ToastProps)
       >
         <Ionicons name={ICONS[type]} size={22} color={ACCENTS[type]} />
         <Text style={styles.message}>{message}</Text>
+        {action ? (
+          <Pressable
+            onPress={() => {
+              action.onPress();
+              onDismissRef.current?.();
+            }}
+            accessibilityRole="button"
+            hitSlop={8}
+            style={styles.action}
+          >
+            <Text style={styles.actionText}>{action.label}</Text>
+          </Pressable>
+        ) : null}
       </Pressable>
     </Animated.View>
   );
@@ -68,4 +83,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   message: { ...typography.body, color: colors.text, flex: 1 },
+  action: { minHeight: 40, justifyContent: 'center', paddingHorizontal: spacing.sm },
+  actionText: { ...typography.bodyStrong, color: colors.accent },
 });

@@ -6,12 +6,14 @@ export const mockRouter = {
   push: jest.fn(),
   replace: jest.fn(),
   back: jest.fn(),
+  navigate: jest.fn(),
   canGoBack: jest.fn(() => true),
   params: {} as Record<string, string>,
   reset() {
     this.push.mockReset();
     this.replace.mockReset();
     this.back.mockReset();
+    this.navigate.mockReset();
     this.canGoBack.mockReset().mockReturnValue(true);
     this.params = {};
   },

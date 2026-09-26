@@ -180,6 +180,29 @@ export class ProductRepository {
     }
   }
 
+  /** Puts back a deleted product exactly as it was (same id, counters and edit markers). */
+  async restore(product: ProductRecord): Promise<void> {
+    try {
+      const database = await getDatabase();
+      await database.runAsync(
+        `
+          INSERT OR REPLACE INTO products (id, ${INSERT_COLUMNS}, edited_at, edited_fields)
+          VALUES ($id, ${INSERT_VALUES}, $edited_at, $edited_fields);
+        `,
+        {
+          ...toParams(product),
+          $id: product.id ?? null,
+          $edited_at: product.edited_at ?? null,
+          $edited_fields: product.edited_fields ?? null,
+        }
+      );
+    } catch (error) {
+      throw new Error(`Failed to restore product ${product.ean}: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
+    }
+  }
+
   async deleteByEan(ean: string): Promise<void> {
     try {
       const database = await getDatabase();
