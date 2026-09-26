@@ -6,8 +6,12 @@ import { Button, IconButton } from '../../ui/components';
 import { STATUS_ICONS, reasonText, statusLabel } from '../../ui/status';
 import { colors, radius, spacing, typography } from '../../ui/theme';
 import type { ScanCard } from './useScanSession';
-import { matchAllergens, type EuAllergen } from '../../domain/allergens/allergenProfile';
-import { allergenWarningLines } from '../allergens/AllergenWarning';
+import {
+  hasAllergenMatch,
+  matchAllergens,
+  type EuAllergen,
+} from '../../domain/allergens/allergenProfile';
+import { allergenAnnouncement } from '../allergens/AllergenWarning';
 import { useAllergenStore } from '../../store/allergenStore';
 
 /** Text read out by screen readers when a scan result arrives. */
@@ -25,15 +29,15 @@ export function scanCardAnnouncement(
         : t('scanner.errorResult');
   }
   const { product, rating } = card.data;
-  const allergens = allergenWarningLines(matchAllergens(product, allergenProfile), t);
-  return [
-    t('scanner.cardA11y', {
-      name: displayProductName(product.name, t('product.unknown')),
-      status: statusLabel(rating.status, t),
-      reason: rating.reasons.length > 0 ? reasonText(rating.reasons[0], t) : '',
-    }),
-    ...allergens,
-  ].join('. ');
+  const summary = t('scanner.cardA11y', {
+    name: displayProductName(product.name, t('product.unknown')),
+    status: statusLabel(rating.status, t),
+    reason: rating.reasons.length > 0 ? reasonText(rating.reasons[0], t) : '',
+  })
+    .trim()
+    .replace(/[.\s]+$/, '');
+  // An allergen from the user's profile matters more than the rating, so it comes first.
+  return [...allergenAnnouncement(matchAllergens(product, allergenProfile), t), summary].join('. ');
 }
 
 /** Result of the last scan, shown on top of the camera. */
@@ -95,7 +99,9 @@ export function ScanResultCard({
   const status = rating.status;
   const name = displayProductName(product.name, t('product.unknown'));
   const reason = rating.reasons.length > 0 ? reasonText(rating.reasons[0], t) : '';
-  const allergens = allergenWarningLines(matchAllergens(product, allergenProfile), t);
+  const allergenMatch = matchAllergens(product, allergenProfile);
+  const allergenLines = allergenAnnouncement(allergenMatch, t);
+  const allergenAlert = hasAllergenMatch(allergenMatch);
 
   return (
     <View
@@ -111,6 +117,16 @@ export function ScanResultCard({
       >
         <Ionicons name={STATUS_ICONS[status]} size={40} color={colors.status[status]} />
         <View style={styles.flex}>
+          {allergenLines.map((line) => (
+            <View key={line} style={styles.allergen} testID="scan-card-allergen">
+              <Ionicons
+                name={allergenAlert ? 'warning' : 'information-circle-outline'}
+                size={20}
+                color={allergenAlert ? colors.danger : colors.textSecondary}
+              />
+              <Text style={allergenAlert ? styles.allergenText : styles.allergenNote}>{line}</Text>
+            </View>
+          ))}
           <Text style={[styles.status, { color: colors.status[status] }]}>
             {statusLabel(status, t)}
           </Text>
@@ -122,14 +138,6 @@ export function ScanResultCard({
               {reason}
             </Text>
           ) : null}
-          {allergens.map((line) => (
-            <View key={line} style={styles.allergen} testID="scan-card-allergen">
-              <Ionicons name="warning" size={16} color={colors.danger} />
-              <Text style={styles.allergenText} numberOfLines={2}>
-                {line}
-              </Text>
-            </View>
-          ))}
         </View>
         <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
       </Pressable>
@@ -158,6 +166,7 @@ const styles = StyleSheet.create({
   body: { ...typography.body, color: colors.text, flexShrink: 1 },
   caption: { ...typography.caption, color: colors.textMuted },
   closeCorner: { position: 'absolute', top: 0, right: 0 },
-  allergen: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
-  allergenText: { ...typography.caption, color: colors.text, fontWeight: '700', flexShrink: 1 },
+  allergen: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
+  allergenText: { ...typography.bodyStrong, color: colors.text, flexShrink: 1 },
+  allergenNote: { ...typography.caption, color: colors.textSecondary, flexShrink: 1 },
 });

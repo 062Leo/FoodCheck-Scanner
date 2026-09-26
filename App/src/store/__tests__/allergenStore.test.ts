@@ -1,4 +1,4 @@
-import { ALLERGEN_PROFILE_KEY, useAllergenStore } from '../allergenStore';
+import { useAllergenStore } from '../allergenStore';
 import * as DatabaseService from '../../infrastructure/db/DatabaseService';
 import { useTestDatabase } from '../../testing/testDatabase';
 
@@ -7,8 +7,10 @@ jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
 describe('allergenStore', () => {
   useTestDatabase();
 
-  beforeEach(() => {
-    useAllergenStore.setState({ profile: [] });
+  beforeEach(async () => {
+    jest.restoreAllMocks();
+    useAllergenStore.setState({ profile: [], status: 'loading' });
+    await useAllergenStore.getState().loadProfile();
   });
 
   it('stores the profile in the database and loads it again', async () => {
@@ -20,16 +22,42 @@ describe('allergenStore', () => {
     await useAllergenStore.getState().loadProfile();
 
     expect(useAllergenStore.getState().profile).toEqual(['gluten']);
-    expect(await DatabaseService.getMetaValue(ALLERGEN_PROFILE_KEY)).toBe('["gluten"]');
+    expect(await DatabaseService.getMetaValue(DatabaseService.META_ALLERGEN_PROFILE)).toBe(
+      '["gluten"]'
+    );
   });
 
-  it('keeps the previous selection when storing fails', async () => {
+  it('applies quick toggles in order without losing one', async () => {
+    const store = useAllergenStore.getState();
+
+    await Promise.all([store.toggle('milk'), store.toggle('eggs'), store.toggle('fish')]);
+
+    expect(useAllergenStore.getState().profile).toEqual(['eggs', 'fish', 'milk']);
+    await useAllergenStore.getState().loadProfile();
+    expect(useAllergenStore.getState().profile).toEqual(['eggs', 'fish', 'milk']);
+  });
+
+  it('shows what is stored when saving fails', async () => {
+    await useAllergenStore.getState().toggle('milk');
     jest.spyOn(DatabaseService, 'setMetaValue').mockRejectedValueOnce(new Error('disk full'));
     jest.spyOn(console, 'error').mockImplementation(() => {});
 
     const ok = await useAllergenStore.getState().toggle('eggs');
 
     expect(ok).toBe(false);
-    expect(useAllergenStore.getState().profile).toEqual([]);
+    expect(useAllergenStore.getState().profile).toEqual(['milk']);
+  });
+
+  it('refuses changes after a failed load, so the stored profile stays intact', async () => {
+    await useAllergenStore.getState().toggle('milk');
+    jest.spyOn(DatabaseService, 'getMetaValue').mockRejectedValueOnce(new Error('locked'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    await useAllergenStore.getState().loadProfile();
+
+    expect(useAllergenStore.getState().status).toBe('error');
+    expect(await useAllergenStore.getState().toggle('eggs')).toBe(false);
+    expect(await DatabaseService.getMetaValue(DatabaseService.META_ALLERGEN_PROFILE)).toBe(
+      '["milk"]'
+    );
   });
 });

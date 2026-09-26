@@ -92,6 +92,8 @@ describe('OpenFoodFactsClient', () => {
               salt_100g: 0.107,
             },
             allergens_tags: ['en:gluten', 'en:nuts'],
+            traces: 'Milch',
+            traces_tags: ['en:milk'],
             ingredients_text: 'Sugar, palm oil',
             ingredients_text_de: 'Zucker, Palmöl',
             ingredients_text_en: 'Sugar, palm oil',
@@ -126,6 +128,8 @@ describe('OpenFoodFactsClient', () => {
         salt100g: 0.107,
       });
       expect(product!.allergensTags).toEqual(['en:gluten', 'en:nuts']);
+      expect(product!.traces).toBe('Milch');
+      expect(product!.tracesTags).toEqual(['en:milk']);
       expect(product!.ingredientsText).toBe('Zucker, Palmöl');
       expect(product!.ingredientsTextDe).toBe('Zucker, Palmöl');
       expect(product!.ingredientsTextEn).toBe('Sugar, palm oil');

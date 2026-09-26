@@ -8,7 +8,14 @@ import * as os from 'os';
 import * as path from 'path';
 
 import { BackupService, BackupError } from '../BackupService';
-import { resetDatabaseState, db, initDatabase } from '../DatabaseService';
+import {
+  resetDatabaseState,
+  db,
+  initDatabase,
+  getMetaValue,
+  setMetaValue,
+  META_ALLERGEN_PROFILE,
+} from '../DatabaseService';
 import { ProductRepository } from '../ProductRepository';
 import { productRecord } from '../../../testing/testDatabase';
 
@@ -99,6 +106,25 @@ describe('BackupService with real files', () => {
 
     expect(await BackupService.getBackupUri()).toBe('file:///other-folder/');
     expect(await BackupService.isAutoBackupEnabled()).toBe(true);
+  });
+
+  it('keeps the allergen profile when the backup has none', async () => {
+    const backupUri = await BackupService.createBackup();
+    await setMetaValue(META_ALLERGEN_PROFILE, '["milk"]');
+
+    await BackupService.restoreFromUri(backupUri);
+
+    expect(await getMetaValue(META_ALLERGEN_PROFILE)).toBe('["milk"]');
+  });
+
+  it('takes the allergen profile from the backup when it has one', async () => {
+    await setMetaValue(META_ALLERGEN_PROFILE, '["gluten"]');
+    const backupUri = await BackupService.createBackup();
+    await setMetaValue(META_ALLERGEN_PROFILE, '["milk"]');
+
+    await BackupService.restoreFromUri(backupUri);
+
+    expect(await getMetaValue(META_ALLERGEN_PROFILE)).toBe('["gluten"]');
   });
 
   it('rejects a file that is not a database and keeps all data', async () => {

@@ -97,6 +97,16 @@ describe('ProductScreen', () => {
     expect(screen.queryByText(/Sellerie/)).toBeNull();
   });
 
+  it('says when a product has no allergen information at all', async () => {
+    useAllergenStore.setState({ profile: ['milk'] });
+    mockLookup.mockResolvedValue(found(limo));
+
+    render(<ProductScreen />);
+
+    expect(await screen.findByTestId('allergen-no-data')).toBeTruthy();
+    expect(screen.queryByTestId('allergen-warning')).toBeNull();
+  });
+
   it('shows no allergen warning without a matching profile entry', async () => {
     useAllergenStore.setState({ profile: ['celery'] });
     mockLookup.mockResolvedValue(found({ ...limo, allergensTags: ['en:milk'] }));

@@ -9,6 +9,7 @@ import {
   deleteMetaValue,
   getMetaValue,
   initDatabase,
+  META_ALLERGEN_PROFILE,
   resetDatabaseState,
   setMetaValue,
 } from './DatabaseService';
@@ -24,6 +25,11 @@ const META_AUTO_BACKUP = 'backup_auto';
 const META_LAST_BACKUP = 'backup_last_at';
 /** Settings of this device that a restored file must not overwrite. */
 const DEVICE_META_KEYS = [META_BACKUP_URI, META_AUTO_BACKUP, META_LAST_BACKUP];
+/**
+ * Kept when the restored file does not have them, e.g. a backup made before the allergen
+ * profile existed must not silently switch the allergen warnings off.
+ */
+const KEEP_IF_MISSING_META_KEYS = [META_ALLERGEN_PROFILE];
 
 /** Base64 of "SQLite format 3", the first 15 bytes of every SQLite database file. */
 const SQLITE_HEADER_BASE64 = 'U1FMaXRlIGZvcm1hdCAz';
@@ -218,6 +224,11 @@ export const BackupService = {
       const value = await metaValue(key);
       if (value !== null) deviceMeta.set(key, value);
     }
+    const currentMeta = new Map<string, string>();
+    for (const key of KEEP_IF_MISSING_META_KEYS) {
+      const value = await metaValue(key);
+      if (value !== null) currentMeta.set(key, value);
+    }
 
     await checkpoint().catch(() => {});
     await FileSystem.deleteAsync(SAFETY_COPY_PATH, { idempotent: true }).catch(() => {});
@@ -235,6 +246,9 @@ export const BackupService = {
       for (const key of DEVICE_META_KEYS) {
         const value = deviceMeta.get(key);
         await (value === undefined ? deleteMetaValue(key) : setMetaValue(key, value));
+      }
+      for (const [key, value] of currentMeta) {
+        if ((await getMetaValue(key)) === null) await setMetaValue(key, value);
       }
     } catch (error) {
       await db?.closeAsync().catch(() => {});

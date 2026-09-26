@@ -74,6 +74,8 @@ export interface Product {
   ecoscoreGrade?: string;
   allergensTags?: string[];
   traces?: string;
+  /** Normalised traces from Open Food Facts, e.g. "en:nuts" (not editable in the app). */
+  tracesTags?: string[];
   additivesTags?: string[];
   categories?: string;
   miscTags?: string[];

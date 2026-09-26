@@ -25,10 +25,10 @@ export default function ScannerScreen() {
   const [torch, setTorch] = useState(false);
   const [offline, setOffline] = useState(false);
   const [manualEntry, setManualEntry] = useState(false);
-  const allergenProfile = useAllergenStore((s) => s.profile);
+  // Read the profile when the result arrives, not when the lookup started.
   const announce = useCallback(
-    (scanCard: ScanCard) => scanCardAnnouncement(scanCard, t, allergenProfile),
-    [t, allergenProfile]
+    (scanCard: ScanCard) => scanCardAnnouncement(scanCard, t, useAllergenStore.getState().profile),
+    [t]
   );
   const { card, onBarcode, submitManual, dismiss, retry } = useScanSession(announce);
 

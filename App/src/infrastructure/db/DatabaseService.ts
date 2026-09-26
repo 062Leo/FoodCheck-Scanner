@@ -51,6 +51,9 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   return db ?? initDatabase();
 }
 
+/** The user's allergen profile (JSON list of EU allergen ids). */
+export const META_ALLERGEN_PROFILE = 'allergen_profile';
+
 export async function getMetaValue(key: string): Promise<string | null> {
   const database = await getDatabase();
   const row = await database.getFirstAsync<{ value: string }>(

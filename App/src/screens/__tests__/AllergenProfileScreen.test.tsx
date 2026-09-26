@@ -10,19 +10,30 @@ jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
 describe('AllergenProfileScreen', () => {
   useTestDatabase();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     useLanguageStore.setState({ language: 'de' });
-    useAllergenStore.setState({ profile: [] });
+    await useAllergenStore.getState().loadProfile();
   });
 
-  it('lists the 14 EU allergens and saves a selection', async () => {
+  it('lists the 14 EU allergens; tapping a row switches it on', async () => {
     render(<AllergenProfileScreen />);
 
     expect(screen.getAllByRole('switch')).toHaveLength(14);
-    fireEvent(screen.getByLabelText('Erdnüsse'), 'valueChange', true);
+    fireEvent.press(screen.getByRole('switch', { name: 'Erdnüsse' }));
 
     await waitFor(() => expect(useAllergenStore.getState().profile).toEqual(['peanuts']));
-    expect(screen.getByLabelText('Erdnüsse').props.value).toBe(true);
+    expect(screen.getByRole('switch', { name: 'Erdnüsse' }).props.accessibilityState).toMatchObject(
+      { checked: true }
+    );
     expect(screen.getByText(/prüfe immer die Verpackung/)).toBeTruthy();
+  });
+
+  it('says when the selection could not be loaded and blocks changes', () => {
+    useAllergenStore.setState({ status: 'error' });
+    render(<AllergenProfileScreen />);
+
+    expect(screen.getByText(/konnte nicht geladen werden/)).toBeTruthy();
+    fireEvent.press(screen.getByRole('switch', { name: 'Milch' }));
+    expect(useAllergenStore.getState().profile).toEqual([]);
   });
 });

@@ -149,6 +149,8 @@ export class ProductNormalizer {
 
       const allergens = p.allergensTags ?? p.allergens_tags;
       if (Array.isArray(allergens)) product.allergensTags = allergens as string[];
+      const traceTags = p.tracesTags ?? p.traces_tags;
+      if (Array.isArray(traceTags)) product.tracesTags = traceTags as string[];
 
       const addTags = p.additivesTags ?? p.additives_tags;
       if (Array.isArray(addTags)) product.additivesTags = addTags as string[];

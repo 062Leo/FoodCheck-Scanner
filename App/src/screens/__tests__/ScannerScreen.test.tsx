@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { mockRouter } from '../../testing/screenMocks';
+import * as Haptics from 'expo-haptics';
 import { useTestDatabase } from '../../testing/testDatabase';
 import { useFilterStore } from '../../store/filterStore';
 import { useAllergenStore } from '../../store/allergenStore';
@@ -110,7 +111,38 @@ describe('ScannerScreen', () => {
 
     expect(await screen.findByText('Enthält Gluten')).toBeTruthy();
     expect(screen.getByText('Kann Spuren enthalten: Milch')).toBeTruthy();
-    expect(screen.getByLabelText(/Enthält Gluten/)).toBeTruthy();
+    // The screen reader hears the allergen before the rating.
+    expect(
+      screen.getByLabelText(/^Enthält Gluten\. Kann Spuren enthalten: Milch\. Instantnudeln/)
+    ).toBeTruthy();
+  });
+
+  it('does not vibrate "all good" for an OK product with a profile allergen', async () => {
+    useAllergenStore.setState({ profile: ['milk'] });
+    const water = {
+      ean: EAN,
+      name: 'Milchbrötchen',
+      ingredientsText: 'Wasser',
+      novaScore: 1 as const,
+    };
+    const withMilk = { ...water, allergensTags: ['en:milk'] };
+    const rating = rateProduct(withMilk, SEEDED_RULES);
+    expect(rating.status).toBe('OK');
+    mockLookup.mockResolvedValue({
+      status: 'found',
+      product: withMilk,
+      rating,
+      record: null,
+      source: 'network',
+      networkFailed: false,
+      isStale: false,
+    });
+    render(<ScannerScreen />);
+
+    scan(EAN);
+
+    expect(await screen.findByText('Enthält Milch')).toBeTruthy();
+    expect(Haptics.notificationAsync).toHaveBeenLastCalledWith('warning');
   });
 
   it('ignores misreads with a wrong check digit', async () => {

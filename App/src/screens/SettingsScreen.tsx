@@ -48,6 +48,7 @@ export default function SettingsScreen() {
   const setLanguage = useLanguageStore((s) => s.setLanguage);
   const ruleCount = useFilterStore((s) => s.rules.length);
   const allergenProfile = useAllergenStore((s) => s.profile);
+  const allergenStatus = useAllergenStore((s) => s.status);
   const [offUsername, setOffUsername] = useState<string | null>(null);
   const [showOffSetup, setShowOffSetup] = useState(false);
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
@@ -195,9 +196,11 @@ export default function SettingsScreen() {
             icon="warning-outline"
             title={t('allergenProfile.title')}
             description={
-              allergenProfile.length > 0
-                ? allergenProfile.map((allergen) => allergenName(allergen, t)).join(', ')
-                : t('allergenProfile.none')
+              allergenStatus === 'error'
+                ? t('allergenProfile.loadFailed')
+                : allergenProfile.length > 0
+                  ? allergenProfile.map((allergen) => allergenName(allergen, t)).join(', ')
+                  : t('allergenProfile.none')
             }
             onPress={() => router.push('/settings/allergens')}
           />
