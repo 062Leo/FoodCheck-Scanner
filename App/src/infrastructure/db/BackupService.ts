@@ -1,264 +1,270 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { StorageAccessFramework } from 'expo-file-system/legacy';
+import * as SQLite from 'expo-sqlite';
+import * as DocumentPicker from 'expo-document-picker';
 import { Platform } from 'react-native';
-import { initDatabase, db, resetDatabaseState } from './DatabaseService';
+import {
+  DATABASE_NAME,
+  db,
+  deleteMetaValue,
+  getMetaValue,
+  initDatabase,
+  resetDatabaseState,
+  setMetaValue,
+} from './DatabaseService';
 
-const DATABASE_NAME = 'foodscanner.db';
-const DB_PATH = `${FileSystem.documentDirectory}SQLite/${DATABASE_NAME}`;
+const DATABASE_DIR = `${FileSystem.documentDirectory}SQLite/`;
+const DB_PATH = `${DATABASE_DIR}${DATABASE_NAME}`;
+const CANDIDATE_NAME = 'restore-candidate.db';
+const CANDIDATE_PATH = `${DATABASE_DIR}${CANDIDATE_NAME}`;
+const SAFETY_COPY_PATH = `${DATABASE_DIR}foodscanner.pre-restore.db`;
+
 const META_BACKUP_URI = 'backup_uri';
 const META_AUTO_BACKUP = 'backup_auto';
 const META_LAST_BACKUP = 'backup_last_at';
+/** Settings of this device that a restored file must not overwrite. */
+const DEVICE_META_KEYS = [META_BACKUP_URI, META_AUTO_BACKUP, META_LAST_BACKUP];
+
+/** Base64 of "SQLite format 3", the first 15 bytes of every SQLite database file. */
+const SQLITE_HEADER_BASE64 = 'U1FMaXRlIGZvcm1hdCAz';
+const AUTO_BACKUP_INTERVAL_HOURS = 24;
+
+export type BackupErrorCode =
+  | 'unsupported-platform'
+  | 'permission-denied'
+  | 'no-directory'
+  | 'no-database'
+  | 'cancelled'
+  | 'not-a-backup'
+  | 'restore-failed';
+
+/** Error with a code the UI translates; `message` is for logs only. */
+export class BackupError extends Error {
+  constructor(
+    public readonly code: BackupErrorCode,
+    message: string = code
+  ) {
+    super(message);
+    this.name = 'BackupError';
+  }
+}
 
 export interface BackupFile {
   name: string;
   uri: string;
 }
 
+async function metaValue(key: string): Promise<string | null> {
+  try {
+    return await getMetaValue(key);
+  } catch {
+    return null;
+  }
+}
+
+async function checkpoint(): Promise<void> {
+  const database = db ?? (await initDatabase());
+  // Moves the write-ahead log into the main file so a file copy is complete.
+  await database.execAsync('PRAGMA wal_checkpoint(TRUNCATE)');
+}
+
+async function deleteDatabaseFiles(path: string): Promise<void> {
+  for (const suffix of ['', '-wal', '-shm']) {
+    await FileSystem.deleteAsync(path + suffix, { idempotent: true }).catch(() => {});
+  }
+}
+
+/** Checks that a file is an SQLite database of this app before anything is replaced. */
+async function assertIsAppDatabase(base64: string): Promise<void> {
+  if (!base64.startsWith(SQLITE_HEADER_BASE64)) {
+    throw new BackupError('not-a-backup', 'File is not an SQLite database');
+  }
+
+  await deleteDatabaseFiles(CANDIDATE_PATH);
+  await FileSystem.writeAsStringAsync(CANDIDATE_PATH, base64, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  let candidate: SQLite.SQLiteDatabase | null = null;
+  try {
+    candidate = await SQLite.openDatabaseAsync(CANDIDATE_NAME);
+    const tables = await candidate.getAllAsync<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('products', 'meta')"
+    );
+    if (tables.length < 2) {
+      throw new BackupError('not-a-backup', 'Database does not contain FoodCheck tables');
+    }
+  } catch (error) {
+    if (error instanceof BackupError) throw error;
+    throw new BackupError('not-a-backup', `Database cannot be read: ${String(error)}`);
+  } finally {
+    await candidate?.closeAsync().catch(() => {});
+    await deleteDatabaseFiles(CANDIDATE_PATH);
+  }
+}
+
 export const BackupService = {
   async getBackupUri(): Promise<string> {
-    await initDatabase();
-    if (!db) return '';
-
-    try {
-      const row = await db.getFirstAsync<{ value: string }>(
-        "SELECT value FROM meta WHERE key = '" + META_BACKUP_URI + "'"
-      );
-      return row?.value || '';
-    } catch {
-      return '';
-    }
+    return (await metaValue(META_BACKUP_URI)) ?? '';
   },
 
   async setBackupUri(uri: string): Promise<void> {
-    await initDatabase();
-    if (!db) return;
+    await setMetaValue(META_BACKUP_URI, uri);
+  },
 
-    await db.runAsync(
-      'INSERT INTO meta (key, value) VALUES ($key, $value) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-      { $key: META_BACKUP_URI, $value: uri }
-    );
+  async isBackupPathConfigured(): Promise<boolean> {
+    return (await BackupService.getBackupUri()).length > 0;
+  },
+
+  /** Human-readable folder name of an Android storage-access URI. */
+  directoryLabel(uri: string): string {
+    return decodeURIComponent(uri.split('%3A').pop()?.split('/')[0] ?? uri) || uri;
   },
 
   async pickBackupDirectory(): Promise<string> {
     if (Platform.OS !== 'android') {
-      throw new Error('Directory picker is only supported on Android');
+      throw new BackupError('unsupported-platform');
     }
-
     const permission = await StorageAccessFramework.requestDirectoryPermissionsAsync();
     if (!permission.granted) {
-      throw new Error('Directory permission denied');
+      throw new BackupError('permission-denied');
     }
-
-    await this.setBackupUri(permission.directoryUri);
-
-    const dirName =
-      permission.directoryUri.split('%3A').pop()?.split('/')[0] || permission.directoryUri;
-    return dirName;
+    await BackupService.setBackupUri(permission.directoryUri);
+    return BackupService.directoryLabel(permission.directoryUri);
   },
 
+  /** Copies the database file into the chosen folder. Returns the new file's URI. */
   async createBackup(): Promise<string> {
-    await initDatabase();
-
-    if (db) {
-      await db.execAsync('PRAGMA wal_checkpoint(TRUNCATE)').catch(() => {});
-    }
-
-    const backupUri = await this.getBackupUri();
+    const backupUri = await BackupService.getBackupUri();
     if (!backupUri) {
-      throw new Error('No backup directory selected');
+      throw new BackupError('no-directory');
     }
 
+    await checkpoint();
     const dbInfo = await FileSystem.getInfoAsync(DB_PATH);
     if (!dbInfo.exists) {
-      throw new Error('Database file not found');
+      throw new BackupError('no-database');
     }
 
     const now = new Date();
-    const timestamp = now.toISOString().replace(/[:.]/g, '-');
-    const backupName = `foodscanner_backup_${timestamp}.db`;
+    const backupName = `foodscanner_backup_${now.toISOString().replace(/[:.]/g, '-')}.db`;
+    const contents = await FileSystem.readAsStringAsync(DB_PATH, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
 
     let backupPath: string;
-
     if (backupUri.startsWith('content://')) {
-      const dbBase64 = await FileSystem.readAsStringAsync(DB_PATH, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      const fileUri = await StorageAccessFramework.createFileAsync(
+      backupPath = await StorageAccessFramework.createFileAsync(
         backupUri,
         backupName,
         'application/octet-stream'
       );
-      await FileSystem.writeAsStringAsync(fileUri, dbBase64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-
-      backupPath = fileUri;
     } else {
-      const dirInfo = await FileSystem.getInfoAsync(backupUri);
-      if (!dirInfo.exists) {
-        await FileSystem.makeDirectoryAsync(backupUri, { intermediates: true });
-      }
-
+      await FileSystem.makeDirectoryAsync(backupUri, { intermediates: true }).catch(() => {});
       backupPath = `${backupUri}${backupUri.endsWith('/') ? '' : '/'}${backupName}`;
-      await FileSystem.copyAsync({ from: DB_PATH, to: backupPath });
     }
+    await FileSystem.writeAsStringAsync(backupPath, contents, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
 
-    await this.setLastBackupTime(now.toISOString());
-
+    await BackupService.setLastBackupTime(now.toISOString());
     return backupPath;
   },
 
-  async isBackupPathConfigured(): Promise<boolean> {
-    const uri = await this.getBackupUri();
-    return uri.length > 0;
-  },
-
   async getLastBackupTime(): Promise<string | null> {
-    await initDatabase();
-    if (!db) return null;
-
-    try {
-      const row = await db.getFirstAsync<{ value: string }>(
-        "SELECT value FROM meta WHERE key = '" + META_LAST_BACKUP + "'"
-      );
-      return row?.value ?? null;
-    } catch {
-      return null;
-    }
-  },
-
-  async isAutoBackupEnabled(): Promise<boolean> {
-    await initDatabase();
-    if (!db) return false;
-
-    try {
-      const row = await db.getFirstAsync<{ value: string }>(
-        "SELECT value FROM meta WHERE key = '" + META_AUTO_BACKUP + "'"
-      );
-      return row?.value === 'true';
-    } catch {
-      return false;
-    }
-  },
-
-  async setAutoBackupEnabled(enabled: boolean): Promise<void> {
-    await initDatabase();
-    if (!db) return;
-
-    await db.runAsync(
-      'INSERT INTO meta (key, value) VALUES ($key, $value) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-      { $key: META_AUTO_BACKUP, $value: enabled ? 'true' : 'false' }
-    );
+    return metaValue(META_LAST_BACKUP);
   },
 
   async setLastBackupTime(iso: string): Promise<void> {
-    if (!db) return;
+    await setMetaValue(META_LAST_BACKUP, iso).catch(() => {});
+  },
 
-    try {
-      await db.runAsync(
-        'INSERT INTO meta (key, value) VALUES ($key, $value) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-        { $key: META_LAST_BACKUP, $value: iso }
-      );
-    } catch {
-      // silently ignore
-    }
+  async isAutoBackupEnabled(): Promise<boolean> {
+    return (await metaValue(META_AUTO_BACKUP)) === 'true';
+  },
+
+  async setAutoBackupEnabled(enabled: boolean): Promise<void> {
+    await setMetaValue(META_AUTO_BACKUP, enabled ? 'true' : 'false');
   },
 
   async pickRestoreFile(): Promise<BackupFile> {
-    let getDocumentAsync:
-      | ((opts: Record<string, unknown>) => Promise<{
-          assets?: Array<{ uri: string; name: string }>;
-          canceled?: boolean;
-        }>)
-      | undefined;
-
-    try {
-      const mod = globalThis.expo?.modules?.ExpoDocumentPicker;
-      if (mod?.getDocumentAsync) {
-        getDocumentAsync = mod.getDocumentAsync.bind(mod);
-      }
-    } catch {
-      // not available via expo.modules
-    }
-
-    if (!getDocumentAsync) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const mod = require('expo-document-picker');
-        getDocumentAsync = mod.getDocumentAsync;
-      } catch {
-        throw new Error(
-          'expo-document-picker not available. Run: npx expo prebuild --clean && npx expo run:android'
-        );
-      }
-    }
-
-    if (!getDocumentAsync) {
-      throw new Error('expo-document-picker not available');
-    }
-
-    const result = await getDocumentAsync({ type: '*/*', copyToCacheDirectory: false });
-
+    const result = await DocumentPicker.getDocumentAsync({
+      type: '*/*',
+      copyToCacheDirectory: true,
+    });
     if (result.canceled || !result.assets?.[0]) {
-      throw new Error('cancel');
+      throw new BackupError('cancelled');
     }
-
     const asset = result.assets[0];
     return { name: asset.name || 'backup.db', uri: asset.uri };
   },
 
+  /**
+   * Replaces the database with a backup file.
+   *
+   * The file is checked first (SQLite header + FoodCheck tables); the current database
+   * is kept as a safety copy and put back if anything fails. Backup settings of this
+   * device (folder, auto backup, last backup) are kept. Callers reload their stores
+   * afterwards.
+   */
   async restoreFromUri(fileUri: string): Promise<void> {
-    const dbBase64 = await FileSystem.readAsStringAsync(fileUri, {
+    const contents = await FileSystem.readAsStringAsync(fileUri, {
       encoding: FileSystem.EncodingType.Base64,
     });
+    await assertIsAppDatabase(contents);
+
+    const deviceMeta = new Map<string, string>();
+    for (const key of DEVICE_META_KEYS) {
+      const value = await metaValue(key);
+      if (value !== null) deviceMeta.set(key, value);
+    }
+
+    await checkpoint().catch(() => {});
+    await FileSystem.deleteAsync(SAFETY_COPY_PATH, { idempotent: true }).catch(() => {});
+    await FileSystem.copyAsync({ from: DB_PATH, to: SAFETY_COPY_PATH });
 
     await db?.closeAsync();
     resetDatabaseState();
 
-    const walPath = DB_PATH + '-wal';
-    const shmPath = DB_PATH + '-shm';
+    try {
+      await deleteDatabaseFiles(DB_PATH);
+      await FileSystem.writeAsStringAsync(DB_PATH, contents, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      await initDatabase();
+      for (const key of DEVICE_META_KEYS) {
+        const value = deviceMeta.get(key);
+        await (value === undefined ? deleteMetaValue(key) : setMetaValue(key, value));
+      }
+    } catch (error) {
+      await db?.closeAsync().catch(() => {});
+      resetDatabaseState();
+      await deleteDatabaseFiles(DB_PATH);
+      await FileSystem.copyAsync({ from: SAFETY_COPY_PATH, to: DB_PATH });
+      await initDatabase();
+      throw new BackupError(
+        'restore-failed',
+        `Restore failed and was rolled back: ${String(error)}`
+      );
+    }
 
-    await FileSystem.deleteAsync(walPath, { idempotent: true }).catch(() => {});
-    await FileSystem.deleteAsync(shmPath, { idempotent: true }).catch(() => {});
-    await FileSystem.deleteAsync(DB_PATH, { idempotent: true }).catch(() => {});
-
-    await FileSystem.writeAsStringAsync(DB_PATH, dbBase64, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-
-    await initDatabase();
-
-    const { useCatalogStore } = await import('../../store/catalogStore');
-    const { useFilterStore } = await import('../../store/filterStore');
-
-    useFilterStore.setState({ isInitialized: false, rules: [] });
-
-    await useCatalogStore.getState().loadAll();
-    await useFilterStore.getState().loadRules();
+    await FileSystem.deleteAsync(SAFETY_COPY_PATH, { idempotent: true }).catch(() => {});
   },
 
+  /** Creates a backup at most once a day if enabled and a folder is set. */
   async performAutoBackup(): Promise<void> {
     try {
-      const enabled = await this.isAutoBackupEnabled();
-      if (!enabled) return;
+      if (!(await BackupService.isAutoBackupEnabled())) return;
+      if (!(await BackupService.isBackupPathConfigured())) return;
 
-      const hasPath = await this.isBackupPathConfigured();
-      if (!hasPath) return;
-
-      const lastBackup = await this.getLastBackupTime();
+      const lastBackup = await BackupService.getLastBackupTime();
       if (lastBackup) {
-        const lastDate = new Date(lastBackup);
-        const now = new Date();
-        const hoursSinceLastBackup = (now.getTime() - lastDate.getTime()) / (1000 * 60 * 60);
-        if (hoursSinceLastBackup < 24) {
-          return;
-        }
+        const hours = (Date.now() - new Date(lastBackup).getTime()) / (1000 * 60 * 60);
+        if (hours < AUTO_BACKUP_INTERVAL_HOURS) return;
       }
-
-      await this.createBackup();
-    } catch {
-      // silently ignore auto-backup failures
+      await BackupService.createBackup();
+    } catch (error) {
+      console.warn('Automatic backup failed:', error);
     }
   },
 };

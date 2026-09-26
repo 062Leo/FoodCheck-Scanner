@@ -42,7 +42,7 @@ const de = {
   'settings.backupPathEmpty': '',
   'settings.backupNoPathHint': 'Zuerst Speicherort wählen',
   'settings.backupPicking': 'Öffne...',
-  'settings.backupIosHint': 'Auf iOS wird das Backup im App-Dokumente-Ordner gespeichert.',
+  'settings.backupIosHint': 'Backups in einen Ordner sind derzeit nur unter Android möglich.',
   'settings.restore': 'Backup wiederherstellen',
   'settings.restoreHint': 'Gesicherte Datenbank-Datei (.db) auswählen',
   'settings.restoreBtn': 'Wiederherstellen',
@@ -445,6 +445,11 @@ const de = {
   'manualEntry.invalid': 'Ungültiger Barcode – bitte Ziffern prüfen.',
   'manualEntry.submit': 'Suchen',
   'manualEntry.cancel': 'Abbrechen',
+  'backup.error.notABackup':
+    'Diese Datei ist kein FoodCheck-Backup. Deine Daten wurden nicht verändert.',
+  'backup.error.restoreFailed':
+    'Wiederherstellung fehlgeschlagen. Deine bisherigen Daten wurden wiederhergestellt.',
+  'backup.error.generic': 'Das Backup konnte nicht ausgeführt werden. Bitte erneut versuchen.',
 };
 
 type Translations = typeof de;
@@ -484,7 +489,7 @@ const en: Translations = {
   'settings.backupPathEmpty': '',
   'settings.backupNoPathHint': 'Select storage location first',
   'settings.backupPicking': 'Opening...',
-  'settings.backupIosHint': 'On iOS the backup is saved in the app documents folder.',
+  'settings.backupIosHint': 'Backups to a folder are currently only available on Android.',
   'settings.restore': 'Restore Backup',
   'settings.restoreHint': 'Select a saved database file (.db)',
   'settings.restoreBtn': 'Restore',
@@ -876,6 +881,9 @@ const en: Translations = {
   'manualEntry.invalid': 'Invalid barcode – please check the digits.',
   'manualEntry.submit': 'Look up',
   'manualEntry.cancel': 'Cancel',
+  'backup.error.notABackup': 'This file is not a FoodCheck backup. Your data has not been changed.',
+  'backup.error.restoreFailed': 'Restore failed. Your previous data has been kept.',
+  'backup.error.generic': 'The backup could not be completed. Please try again.',
 };
 
 export type TranslationKey = keyof typeof de;

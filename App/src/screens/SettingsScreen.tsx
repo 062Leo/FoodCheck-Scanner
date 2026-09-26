@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -17,10 +17,28 @@ import { useLanguageStore } from '../store/languageStore';
 import { useTranslation } from '../i18n/useTranslation';
 import { LANGUAGES } from '../i18n/translations';
 import type { SupportedLanguage } from '../i18n/translations';
-import { BackupService } from '../infrastructure/db/BackupService';
+import { BackupError, BackupService } from '../infrastructure/db/BackupService';
+import { reloadStores } from '../store/reloadStores';
+import type { TranslateFn } from '../i18n/useTranslation';
 import { Accordion } from '../components/Accordion';
 
 const writeClient = new OpenFoodFactsWriteClient();
+
+function backupErrorText(error: unknown, t: TranslateFn): string {
+  if (!(error instanceof BackupError)) return t('backup.error.generic');
+  switch (error.code) {
+    case 'no-directory':
+      return t('settings.backupNoPathHint');
+    case 'not-a-backup':
+      return t('backup.error.notABackup');
+    case 'restore-failed':
+      return t('backup.error.restoreFailed');
+    case 'unsupported-platform':
+      return t('settings.backupIosHint');
+    default:
+      return t('backup.error.generic');
+  }
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -37,23 +55,32 @@ export default function SettingsScreen() {
   const [restoring, setRestoring] = useState(false);
   const [howToUseExpanded, setHowToUseExpanded] = useState(false);
 
-  useEffect(() => {
-    writeClient.loadCredentials().then((creds) => {
-      if (creds) setOffUsername(creds.username);
-    });
-
-    BackupService.getLastBackupTime().then(setLastBackupTime);
-    BackupService.isAutoBackupEnabled().then(setAutoBackup);
-    BackupService.getBackupUri().then((uri) => {
-      if (uri) {
-        const label = uri.startsWith('content://')
-          ? uri.split('%3A').pop()?.split('/')[0] || uri
-          : uri;
-        setBackupDirLabel(label);
-      }
-    });
-    BackupService.isBackupPathConfigured().then(setHasCustomPath);
+  const loadBackupState = useCallback(async () => {
+    try {
+      const [last, auto, uri] = await Promise.all([
+        BackupService.getLastBackupTime(),
+        BackupService.isAutoBackupEnabled(),
+        BackupService.getBackupUri(),
+      ]);
+      setLastBackupTime(last);
+      setAutoBackup(auto);
+      setHasCustomPath(uri.length > 0);
+      setBackupDirLabel(uri ? BackupService.directoryLabel(uri) : '');
+    } catch (error) {
+      console.error('Failed to load backup settings:', error);
+    }
   }, []);
+
+  useEffect(() => {
+    writeClient
+      .loadCredentials()
+      .then((creds) => {
+        if (creds) setOffUsername(creds.username);
+      })
+      .catch(() => setOffUsername(null));
+
+    void loadBackupState();
+  }, [loadBackupState]);
 
   const handleOffSetupSuccess = () => {
     setShowOffSetup(false);
@@ -89,8 +116,7 @@ export default function SettingsScreen() {
       setLastBackupTime(time);
       Alert.alert(t('settings.backup'), t('settings.backupSuccess', { path: backupPathResult }));
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      Alert.alert(t('settings.backup'), message);
+      Alert.alert(t('settings.backup'), backupErrorText(err, t));
     } finally {
       setBackupCreating(false);
     }
@@ -103,9 +129,8 @@ export default function SettingsScreen() {
       setBackupDirLabel(dirName);
       setHasCustomPath(true);
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      if (!message.includes('permission denied') && !message.includes('cancel')) {
-        Alert.alert(t('settings.backup'), message);
+      if (!(err instanceof BackupError && err.code === 'permission-denied')) {
+        Alert.alert(t('settings.backup'), backupErrorText(err, t));
       }
     } finally {
       setPickingDir(false);
@@ -123,12 +148,14 @@ export default function SettingsScreen() {
           try {
             const file = await BackupService.pickRestoreFile();
             await BackupService.restoreFromUri(file.uri);
+            await reloadStores();
+            await loadBackupState();
             Alert.alert(t('settings.restore'), t('settings.restoreSuccess'));
           } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            if (!message.includes('cancel')) {
-              Alert.alert(t('settings.restore'), message);
+            if (!(err instanceof BackupError && err.code === 'cancelled')) {
+              Alert.alert(t('settings.restore'), backupErrorText(err, t));
             }
+            await reloadStores().catch(() => {});
           } finally {
             setRestoring(false);
           }
@@ -139,7 +166,11 @@ export default function SettingsScreen() {
 
   const handleAutoBackupToggle = async (enabled: boolean) => {
     setAutoBackup(enabled);
-    await BackupService.setAutoBackupEnabled(enabled);
+    try {
+      await BackupService.setAutoBackupEnabled(enabled);
+    } catch {
+      setAutoBackup(!enabled);
+    }
   };
 
   const formatBackupDate = (iso: string | null): string => {

@@ -67,6 +67,11 @@ export async function setMetaValue(key: string, value: string): Promise<void> {
   );
 }
 
+export async function deleteMetaValue(key: string): Promise<void> {
+  const database = await getDatabase();
+  await database.runAsync('DELETE FROM meta WHERE key = $key', { $key: key });
+}
+
 async function initializeDatabase(): Promise<SQLite.SQLiteDatabase> {
   try {
     const database = await SQLite.openDatabaseAsync(DATABASE_NAME);
