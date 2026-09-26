@@ -129,7 +129,8 @@ export function buildRuleChange(
   }
 
   const threshold = parseDecimal(form.threshold);
-  if (!threshold) return { error: 'threshold' };
+  // "<5" is valid for product values, but a rule states its comparison with the operator.
+  if (!threshold || threshold.lessThan) return { error: 'threshold' };
   const rule: NewFilterRule = {
     type: 'nutrient',
     key: form.nutrient,

@@ -230,7 +230,10 @@ export default function FilterScreen() {
         saving={saving}
         onSave={(change) => void save(change)}
         onDelete={remove}
-        onClose={() => setEditor(null)}
+        // Closing while saving would look like cancel although the save still completes.
+        onClose={() => {
+          if (!saving) setEditor(null);
+        }}
       />
 
       {toast && (

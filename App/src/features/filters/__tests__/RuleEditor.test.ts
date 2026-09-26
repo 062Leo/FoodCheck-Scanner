@@ -76,6 +76,10 @@ describe('buildRuleChange', () => {
     expect(buildRuleChange(null, { ...form, type: 'nutrient', threshold: 'viel' })).toEqual({
       error: 'threshold',
     });
+    // The comparison belongs to the operator; "<5" must not silently become "> 5".
+    expect(buildRuleChange(null, { ...form, type: 'nutrient', threshold: '<5' })).toEqual({
+      error: 'threshold',
+    });
   });
 });
 
