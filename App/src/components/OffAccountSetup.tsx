@@ -1,23 +1,30 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  View,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-  ActivityIndicator,
-  Linking,
+  View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { OpenFoodFactsWriteClient } from '../infrastructure/api/OpenFoodFactsWriteClient';
+import {
+  OpenFoodFactsWriteClient,
+  UploadError,
+} from '../infrastructure/api/OpenFoodFactsWriteClient';
+import { WRITE_BASE_URL, WRITE_HOST } from '../infrastructure/api/config';
 import { useTranslation } from '../i18n/useTranslation';
+import { Button, IconButton } from '../ui/components';
+import { colors, radius, spacing, typography } from '../ui/theme';
 
 interface OffAccountSetupProps {
   visible: boolean;
   onSuccess: () => void;
   onCancel: () => void;
 }
+
+const client = new OpenFoodFactsWriteClient();
 
 export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetupProps) {
   const { t } = useTranslation();
@@ -27,169 +34,144 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const close = (success: boolean) => {
+    setPassword('');
+    setError('');
+    setShowPassword(false);
+    if (success) onSuccess();
+    else onCancel();
+  };
+
   const handleSave = async () => {
     if (!username.trim() || !password.trim()) {
       setError(t('off.required'));
       return;
     }
-
+    setIsSaving(true);
+    setError('');
     try {
-      setIsSaving(true);
-      setError('');
-      const client = new OpenFoodFactsWriteClient();
       await client.saveCredentials(username.trim(), password);
-      onSuccess();
+      close(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('off.saveError'));
+      setError(
+        err instanceof UploadError && err.code === 'invalid-credentials'
+          ? t('off.invalidCredentials')
+          : err instanceof UploadError && err.code === 'network'
+            ? t('off.checkFailed')
+            : t('off.saveError')
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
-  const openRegisterLink = () => {
-    Linking.openURL('https://world.openfoodfacts.org/cgi/user.pl');
-  };
-
   return (
-    <Modal visible={visible} animationType="fade" transparent>
-      <View style={styles.overlay}>
+    <Modal visible={visible} animationType="fade" transparent onRequestClose={() => close(false)}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <View style={styles.container}>
-          <Text style={styles.title}>{t('off.title')}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title} accessibilityRole="header">
+              {t('off.title')}
+            </Text>
+            <IconButton icon="close" label={t('edit.cancel')} onPress={() => close(false)} />
+          </View>
           <Text style={styles.description}>{t('off.description')}</Text>
+          <Text style={styles.hint}>{t('off.targetHint', { host: WRITE_HOST })}</Text>
 
-          <TouchableOpacity onPress={openRegisterLink} style={styles.linkButton}>
-            <Text style={styles.linkText}>{t('off.register')}</Text>
-          </TouchableOpacity>
+          <Text style={styles.label}>{t('off.username')}</Text>
+          <TextInput
+            style={styles.input}
+            value={username}
+            onChangeText={setUsername}
+            placeholder={t('off.usernamePlaceholder')}
+            placeholderTextColor={colors.textMuted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="username"
+            textContentType="username"
+            accessibilityLabel={t('off.username')}
+          />
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>{t('off.username')}</Text>
+          <Text style={styles.label}>{t('off.password')}</Text>
+          <View style={styles.passwordRow}>
             <TextInput
-              style={styles.input}
-              value={username}
-              onChangeText={setUsername}
-              placeholder={t('off.usernamePlaceholder')}
-              placeholderTextColor="#757575"
+              style={[styles.input, styles.flex]}
+              value={password}
+              onChangeText={setPassword}
+              placeholder={t('off.passwordPlaceholder')}
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoCorrect={false}
+              autoComplete="password"
+              textContentType="password"
+              accessibilityLabel={t('off.password')}
+              onSubmitEditing={() => void handleSave()}
             />
-
-            <Text style={styles.label}>{t('off.password')}</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                value={password}
-                onChangeText={setPassword}
-                placeholder={t('off.passwordPlaceholder')}
-                placeholderTextColor="#757575"
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#757575" />
-              </TouchableOpacity>
-            </View>
+            <IconButton
+              icon={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              label={showPassword ? t('a11y.hidePassword') : t('a11y.showPassword')}
+              onPress={() => setShowPassword((value) => !value)}
+            />
           </View>
 
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          {error ? (
+            <Text style={styles.error} accessibilityLiveRegion="polite">
+              {error}
+            </Text>
+          ) : null}
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={onCancel}
-              disabled={isSaving}
-            >
-              <Text style={styles.cancelButtonText}>{t('edit.cancel')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.saveButton,
-                (!username.trim() || !password.trim()) && styles.disabledButton,
-              ]}
-              onPress={handleSave}
-              disabled={isSaving || !username.trim() || !password.trim()}
-            >
-              {isSaving ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.saveButtonText}>{t('off.save')}</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          <Button
+            title={t('off.save')}
+            onPress={() => void handleSave()}
+            loading={isSaving}
+            style={styles.save}
+          />
+          <Button
+            title={t('off.register')}
+            variant="ghost"
+            icon="open-outline"
+            onPress={() => void Linking.openURL(`${WRITE_BASE_URL}/cgi/user.pl`)}
+          />
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.scrim,
     justifyContent: 'center',
-    padding: 20,
+    padding: spacing.xl,
   },
   container: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 12,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    gap: spacing.sm,
   },
-  title: { color: '#FFF', fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-  description: { color: '#BDBDBD', fontSize: 14, marginBottom: 16, lineHeight: 20 },
-  linkButton: { marginBottom: 24 },
-  linkText: { color: '#2196F3', fontSize: 14, fontWeight: '600' },
-  inputContainer: { marginBottom: 24 },
-  label: { color: '#BDBDBD', fontSize: 14, marginBottom: 8 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  title: { ...typography.title, color: colors.text, flexShrink: 1 },
+  description: { ...typography.body, color: colors.textSecondary },
+  hint: { ...typography.caption, color: colors.textMuted },
+  label: { ...typography.label, color: colors.textSecondary, marginTop: spacing.sm },
   input: {
-    backgroundColor: '#121212',
-    color: '#FFF',
+    ...typography.body,
+    color: colors.text,
+    backgroundColor: colors.surfaceSunken,
+    borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: '#333',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
+    borderColor: colors.borderStrong,
+    paddingHorizontal: spacing.md,
+    minHeight: 48,
   },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#121212',
-    borderWidth: 1,
-    borderColor: '#333',
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  passwordInput: {
-    flex: 1,
-    color: '#FFF',
-    padding: 12,
-    fontSize: 16,
-  },
-  eyeButton: {
-    padding: 12,
-  },
-  errorText: { color: '#F44336', marginBottom: 16, fontSize: 14 },
-  buttonRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  cancelButton: { backgroundColor: 'transparent' },
-  cancelButtonText: { color: '#BDBDBD', fontSize: 16, fontWeight: '600' },
-  saveButton: { backgroundColor: '#4CAF50' },
-  saveButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
-  disabledButton: { opacity: 0.5 },
+  passwordRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  error: { ...typography.body, color: colors.danger },
+  save: { marginTop: spacing.md },
 });

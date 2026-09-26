@@ -23,6 +23,8 @@ export interface ProductRecord {
   last_seen_at?: string | null;
   /** Set when the user edited the product on this device. */
   edited_at?: string | null;
+  /** JSON array of the fields the user edited (see domain/product/editedFields). */
+  edited_fields?: string | null;
 }
 
 /** Lightweight row for lists (no raw_json). */

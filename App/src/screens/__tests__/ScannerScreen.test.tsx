@@ -129,8 +129,9 @@ describe('ScannerScreen', () => {
     fireEvent.press(await screen.findByText('Produkt erfassen'));
     expect(mockRouter.push).toHaveBeenCalledWith({
       pathname: '/edit/[ean]',
-      params: { ean: EAN },
+      params: { ean: EAN, then: 'show' },
     });
+    expect(screen.queryByTestId('scan-card')).toBeNull();
   });
 
   it('validates manually entered barcodes', async () => {

@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Product } from '../../types/Product';
 import type { TranslateFn } from '../../i18n/useTranslation';
-import type { SupportedLanguage, TranslationKey } from '../../i18n/translations';
+import type { SupportedLanguage } from '../../i18n/translations';
+import { languageLabel } from '../../i18n/languageLabel';
 import { TranslationRouter } from '../../infrastructure/translation/TranslationRouter';
 import { Button, Card, Chip, SectionTitle } from '../../ui/components';
 import { colors, spacing, typography } from '../../ui/theme';
@@ -29,13 +30,6 @@ export function ingredientsByLanguage(
     if (b === uiLanguage) return 1;
     return 0;
   });
-}
-
-function languageLabel(code: string, t: TranslateFn): string {
-  if (code === UNKNOWN_LANGUAGE) return t('product.original');
-  const key = `product.lang.${code}` as TranslationKey;
-  const label = t(key);
-  return label === key ? code.toUpperCase() : label;
 }
 
 export function IngredientsSection({

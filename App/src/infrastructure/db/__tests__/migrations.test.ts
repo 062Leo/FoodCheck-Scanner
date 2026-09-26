@@ -54,7 +54,13 @@ describe('database migrations', () => {
       DATABASE_VERSION
     );
     expect(await columnsOf(database, 'products')).toEqual(
-      expect.arrayContaining(['visit_count', 'last_seen_at', 'edited_at', 'image_url'])
+      expect.arrayContaining([
+        'visit_count',
+        'last_seen_at',
+        'edited_at',
+        'edited_fields',
+        'image_url',
+      ])
     );
     expect(await columnsOf(database, 'filter_rules')).toEqual(
       expect.arrayContaining(['category', 'translations'])

@@ -101,22 +101,33 @@ describe('ProductRepository (SQLite)', () => {
     expect(await database().getAllAsync('SELECT * FROM favorites')).toEqual([]);
   });
 
-  it('updateProduct marks the product as edited and keeps unrelated data', async () => {
-    await repository.saveScan(
-      productRecord({
-        raw_json: JSON.stringify({
-          product: { ean: '4000000000001', name: 'Alt', stores: 'Laden', novaScore: 3 },
-        }),
-      })
+  it('saveEdit stores data and edit markers without counting a scan', async () => {
+    await repository.saveScan(productRecord({ name: 'Alt' }));
+
+    await repository.saveEdit(
+      productRecord({ name: 'Korrigiert', nova_score: 2, edited_at: '2026-02-01T00:00:00.000Z' }),
+      '["name","nova"]'
     );
 
-    await repository.updateProduct({ ean: '4000000000001', name: 'Korrigiert', novaScore: 2 });
+    expect(await repository.findByEan('4000000000001')).toMatchObject({
+      name: 'Korrigiert',
+      nova_score: 2,
+      visit_count: 1,
+      edited_at: '2026-02-01T00:00:00.000Z',
+      edited_fields: '["name","nova"]',
+    });
+  });
 
-    const updated = await repository.findByEan('4000000000001');
-    expect(updated?.name).toBe('Korrigiert');
-    expect(updated?.nova_score).toBe(2);
-    expect(updated?.edited_at).toEqual(expect.any(String));
-    const product = JSON.parse(updated!.raw_json!).product;
-    expect(product).toMatchObject({ name: 'Korrigiert', stores: 'Laden', novaScore: 2 });
+  it('keeps edit markers when the product is scanned or refreshed later', async () => {
+    await repository.saveEdit(productRecord({ edited_at: '2026-02-01T00:00:00.000Z' }), '["name"]');
+    await repository.saveScan(productRecord({ name: 'Neu' }));
+    await repository.saveRefresh(productRecord({ name: 'Neuer' }));
+
+    expect(await repository.findByEan('4000000000001')).toMatchObject({
+      name: 'Neuer',
+      edited_at: '2026-02-01T00:00:00.000Z',
+      edited_fields: '["name"]',
+      visit_count: 2,
+    });
   });
 });

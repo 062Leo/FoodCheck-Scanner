@@ -116,7 +116,7 @@ function ProductDetails({
   const hasIngredients = Boolean(product.ingredientsText?.trim());
   const { insights, loading: insightsLoading } = useRobotoffInsights(
     product.ean,
-    data.source === 'network',
+    data.source !== 'cache',
     language
   );
 
@@ -125,7 +125,7 @@ function ProductDetails({
     : data.source === 'cache'
       ? t('product.source.offline')
       : undefined;
-  const staleNote = data.isStale ? t('product.source.stale') : undefined;
+  const staleNote = data.isStale && data.source === 'cache' ? t('product.source.stale') : undefined;
   const footnote = [sourceNote, staleNote].filter(Boolean).join(' · ') || undefined;
 
   const gallery = useMemo(() => galleryImages(product, t), [product, t]);

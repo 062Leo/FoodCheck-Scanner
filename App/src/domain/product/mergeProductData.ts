@@ -1,5 +1,6 @@
 import type { Product, ProductNutriments } from '../../types/Product';
 import { hasProductName } from './productName';
+import { applyEditedFields, type EditedFields } from './editedFields';
 
 /** Fields the user can correct on the edit screen. */
 const USER_EDITABLE_FIELDS = [
@@ -41,16 +42,23 @@ function definedNutriments(nutriments: ProductNutriments | undefined): ProductNu
  *
  * - Not edited on this device: the fresh data wins completely, so corrections made on
  *   Open Food Facts reach the app.
- * - Edited on this device: the user's values win for every editable field they hold;
- *   everything else (images, scores, tags) comes from the fresh data.
+ * - Edited fields known: exactly those fields keep the user's value (also an
+ *   intentionally emptied one); everything else comes from Open Food Facts.
+ * - Edited before field tracking existed ('all'): every editable field the local
+ *   product holds wins, as the app always did.
  */
 export function mergeProductData(
   fresh: Product,
   local: Product | null,
-  isEdited: boolean
+  edited: EditedFields | null
 ): Product {
-  if (!local || !isEdited) {
+  if (!local || !edited) {
     return fresh;
+  }
+  if (edited !== 'all') {
+    const merged: Product = { ...fresh };
+    applyEditedFields(merged, local, edited);
+    return merged;
   }
 
   const merged: Product = { ...fresh };

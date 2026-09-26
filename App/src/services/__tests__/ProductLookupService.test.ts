@@ -1,5 +1,6 @@
 import { ProductLookupService, isStale } from '../ProductLookupService';
 import { ProductRepository } from '../../infrastructure/db/ProductRepository';
+import { ProductEditService } from '../ProductEditService';
 import { NetworkError } from '../../infrastructure/api/fetchWithTimeout';
 import { SEEDED_RULES } from '../../domain/analysis/__fixtures__/goldenRuleSets';
 import { productRecord, useTestDatabase } from '../../testing/testDatabase';
@@ -124,27 +125,83 @@ describe('ProductLookupService', () => {
     });
   });
 
-  it('keeps local corrections of an edited product but takes fresh images', async () => {
+  it('keeps exactly the fields the user edited and updates everything else', async () => {
     await repository.saveScan(
-      productRecord({ raw_json: JSON.stringify({ product: { ean: EAN, name: 'x' } }) })
+      productRecord({
+        raw_json: JSON.stringify({
+          product: { ean: EAN, name: 'Alt', brand: 'Alte Marke', traces: 'Nüsse' },
+        }),
+      })
     );
-    await repository.updateProduct({
-      ean: EAN,
-      name: 'Meine Limo',
-      ingredients: 'Wasser, Zucker',
-    });
-    api.getProductByEan.mockResolvedValue(freshProduct);
+    const editor = new ProductEditService({ repository });
+    const session = await editor.open(EAN);
+    await editor.save(
+      session,
+      {
+        ...session.initial,
+        name: 'Meine Limo',
+        traces: '',
+        ingredients: { de: 'Wasser, Rohrzucker' },
+      },
+      SEEDED_RULES
+    );
+    api.getProductByEan.mockResolvedValue({ ...freshProduct, traces: 'Soja' });
 
     const result = await service.lookup(EAN, 'view', SEEDED_RULES);
 
     if (result.status !== 'found') throw new Error('expected found');
     expect(result.product).toMatchObject({
       name: 'Meine Limo',
-      ingredientsText: 'Wasser, Zucker',
+      ingredientsText: 'Wasser, Rohrzucker',
+      brand: 'OFF-Marke',
       imageUrl: freshProduct.imageUrl,
-      brand: 'Marke',
+      nutriments: { sugars100g: 9 },
     });
-    expect((await repository.findByEan(EAN))?.edited_at).toEqual(expect.any(String));
+    expect(result.product.traces).toBeUndefined();
+    // NOVA was not edited, so Open Food Facts' NOVA 4 applies.
+    expect(result.rating.status).toBe('Critical');
+  });
+
+  it('keeps all local fields of products edited before field tracking existed', async () => {
+    await repository.saveEdit(
+      productRecord({
+        name: 'Meins',
+        brands: 'Eigene Marke',
+        raw_json: JSON.stringify({ product: { ean: EAN, name: 'Meins', brand: 'Eigene Marke' } }),
+        edited_at: '2025-01-01T00:00:00.000Z',
+      }),
+      null
+    );
+    api.getProductByEan.mockResolvedValue(freshProduct);
+
+    const result = await service.lookup(EAN, 'view', SEEDED_RULES);
+
+    if (result.status !== 'found') throw new Error('expected found');
+    expect(result.product).toMatchObject({ name: 'Meins', brand: 'Eigene Marke' });
+  });
+
+  it('marks device data as such when Open Food Facts does not know the product', async () => {
+    await repository.saveScan(
+      productRecord({ raw_json: JSON.stringify({ product: freshProduct }) })
+    );
+    api.getProductByEan.mockResolvedValue(null);
+
+    expect(await service.lookup(EAN, 'view', SEEDED_RULES)).toMatchObject({
+      status: 'found',
+      source: 'device',
+      networkFailed: false,
+    });
+  });
+
+  it('does not retry the network when a cached product can be shown', async () => {
+    await repository.saveScan(
+      productRecord({ raw_json: JSON.stringify({ product: freshProduct }) })
+    );
+    api.getProductByEan.mockResolvedValue(freshProduct);
+
+    await service.lookup(EAN, 'view', SEEDED_RULES);
+
+    expect(api.getProductByEan).toHaveBeenCalledWith(EAN, { retries: 0 });
   });
 
   it('replaces stale data of a product that was not edited', async () => {

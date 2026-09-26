@@ -9,6 +9,7 @@ import { ProductNormalizer, PRODUCT_DATA_VERSION } from '../domain/analysis/Prod
 import { rateProduct } from '../domain/analysis/rateProduct';
 import { mergeProductData } from '../domain/product/mergeProductData';
 import { toNovaScore } from '../domain/analysis/ProductRating';
+import { parseEditedFields } from '../domain/product/editedFields';
 
 export const STALE_THRESHOLD_DAYS = 7;
 
@@ -23,8 +24,12 @@ export type LookupResult =
       product: Product;
       rating: ScanResult;
       record: ProductRecord | null;
-      /** Where the shown data comes from. */
-      source: 'network' | 'cache';
+      /**
+       * Where the shown data comes from: fresh from Open Food Facts, from the device
+       * because the network is unavailable ('cache'), or from the device by choice
+       * ('device': just saved, or unknown to Open Food Facts).
+       */
+      source: 'network' | 'cache' | 'device';
       /** True if cached data is shown although fresh data could not be loaded. */
       networkFailed: boolean;
       isStale: boolean;
@@ -110,24 +115,31 @@ export class ProductLookupService {
     const cached = record ? productFromRecord(record) : null;
 
     if (!(await this.checkOnline())) {
-      return cached ? this.fromCache(record!, cached, intent, rules, false) : { status: 'offline' };
+      return cached
+        ? this.fromCache(record!, cached, intent, rules, 'cache', false)
+        : { status: 'offline' };
     }
 
     let fresh: Product | null;
     try {
-      fresh = await this.api.getProductByEan(ean);
+      // With a cached product at hand, do not keep the user waiting for a retry.
+      fresh = await this.api.getProductByEan(ean, { retries: cached ? 0 : 1 });
     } catch (error) {
-      if (cached) return this.fromCache(record!, cached, intent, rules, true);
+      if (cached) return this.fromCache(record!, cached, intent, rules, 'cache', true);
       return { status: error instanceof NetworkError ? 'offline' : 'error' };
     }
 
     if (!fresh) {
       return cached
-        ? this.fromCache(record!, cached, intent, rules, false)
+        ? this.fromCache(record!, cached, intent, rules, 'device', false)
         : { status: 'not-found' };
     }
 
-    const product = mergeProductData(fresh, cached, Boolean(record?.edited_at));
+    const product = mergeProductData(
+      fresh,
+      cached,
+      parseEditedFields(record?.edited_fields, record?.edited_at)
+    );
     const rating = rateProduct(product, rules);
     const timestamp = this.now().toISOString();
     const saved = toProductRecord(product, rating, timestamp, timestamp);
@@ -149,7 +161,7 @@ export class ProductLookupService {
   async lookupLocal(ean: string, rules: FilterRule[]): Promise<LookupResult> {
     const record = await this.repository.findByEan(ean).catch(() => null);
     if (!record) return { status: 'not-found' };
-    return this.fromCache(record, productFromRecord(record), 'view', rules, false);
+    return this.fromCache(record, productFromRecord(record), 'view', rules, 'device', false);
   }
 
   private async fromCache(
@@ -157,6 +169,7 @@ export class ProductLookupService {
     product: Product,
     intent: LookupIntent,
     rules: FilterRule[],
+    source: 'cache' | 'device',
     networkFailed: boolean
   ): Promise<LookupResult> {
     const rating = rateProduct(product, rules);
@@ -178,7 +191,7 @@ export class ProductLookupService {
       product,
       rating,
       record,
-      source: 'cache',
+      source,
       networkFailed,
       isStale: isStale(record, this.now().getTime()),
     };

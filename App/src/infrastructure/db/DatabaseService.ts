@@ -3,7 +3,7 @@ import { seedRules } from '../../domain/rules/seedRules';
 import { getErrorMessage } from '../../shared/errors';
 
 export const DATABASE_NAME = 'foodscanner.db';
-export const DATABASE_VERSION = 7;
+export const DATABASE_VERSION = 8;
 const META_SCHEMA_VERSION_KEY = 'schema_version';
 
 type Migration = (database: SQLite.SQLiteDatabase) => Promise<void>;
@@ -29,6 +29,7 @@ const migrations: Record<number, Migration> = {
   5: addCategoryColumn,
   6: addTranslationsColumn,
   7: addFavoritesUniquenessAndEditTracking,
+  8: addEditedFieldsColumn,
 };
 
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -428,6 +429,15 @@ async function addFavoritesUniquenessAndEditTracking(
   } catch (error) {
     throw new Error(`Failed to backfill edited_at: ${getErrorMessage(error)}`, { cause: error });
   }
+}
+
+/**
+ * v8: products.edited_fields lists which fields the user edited (JSON array), so
+ * Open Food Facts can still update everything else. NULL with edited_at set means
+ * "edited before field tracking existed": all editable fields are treated as edited.
+ */
+async function addEditedFieldsColumn(database: SQLite.SQLiteDatabase): Promise<void> {
+  await addColumnIfMissing(database, 'products', 'edited_fields TEXT');
 }
 
 export function hasLocalEditMarkers(rawJson: string): boolean {

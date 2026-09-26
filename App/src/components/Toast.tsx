@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableWithoutFeedback } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, radius, spacing, typography } from '../ui/theme';
 
 interface ToastProps {
   message: string;
@@ -8,81 +11,61 @@ interface ToastProps {
   onDismiss?: () => void;
 }
 
-export function Toast({ message, type, duration = 3000, onDismiss }: ToastProps) {
-  const [visible, setVisible] = useState(true);
-  const slideAnim = new Animated.Value(0);
+const ICONS = {
+  success: 'checkmark-circle',
+  error: 'alert-circle',
+  info: 'information-circle',
+} as const;
+
+const ACCENTS = { success: colors.accent, error: colors.danger, info: colors.info };
+
+export function Toast({ message, type, duration = 3500, onDismiss }: ToastProps) {
+  const insets = useSafeAreaInsets();
+  const slide = useRef(new Animated.Value(0)).current;
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
 
   useEffect(() => {
-    Animated.timing(slideAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
+    AccessibilityInfo.announceForAccessibility(message);
+    Animated.timing(slide, { toValue: 1, duration: 250, useNativeDriver: true }).start();
     const timer = setTimeout(() => {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start(() => {
-        setVisible(false);
-        onDismiss?.();
-      });
+      Animated.timing(slide, { toValue: 0, duration: 250, useNativeDriver: true }).start(() =>
+        onDismissRef.current?.()
+      );
     }, duration);
-
     return () => clearTimeout(timer);
-  }, [slideAnim, duration, onDismiss]);
+  }, [message, duration, slide]);
 
-  if (!visible) {
-    return null;
-  }
-
-  const translateY = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-100, 0],
-  });
-
-  const backgroundColor = type === 'error' ? '#F44336' : type === 'success' ? '#4CAF50' : '#2196F3';
+  const translateY = slide.interpolate({ inputRange: [0, 1], outputRange: [-120, 0] });
 
   return (
     <Animated.View
-      style={[
-        styles.container,
-        {
-          transform: [{ translateY }],
-          backgroundColor,
-        },
-      ]}
+      style={[styles.container, { top: insets.top + spacing.sm, transform: [{ translateY }] }]}
+      accessibilityLiveRegion="polite"
     >
-      <TouchableWithoutFeedback
-        onPress={() => {
-          setVisible(false);
-          onDismiss?.();
-        }}
+      <Pressable
+        style={[styles.content, { borderLeftColor: ACCENTS[type] }]}
+        onPress={() => onDismissRef.current?.()}
+        accessibilityRole="alert"
       >
-        <View>
-          <Text style={styles.message}>{message}</Text>
-        </View>
-      </TouchableWithoutFeedback>
+        <Ionicons name={ICONS[type]} size={22} color={ACCENTS[type]} />
+        <Text style={styles.message}>{message}</Text>
+      </Pressable>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 48,
-    left: 16,
-    right: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    zIndex: 1000,
+  container: { position: 'absolute', left: spacing.lg, right: spacing.lg, zIndex: 1000 },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceRaised,
+    borderRadius: radius.md,
+    borderLeftWidth: 4,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
-  message: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
+  message: { ...typography.body, color: colors.text, flex: 1 },
 });

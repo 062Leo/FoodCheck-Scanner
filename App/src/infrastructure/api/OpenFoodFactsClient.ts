@@ -165,7 +165,7 @@ export class OpenFoodFactsClient {
    * Looks a product up by barcode. Returns null if Open Food Facts does not know it.
    * Throws NetworkError on timeout/no connection so callers can fall back to the cache.
    */
-  async getProductByEan(ean: string): Promise<Product | null> {
+  async getProductByEan(ean: string, options: { retries?: number } = {}): Promise<Product | null> {
     return retryWithBackoff(
       async () => {
         try {
@@ -194,7 +194,7 @@ export class OpenFoodFactsClient {
           throw new Error(`Failed to fetch product data: ${detail}`, { cause: _error });
         }
       },
-      { retries: 1, baseDelayMs: 1000 }
+      { retries: options.retries ?? 1, baseDelayMs: 1000 }
     );
   }
 

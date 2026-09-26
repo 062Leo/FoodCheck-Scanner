@@ -64,8 +64,11 @@ export default function ScannerScreen() {
   }, [card, router]);
 
   const addProduct = useCallback(() => {
-    if (card) router.push({ pathname: '/edit/[ean]', params: { ean: card.ean } });
-  }, [card, router]);
+    if (!card) return;
+    const ean = card.ean;
+    dismiss();
+    router.push({ pathname: '/edit/[ean]', params: { ean, then: 'show' } });
+  }, [card, dismiss, router]);
 
   const bottomArea = (
     <View style={[styles.bottom, { paddingBottom: spacing.lg }]}>
