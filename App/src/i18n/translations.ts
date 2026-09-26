@@ -485,6 +485,9 @@ const de = {
   'edit.ocrFilledOne': '1 Wert aus dem Foto übernommen – bitte prüfen.',
   'catalog.deleteFailed': 'Produkt konnte nicht gelöscht werden.',
   'catalog.undoFailed': 'Rückgängig machen ist fehlgeschlagen.',
+  'settings.filterCountOne': '1 Regel – bestimmt, was als Red Flag zählt',
+  'filter.introOne':
+    '1 Regel. Treffer in der Zutatenliste zählen als Red Flag; mit „Erlaubt“ nimmst du Zutaten von der Bewertung aus.',
 };
 
 type Translations = typeof de;
@@ -954,6 +957,9 @@ const en: Translations = {
   'edit.ocrFilledOne': '1 value taken from the photo – please check.',
   'catalog.deleteFailed': 'The product could not be deleted.',
   'catalog.undoFailed': 'Undo failed.',
+  'settings.filterCountOne': '1 rule – decides what counts as a red flag',
+  'filter.introOne':
+    '1 rule. Matches in the ingredient list count as red flags; “Allowed” excludes ingredients from the rating.',
 };
 
 export type TranslationKey = keyof typeof de;

@@ -134,7 +134,9 @@ export default function FilterScreen() {
           />
         }
       />
-      <Text style={styles.intro}>{t('filter.intro', { n: rules.length })}</Text>
+      <Text style={styles.intro}>
+        {rules.length === 1 ? t('filter.introOne') : t('filter.intro', { n: rules.length })}
+      </Text>
       <View style={styles.searchBox}>
         <Ionicons name="search" size={18} color={colors.textMuted} />
         <TextInput

@@ -180,7 +180,11 @@ export default function SettingsScreen() {
           <ListRow
             icon="options-outline"
             title={t('settings.filter')}
-            description={t('settings.filterCount', { count: ruleCount })}
+            description={
+              ruleCount === 1
+                ? t('settings.filterCountOne')
+                : t('settings.filterCount', { count: ruleCount })
+            }
             onPress={() => router.push('/settings/filters')}
           />
         </Group>
