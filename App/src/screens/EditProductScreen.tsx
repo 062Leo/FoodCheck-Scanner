@@ -84,13 +84,13 @@ export default function EditProductScreen() {
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // An upload that finishes after the screen was closed must not navigate anymore.
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    leavingRef.current = false;
+    return () => {
       leavingRef.current = true;
       clearTimeout(leaveTimer.current);
-    },
-    []
-  );
+    };
+  }, []);
 
   // Ask before leaving with unsaved changes.
   useEffect(() => {
