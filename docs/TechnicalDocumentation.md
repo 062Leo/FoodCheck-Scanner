@@ -181,7 +181,7 @@ App/
 | expo-document-picker | Picking a backup file to restore |
 | expo-haptics | Scan/save feedback |
 | expo-build-properties | Android SDK version pins |
-| Jest + jest-expo | Unit testing (49 suites, 418 tests) |
+| Jest + jest-expo | Unit testing (52 suites, 437 tests) |
 | ESLint 10 (flat config) + Prettier | Code quality & formatting |
 
 ## 5. Data Flow
@@ -449,7 +449,7 @@ Expo Router file-based routing in `App/app/`:
 ## 12. Testing
 
 - **Framework:** Jest with the `jest-expo` preset
-- **Count:** 49 suites, 418 tests (all passing; measured with `npx jest --maxWorkers=2 --silent`)
+- **Count:** 52 suites, 437 tests (all passing; measured with `npx jest --maxWorkers=2 --silent`)
 - **Location:** `__tests__/` directories alongside source files
 - **No snapshot tests** — all assertion-based `expect()` calls
 - **Real SQLite in tests:** database and repository tests run against `node:sqlite` through a test double (`src/testing/nodeSqlite.ts`, `useTestDatabase()`), not string-matching mocks; migration tests start from literal legacy schemas with seeded data and check data survival, idempotency and rollback of a failing migration
@@ -517,7 +517,7 @@ Expo Router file-based routing in `App/app/`:
 
 - `npm run typecheck` — clean (0 errors)
 - `npm run lint` — clean (0 errors, ESLint 10 flat config)
-- `npm test` — 49 suites, 418 tests, all passing
+- `npm test` — 52 suites, 437 tests, all passing
 - `npm run test:integration` requires network access to the OFF staging server and is not part of `npm run check`
 
 ## 16. Non-Functional Requirements
