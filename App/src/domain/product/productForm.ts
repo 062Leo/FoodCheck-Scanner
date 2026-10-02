@@ -212,7 +212,9 @@ export function applyForm(base: Product, values: ProductFormValues): Product {
  */
 export function toOffPayload(
   values: ProductFormValues,
-  fields: EditedFields = 'all'
+  fields: EditedFields = 'all',
+  /** Ingredient languages to send; all when omitted. */
+  ingredientLanguages?: ReadonlySet<string>
 ): Record<string, string> {
   const payload: Record<string, string> = {};
   const included = (field: string) => fields === 'all' || (fields as Set<string>).has(field);
@@ -232,6 +234,7 @@ export function toOffPayload(
   set('manufacturingPlaces', 'manufacturing_places', values.manufacturingPlaces);
   set('stores', 'stores', values.stores);
   for (const [lang, text] of Object.entries(values.ingredients)) {
+    if (ingredientLanguages && !ingredientLanguages.has(lang)) continue;
     set('ingredients', `ingredients_text_${lang}`, text);
   }
 

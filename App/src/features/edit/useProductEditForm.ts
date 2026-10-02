@@ -146,6 +146,7 @@ export function useProductEditForm(ean: string | undefined) {
     () => (session && values ? editService.offPayload(session, values) : {}),
     [session, values]
   );
+  const hasChanges = Boolean(session && values && editService.hasChanges(session, values));
 
   /** Saves locally first (so nothing is lost if sending fails), then contributes. */
   const upload = useCallback(async (): Promise<SubmitResult> => {
@@ -169,6 +170,7 @@ export function useProductEditForm(ean: string | undefined) {
     session,
     values,
     offPayload,
+    hasChanges,
     errors,
     loadError,
     isDirty,

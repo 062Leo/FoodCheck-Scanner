@@ -116,7 +116,7 @@
 - **Allergene**: Enthält (kommagetrennt), Spuren
 - **Zusatzinfos**: Herkunft, Herstellungsort, Geschäfte, Portionsgröße
 - **Speichern**: lokal in SQLite; merkt sich, welche Felder verändert wurden, damit ein späteres Update von Open Food Facts nur die nicht bearbeiteten Felder überschreibt
-- **Upload an OFF**: fragt vor dem Senden nach Bestätigung, nennt Zielserver und zu sendende Felder; speichert zuerst lokal, sendet dann nur die Felder, die du auf diesem Gerät geändert hast (bei Produkten, die Open Food Facts noch nicht kennt: alle ausgefüllten) – unveränderte, evtl. veraltete Werte überschreiben keine neueren Korrekturen anderer; ohne Änderung meldet die App „nichts zu senden“; Entwicklungs-Builds senden an den Staging-, Release-Builds an den Produktivserver
+- **Upload an OFF**: fragt vor dem Senden nach Bestätigung, nennt Zielserver und zu sendende Felder; speichert zuerst lokal, sendet dann nur die Felder, die du auf diesem Gerät geändert hast, bei Zutaten nur die geänderten Sprachen (bei Produkten, die Open Food Facts noch nicht kennt: alle ausgefüllten) – unveränderte, evtl. veraltete Werte überschreiben keine neueren Korrekturen anderer; ohne Änderung meldet die App „nichts zu senden“; gelöschte Angaben bleiben lokal (die App sagt das); Entwicklungs-Builds senden an den Staging-, Release-Builds an den Produktivserver
 - **Ungespeicherte-Änderungen-Warnung**: Navigation-Guard mit Bestätigungsdialog
 - **Auto-Erstellung**: Legt einen Produkt-Stub an, falls für den Barcode noch kein lokaler Eintrag existiert
 
@@ -233,7 +233,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 
 ## Testing
 
-- **49 Test-Suiten**, **418 Tests**, alle erfolgreich (`npx jest --maxWorkers=2 --silent`)
+- **52 Test-Suiten**, **435 Tests**, alle erfolgreich (`npx jest --maxWorkers=2 --silent`)
 - Datenbank- und Repository-Tests laufen gegen echtes SQLite (`node:sqlite`-Testdouble), nicht gegen String-Vergleichs-Mocks
 - **Golden-Ratings**: 32 Referenzprodukte mit fest hinterlegtem Bewertungsergebnis, damit Änderungen an der Bewertungslogik als bewusster, überprüfbarer Diff sichtbar werden
 - Getestete Module: Analyse (RedFlagAnalyzer, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating), Services (Lookup, Edit, Re-Rating), API-Clients, Repositories/Migrationen, Backup, OCR, Übersetzungen, Screens/Features

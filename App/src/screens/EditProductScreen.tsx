@@ -137,7 +137,9 @@ export default function EditProductScreen() {
   const onUpload = async () => {
     if (!values) return;
     if (Object.keys(form.offPayload).length === 0) {
-      setToast({ message: t('upload.nothingChanged'), type: 'info' });
+      // Clearing a value is kept on the device; OFF only receives values.
+      const message = form.hasChanges ? t('upload.onlyCleared') : t('upload.nothingChanged');
+      setToast({ message, type: 'info' });
       return;
     }
     const check = await form.prepareUpload();

@@ -92,11 +92,26 @@ export class ProductEditService {
   offPayload(session: EditSession, values: ProductFormValues): Record<string, string> {
     const record = session.record;
     if (!record?.last_api_fetch) return toOffPayload(values);
+    const changedNow = changedFields(session.initial, values);
     const edited = mergeEditedFields(
       parseEditedFields(record.edited_fields, record.edited_at),
-      changedFields(session.initial, values)
+      changedNow
     );
-    return toOffPayload(values, edited);
+    // Ingredients changed now: only the languages that changed, not every stored text.
+    const languages = changedNow.includes('ingredients')
+      ? new Set(
+          Object.keys(values.ingredients).filter(
+            (lang) =>
+              values.ingredients[lang].trim() !== (session.initial.ingredients[lang] ?? '').trim()
+          )
+        )
+      : undefined;
+    return toOffPayload(values, edited, languages);
+  }
+
+  /** Whether the form differs from how it was loaded or last saved. */
+  hasChanges(session: EditSession, values: ProductFormValues): boolean {
+    return changedFields(session.initial, values).length > 0;
   }
 
   /** Sends a payload from `offPayload` to Open Food Facts (see config.ts for the target). */

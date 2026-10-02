@@ -139,4 +139,27 @@ describe('ProductEditService', () => {
       quantity: '1 kg',
     });
   });
+
+  it('sends only the ingredient languages that changed', async () => {
+    await repository.saveScan(
+      productRecord({
+        last_api_fetch: '2026-01-01T10:00:00.000Z',
+        raw_json: JSON.stringify({
+          ean: EAN,
+          name: 'Kekse',
+          ingredientsTextByLang: { de: 'Mehl, Zucker', fr: 'Farine, sucre' },
+        }),
+      })
+    );
+    const session = await service.open(EAN);
+    const values = {
+      ...session.initial,
+      ingredients: { ...session.initial.ingredients, de: 'Mehl, Zucker, Salz' },
+    };
+
+    expect(service.offPayload(session, values)).toEqual({
+      ingredients_text_de: 'Mehl, Zucker, Salz',
+    });
+    expect(service.hasChanges(session, values)).toBe(true);
+  });
 });
