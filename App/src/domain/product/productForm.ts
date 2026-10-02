@@ -62,7 +62,9 @@ export function parseDecimal(input: string): ParsedDecimal | undefined | null {
 }
 
 function formatDecimal(value: number | undefined): string {
-  return value === undefined || !Number.isFinite(value) ? '' : String(value);
+  if (value === undefined || !Number.isFinite(value)) return '';
+  // Plain notation: tiny values from OFF would otherwise show as "1e-7".
+  return String(Number(value.toFixed(6)));
 }
 
 export function emptyForm(): ProductFormValues {
@@ -125,10 +127,16 @@ export function formFromProduct(product: Product): ProductFormValues {
   };
 }
 
-export function validateForm(values: ProductFormValues): FormErrors {
+/**
+ * Checks the form. With `initial`, nutrients left as loaded are not checked: a
+ * faulty value from Open Food Facts must not block saving an unrelated change.
+ */
+export function validateForm(values: ProductFormValues, initial?: ProductFormValues): FormErrors {
   const errors: FormErrors = {};
   for (const field of NUTRIENT_FIELDS) {
-    const parsed = parseDecimal(values.nutriments[field.key]);
+    const input = values.nutriments[field.key];
+    if (initial && input.trim() === initial.nutriments[field.key].trim()) continue;
+    const parsed = parseDecimal(input);
     if (parsed === null) errors[field.key] = 'number';
     else if (parsed && parsed.value > field.max) errors[field.key] = 'range';
   }
@@ -137,8 +145,11 @@ export function validateForm(values: ProductFormValues): FormErrors {
 }
 
 /** Validation for uploading to Open Food Facts: additionally requires a name. */
-export function validateForUpload(values: ProductFormValues): FormErrors {
-  const errors = validateForm(values);
+export function validateForUpload(
+  values: ProductFormValues,
+  initial?: ProductFormValues
+): FormErrors {
+  const errors = validateForm(values, initial);
   if (!values.name.trim()) errors.name = 'required';
   return errors;
 }

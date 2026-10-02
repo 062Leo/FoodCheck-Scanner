@@ -61,8 +61,11 @@ export function useProductEditForm(ean: string | undefined) {
 
   const errors = useMemo<FormErrors>(() => {
     if (!values || errorMode === 'none') return {};
-    return errorMode === 'upload' ? validateForUpload(values) : validateForm(values);
-  }, [values, errorMode]);
+    const initial = session?.initial;
+    return errorMode === 'upload'
+      ? validateForUpload(values, initial)
+      : validateForm(values, initial);
+  }, [values, errorMode, session]);
   const isDirty = values !== null && formSnapshot(values) !== savedSnapshot;
 
   const setField = useCallback((field: TextField, value: string) => {
@@ -113,7 +116,7 @@ export function useProductEditForm(ean: string | undefined) {
 
   const save = useCallback(async (): Promise<SubmitResult> => {
     if (!values) return { ok: false, reason: 'failed', error: 'not loaded' };
-    const validation = validateForm(values);
+    const validation = validateForm(values, session?.initial);
     if (Object.keys(validation).length > 0) {
       setErrorMode('save');
       return { ok: false, reason: 'invalid', errors: validation };
@@ -124,19 +127,19 @@ export function useProductEditForm(ean: string | undefined) {
     } finally {
       setBusy(null);
     }
-  }, [values, persist]);
+  }, [values, session, persist]);
 
   /** Checks everything needed before the confirmation dialog is shown. */
   const prepareUpload = useCallback(async (): Promise<SubmitResult> => {
     if (!values) return { ok: false, reason: 'failed', error: 'not loaded' };
-    const validation = validateForUpload(values);
+    const validation = validateForUpload(values, session?.initial);
     if (Object.keys(validation).length > 0) {
       setErrorMode('upload');
       return { ok: false, reason: 'invalid', errors: validation };
     }
     if (!(await writeClient.loadCredentials())) return { ok: false, reason: 'needs-account' };
     return { ok: true };
-  }, [values]);
+  }, [values, session]);
 
   /** What an upload would send; empty if the user changed nothing Open Food Facts has. */
   const offPayload = useMemo(

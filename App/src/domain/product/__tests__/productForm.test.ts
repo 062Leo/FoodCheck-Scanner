@@ -6,6 +6,7 @@ import {
   parseDecimal,
   toOffPayload,
   validateForUpload,
+  validateForm,
 } from '../productForm';
 import type { Product } from '../../../types/Product';
 
@@ -101,6 +102,30 @@ describe('product form', () => {
     const b = emptyForm();
     b.ingredients = { en: 'y', de: 'x' };
     expect(formSnapshot(a)).toBe(formSnapshot(b));
+  });
+});
+
+describe('faulty values from Open Food Facts', () => {
+  const faulty: Product = {
+    ean: '1',
+    name: 'Limo',
+    nutriments: { salt100g: 1e-7, energyKcal100g: 3700, fat100g: -1 },
+  };
+
+  it('shows tiny values in plain notation', () => {
+    expect(formFromProduct(faulty).nutriments.salt100g).toBe('0');
+  });
+
+  it('does not block saving an unrelated change', () => {
+    const initial = formFromProduct(faulty);
+    const renamed = { ...initial, name: 'Zitronenlimo' };
+
+    expect(validateForm(renamed, initial)).toEqual({});
+    expect(
+      validateForm({ ...renamed, nutriments: { ...initial.nutriments, fat100g: 'x' } }, initial)
+    ).toEqual({
+      fat100g: 'number',
+    });
   });
 });
 
