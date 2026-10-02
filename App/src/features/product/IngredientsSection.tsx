@@ -51,7 +51,9 @@ export function IngredientsSection({
   const [lang, text] = entries[Math.min(selected, entries.length - 1)];
   const target: SupportedLanguage = language;
   const canTranslate = lang !== target;
-  const translation = translations[`${lang}>${target}`];
+  // Keyed by the text too, so an edited ingredient list never shows the old translation.
+  const translationKey = `${lang}>${target}>${text}`;
+  const translation = translations[translationKey];
 
   const translate = async () => {
     setTranslating(true);
@@ -59,7 +61,7 @@ export function IngredientsSection({
     try {
       const translated = await translationRouter.translate(text, target);
       if (translated && translated !== text) {
-        setTranslations((previous) => ({ ...previous, [`${lang}>${target}`]: translated }));
+        setTranslations((previous) => ({ ...previous, [translationKey]: translated }));
       } else {
         setTranslationFailed(true);
       }
@@ -84,7 +86,10 @@ export function IngredientsSection({
               key={code}
               label={languageLabel(code, t)}
               selected={index === selected}
-              onPress={() => setSelected(index)}
+              onPress={() => {
+                setSelected(index);
+                setTranslationFailed(false);
+              }}
             />
           ))}
         </ScrollView>
