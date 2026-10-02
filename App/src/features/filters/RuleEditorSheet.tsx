@@ -16,6 +16,7 @@ import type {
   NewFilterRule,
 } from '../../types/FilterRule';
 import type { NutrientKey } from '../../types/ScanResult';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TranslateFn } from '../../i18n/useTranslation';
 import { categoryLabel } from '../../i18n/categoryLabels';
 import { parseDecimal } from '../../domain/product/productForm';
@@ -162,6 +163,7 @@ export function RuleEditorSheet({
   onDelete: (rule: FilterRule) => void;
   onClose: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const [form, setForm] = useState<FormState>(() => initialState(rule));
   const [error, setError] = useState<string | null>(null);
 
@@ -193,7 +195,7 @@ export function RuleEditorSheet({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Pressable style={styles.flex} onPress={onClose} accessibilityLabel={t('edit.cancel')} />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: spacing.lg + insets.bottom }]}>
           <View style={styles.header}>
             <Text style={styles.title} accessibilityRole="header">
               {rule ? t('filter.editRule') : t('filter.addRule')}

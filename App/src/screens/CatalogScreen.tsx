@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '../i18n/useTranslation';
 import type { TranslationKey } from '../i18n/translations';
 import { useCatalogStore } from '../store/catalogStore';
@@ -48,6 +49,7 @@ const SORT_LABELS: Record<CatalogSort, TranslationKey> = {
 export default function CatalogScreen() {
   const { t, language } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const products = useCatalogStore((s) => s.products);
   const loadAll = useCatalogStore((s) => s.loadAll);
   const [loaded, setLoaded] = useState(products.length > 0);
@@ -214,7 +216,7 @@ export default function CatalogScreen() {
         onRequestClose={() => setSortOpen(false)}
       >
         <Pressable style={styles.backdrop} onPress={() => setSortOpen(false)}>
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: spacing.lg + insets.bottom }]}>
             <Text style={styles.sheetTitle} accessibilityRole="header">
               {t('catalog.sort.title')}
             </Text>

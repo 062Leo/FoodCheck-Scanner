@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TranslateFn } from '../../i18n/useTranslation';
 import { Button } from '../../ui/components';
 import { colors, radius, spacing, typography } from '../../ui/theme';
@@ -26,6 +27,7 @@ export function ManualEntrySheet({
   onSubmit: (code: string) => boolean;
   onClose: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const [code, setCode] = useState('');
   const [invalid, setInvalid] = useState(false);
 
@@ -54,7 +56,7 @@ export function ManualEntrySheet({
           onPress={close}
           accessibilityLabel={t('manualEntry.cancel')}
         />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: spacing.xl + insets.bottom }]}>
           <Text style={styles.title} accessibilityRole="header">
             {t('manualEntry.title')}
           </Text>

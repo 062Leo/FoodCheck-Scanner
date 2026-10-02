@@ -1,4 +1,5 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TranslateFn } from '../../i18n/useTranslation';
 import { languageLabel } from '../../i18n/languageLabel';
 import { colors, radius, spacing, typography, TOUCH_TARGET } from '../../ui/theme';
@@ -23,11 +24,15 @@ export function LanguagePicker({
   onSelect: (language: string) => void;
   onClose: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const options = includeAll && languages.length > 1 ? [...languages, ALL_LANGUAGES] : languages;
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={t('edit.cancel')}>
-        <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+        <View
+          style={[styles.sheet, { paddingBottom: spacing.lg + insets.bottom }]}
+          onStartShouldSetResponder={() => true}
+        >
           <Text style={styles.title} accessibilityRole="header">
             {title}
           </Text>
