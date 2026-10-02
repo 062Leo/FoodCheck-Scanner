@@ -103,6 +103,25 @@ describe('RedFlagAnalyzer matching', () => {
     expect(keys('Zucker, Farbstoff: Amaranth')).toContain('Amaranth');
   });
 
+  it('reads a written-out additive as one substance, not as the words inside it', () => {
+    const bread = 'Weizenmehl, Wasser, Hefe, Salz, Emulgator: ';
+    expect(
+      keys(
+        `${bread}Mono- und Diacetylweinsäureester von Mono- und Diglyceriden von Speisefettsäuren`
+      )
+    ).toEqual(keys(`${bread}E472e`));
+    expect(
+      keys('Mono- and diacetyl tartaric acid esters of mono- and diglycerides of fatty acids')
+    ).toEqual([]);
+    expect(keys('Kakaobutter, Emulgator: Polyglycerin-Polyricinoleat')).toEqual(
+      keys('Kakaobutter, Emulgator: E476')
+    );
+    expect(keys('Hefe, Sorbitanmonostearat, Natriumaluminiumsilicat')).toEqual([]);
+    // Still found where the word stands on its own or the compound really contains it.
+    expect(keys('Sorbit, Glycerin')).toHaveLength(2);
+    expect(keys('Süßungsmittel: Aspartam-Acesulfam-Salz').length).toBeGreaterThan(0);
+  });
+
   it('reports nothing for an empty text without nutriments', () => {
     expect(analyzer.analyze('', SEEDED_RULES)).toEqual([]);
   });

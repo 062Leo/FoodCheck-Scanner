@@ -66,6 +66,31 @@ const CONTEXT_BOUND_E_NUMBERS: Record<string, RegExp> = {
   E123: COLOUR_CONTEXT,
 };
 
+/**
+ * Written-out E472a–f, e.g. "Mono- und Diacetylweinsäureester von Mono- und Diglyceriden
+ * von Speisefettsäuren": one emulsifier, not tartaric acid, E471 and fatty acids.
+ */
+const E472_NAMES = [
+  /[a-zäöüß-]*säureester\s+von\s+mono-?\s*und\s+diglyceriden\s+(?:von\s+|der\s+)?speisefettsäuren/g,
+  /[a-z-]+(?:\s+[a-z-]+)?\s+acid\s+esters\s+of\s+mono-?\s*and\s+di-?glycerides\s+of\s+fatty\s+acids/g,
+];
+
+/** Additive names shorter than this are too generic to hide the words inside them. */
+const MIN_SHIELD_NAME_LENGTH = 8;
+/** Additives made of the additives they name: the aspartame-acesulfame salt is aspartame. */
+const NAMES_OF_REAL_PARTS = new Set(['E962']);
+
+/**
+ * A written-out additive name that hides the words inside it: "Sorbit" in
+ * "Sorbitanmonostearat" is not sorbitol. Without an E-number it hides every word inside.
+ */
+interface NameShield {
+  span: TextSpan;
+  eNumber?: string;
+}
+
+const eNumberFamily = (eNumber: string) => eNumber.match(/^E\d+/)?.[0] ?? eNumber;
+
 /** E-number families whose members are interchangeable label variants (caramel colours). */
 const MERGEABLE_FAMILIES = new Set(['E150']);
 
@@ -103,10 +128,17 @@ interface Whitelist {
 export class RedFlagAnalyzer {
   private readonly parser: IngredientParser;
   private readonly taxonomy: IngredientTaxonomy;
+  private readonly additiveNames: { name: string; eNumber: string }[];
 
   constructor(private readonly defaultRules: AnalyzerRule[] = defaultRedFlagRules) {
     this.parser = new IngredientParser();
     this.taxonomy = new IngredientTaxonomy();
+    this.additiveNames = this.taxonomy
+      .writtenNames()
+      .filter(
+        ({ name, eNumber }) =>
+          name.length >= MIN_SHIELD_NAME_LENGTH && !NAMES_OF_REAL_PARTS.has(eNumber)
+      );
   }
 
   /**
@@ -199,17 +231,25 @@ export class RedFlagAnalyzer {
     const allOccurrences = candidates.flatMap((candidate) =>
       candidate.occurrences.map((span) => ({ candidate, span }))
     );
+    const shields = this.findAdditiveNames(lowerText);
 
-    // 1. Drop occurrences inside a longer match of another rule and context-bound
-    //    words outside their context.
+    // 1. Drop occurrences inside a longer match of another rule, inside the written-out
+    //    name of a different additive, and context-bound words outside their context.
     const located: Located[] = [];
     for (const candidate of candidates) {
       const context = CONTEXT_BOUND_KEYS[candidate.canonicalKey.toLowerCase()];
+      const family = candidate.eNumber ? eNumberFamily(candidate.eNumber) : undefined;
       const surviving = candidate.occurrences.filter((span) => {
         const covered = allOccurrences.some(
           (other) => other.candidate !== candidate && isStrictlyContained(span, other.span)
         );
         if (covered) return false;
+        const shielded = shields.some(
+          (shield) =>
+            isStrictlyContained(span, shield.span) &&
+            (!shield.eNumber || (family !== undefined && family !== eNumberFamily(shield.eNumber)))
+        );
+        if (shielded) return false;
         if (!context) return true;
         const item = structure.itemAt(span.start);
         return context.test(text.slice(item.start, item.end));
@@ -282,6 +322,19 @@ export class RedFlagAnalyzer {
         });
       })
       .map((entry) => entry.finding);
+  }
+
+  private findAdditiveNames(lowerText: string): NameShield[] {
+    const shields: NameShield[] = [];
+    for (const { name, eNumber } of this.additiveNames) {
+      for (const span of findOccurrences(lowerText, name)) shields.push({ span, eNumber });
+    }
+    for (const pattern of E472_NAMES) {
+      for (const match of lowerText.matchAll(pattern)) {
+        shields.push({ span: { start: match.index, end: match.index + match[0].length } });
+      }
+    }
+    return shields;
   }
 
   private collectCandidates(

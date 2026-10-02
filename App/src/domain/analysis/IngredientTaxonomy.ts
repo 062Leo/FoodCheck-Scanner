@@ -19,6 +19,16 @@ export class IngredientTaxonomy {
     }
   }
 
+  /** Every written-out name and alias (no E-number spellings) with its E-number. */
+  writtenNames(): { name: string; eNumber: string }[] {
+    const names: { name: string; eNumber: string }[] = [];
+    for (const [name, entry] of this.byAlias) {
+      if (/^e\s*\d/.test(name)) continue;
+      names.push({ name, eNumber: this.normalizeENumber(entry.eNumber) });
+    }
+    return names;
+  }
+
   findByENumber(eNumber: string): AdditiveInfo | undefined {
     return this.byENumber.get(this.normalizeENumber(eNumber));
   }
