@@ -138,14 +138,22 @@ export function useProductEditForm(ean: string | undefined) {
     return { ok: true };
   }, [values]);
 
+  /** What an upload would send; empty if the user changed nothing Open Food Facts has. */
+  const offPayload = useMemo(
+    () => (session && values ? editService.offPayload(session, values) : {}),
+    [session, values]
+  );
+
   /** Saves locally first (so nothing is lost if sending fails), then contributes. */
   const upload = useCallback(async (): Promise<SubmitResult> => {
     if (!session || !values) return { ok: false, reason: 'failed', error: 'not loaded' };
     setBusy('upload');
     try {
+      // Taken before saving: afterwards the form counts as unchanged.
+      const payload = editService.offPayload(session, values);
       const saved = await persist();
       if (!saved.ok) return saved;
-      await editService.contribute(session.ean, values);
+      await editService.contribute(session.ean, payload);
       return { ok: true };
     } catch (error) {
       return { ok: false, reason: 'failed', error };
@@ -157,6 +165,7 @@ export function useProductEditForm(ean: string | undefined) {
   return {
     session,
     values,
+    offPayload,
     errors,
     loadError,
     isDirty,

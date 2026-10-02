@@ -116,7 +116,7 @@
 - **Allergene**: Enthält (kommagetrennt), Spuren
 - **Zusatzinfos**: Herkunft, Herstellungsort, Geschäfte, Portionsgröße
 - **Speichern**: lokal in SQLite; merkt sich, welche Felder verändert wurden, damit ein späteres Update von Open Food Facts nur die nicht bearbeiteten Felder überschreibt
-- **Upload an OFF**: fragt vor dem Senden nach Bestätigung, nennt Zielserver und zu sendende Felder; speichert zuerst lokal, sendet dann nur tatsächlich ausgefüllte Werte; Entwicklungs-Builds senden an den Staging-, Release-Builds an den Produktivserver
+- **Upload an OFF**: fragt vor dem Senden nach Bestätigung, nennt Zielserver und zu sendende Felder; speichert zuerst lokal, sendet dann nur die Felder, die du auf diesem Gerät geändert hast (bei Produkten, die Open Food Facts noch nicht kennt: alle ausgefüllten) – unveränderte, evtl. veraltete Werte überschreiben keine neueren Korrekturen anderer; ohne Änderung meldet die App „nichts zu senden“; Entwicklungs-Builds senden an den Staging-, Release-Builds an den Produktivserver
 - **Ungespeicherte-Änderungen-Warnung**: Navigation-Guard mit Bestätigungsdialog
 - **Auto-Erstellung**: Legt einen Produkt-Stub an, falls für den Barcode noch kein lokaler Eintrag existiert
 

@@ -80,7 +80,7 @@ describe('ProductEditService', () => {
       nutriments: { ...session.initial.nutriments, sugars100g: '9,5' },
     };
 
-    await service.contribute(EAN, values);
+    await service.contribute(EAN, service.offPayload(session, values));
 
     expect(writeClient.updateProduct).toHaveBeenCalledWith(
       EAN,
@@ -90,5 +90,53 @@ describe('ProductEditService', () => {
         nutrition_data_per: '100g',
       })
     );
+  });
+
+  it('sends only what the user changed of a product that came from Open Food Facts', async () => {
+    await repository.saveScan(
+      productRecord({
+        name: 'Brot',
+        last_api_fetch: '2026-01-01T10:00:00.000Z',
+        raw_json: JSON.stringify({
+          ean: EAN,
+          name: 'Brot',
+          quantity: '500 g',
+          allergensTags: ['en:gluten'],
+          nutriments: { salt100g: 1.2, sugars100g: 0.5 },
+        }),
+      })
+    );
+    const session = await service.open(EAN);
+
+    const payload = service.offPayload(session, {
+      ...session.initial,
+      quantity: '750 g',
+      nutriments: { ...session.initial.nutriments, sugars100g: '0,8' },
+    });
+
+    expect(payload).toEqual({
+      quantity: '750 g',
+      nutrition_data_per: '100g',
+      nutriment_sugars: '0.8',
+      nutriment_sugars_unit: 'g',
+    });
+    expect(service.offPayload(session, session.initial)).toEqual({});
+  });
+
+  it('also sends fields the user changed in an earlier edit', async () => {
+    await repository.saveScan(
+      productRecord({ name: 'Brot', last_api_fetch: '2026-01-01T10:00:00.000Z' })
+    );
+    await service.save(
+      await service.open(EAN),
+      { ...(await service.open(EAN)).initial, brand: 'Bäcker' },
+      SEEDED_RULES
+    );
+    const session = await service.open(EAN);
+
+    expect(service.offPayload(session, { ...session.initial, quantity: '1 kg' })).toEqual({
+      brands: 'Bäcker',
+      quantity: '1 kg',
+    });
   });
 });

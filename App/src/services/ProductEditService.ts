@@ -84,8 +84,23 @@ export class ProductEditService {
     return { product, rating };
   }
 
-  /** Sends the entered values to Open Food Facts (see config.ts for the target). */
-  async contribute(ean: string, values: ProductFormValues): Promise<void> {
-    await this.writeClient.updateProduct(ean, toOffPayload(values));
+  /**
+   * What an upload sends: the fields the user changed on this device, now or earlier.
+   * Unchanged values may be an old copy of OFF's data and would undo newer
+   * corrections there. A product that never came from OFF is sent completely.
+   */
+  offPayload(session: EditSession, values: ProductFormValues): Record<string, string> {
+    const record = session.record;
+    if (!record?.last_api_fetch) return toOffPayload(values);
+    const edited = mergeEditedFields(
+      parseEditedFields(record.edited_fields, record.edited_at),
+      changedFields(session.initial, values)
+    );
+    return toOffPayload(values, edited);
+  }
+
+  /** Sends a payload from `offPayload` to Open Food Facts (see config.ts for the target). */
+  async contribute(ean: string, payload: Record<string, string>): Promise<void> {
+    await this.writeClient.updateProduct(ean, payload);
   }
 }

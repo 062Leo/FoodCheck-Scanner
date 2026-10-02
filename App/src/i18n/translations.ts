@@ -372,6 +372,8 @@ const de = {
   'edit.a11y.removeLanguage': '{{lang}} entfernen',
   'edit.a11y.scanLanguage': 'Zutaten auf {{lang}} scannen',
   'edit.a11y.translateLanguage': '{{lang}} in andere Sprache übersetzen',
+  'upload.nothingChanged':
+    'Nichts zu senden: Du hast an den Angaben von Open Food Facts nichts geändert.',
   'upload.confirmTitle': 'An Open Food Facts senden?',
   'upload.confirmBody':
     'Diese Angaben werden unter deinem Konto öffentlich auf {{host}} veröffentlicht:\n\n{{fields}}\n\nDie Daten stehen dort unter der Open Database License.',
@@ -862,6 +864,7 @@ const en: Translations = {
   'edit.a11y.removeLanguage': 'Remove {{lang}}',
   'edit.a11y.scanLanguage': 'Scan ingredients in {{lang}}',
   'edit.a11y.translateLanguage': 'Translate {{lang}} into another language',
+  'upload.nothingChanged': 'Nothing to send: you have not changed any Open Food Facts data.',
   'upload.confirmTitle': 'Send to Open Food Facts?',
   'upload.confirmBody':
     'These details will be published under your account on {{host}}:\n\n{{fields}}\n\nThe data is shared under the Open Database License.',

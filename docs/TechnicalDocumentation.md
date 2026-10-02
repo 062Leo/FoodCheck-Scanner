@@ -343,7 +343,7 @@ Migrations are append-only and run inside a transaction (or sequentially where t
 | Endpoint | `POST {WRITE_BASE_URL}/cgi/product_jqm2.pl` |
 | Target | `https://world.openfoodfacts.net` (staging) in development builds, `https://world.openfoodfacts.org` (production) in release builds; `EXPO_PUBLIC_OFF_WRITE_ENV` overrides |
 | Auth | `user_id` + `password` in the form body, entered once and stored via expo-secure-store |
-| Required fields | `code`, `user_id`, `password`, `product_name` |
+| Fields sent | `code`, `user_id`, `password`, plus only the fields the user changed on this device (`ProductEditService.offPayload`, based on `edited_fields`); a product that never came from OFF is sent with every filled-in field |
 | Success | Read from the JSON status field (not "response contains a 1") |
 | Multi-language | `product_name_de`, `ingredients_text_de`, etc. |
 

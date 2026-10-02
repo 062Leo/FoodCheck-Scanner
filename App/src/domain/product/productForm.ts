@@ -1,5 +1,6 @@
 import type { NovaScore, Product, ProductNutriments } from '../../types/Product';
 import { hasProductName } from './productName';
+import type { EditedFields } from './editedFields';
 
 /** Nutrients editable per 100 g, with plausible upper bounds. */
 export const NUTRIENT_FIELDS = [
@@ -194,39 +195,41 @@ export function applyForm(base: Product, values: ProductFormValues): Product {
 }
 
 /**
- * Fields for the Open Food Facts write API (product_jqm2.pl). Only non-empty
- * values are sent; values the user did not enter never overwrite data on OFF.
+ * Fields for the Open Food Facts write API (product_jqm2.pl). Only non-empty values
+ * of the given fields are sent: values the user did not enter or change never
+ * overwrite data on OFF, not even with an older copy of OFF's own data.
  */
-export function toOffPayload(values: ProductFormValues): Record<string, string> {
+export function toOffPayload(
+  values: ProductFormValues,
+  fields: EditedFields = 'all'
+): Record<string, string> {
   const payload: Record<string, string> = {};
-  const set = (key: string, value: string) => {
+  const included = (field: string) => fields === 'all' || (fields as Set<string>).has(field);
+  const set = (field: keyof ProductFormValues, key: string, value: string) => {
     const trimmed = value.trim();
-    if (trimmed) payload[key] = trimmed;
+    if (trimmed && included(field)) payload[key] = trimmed;
   };
 
-  set('product_name', values.name);
-  set('brands', values.brand);
-  set('quantity', values.quantity);
-  set('categories', values.categories);
-  set('serving_size', values.servingSize);
-  set('allergens', values.allergens);
-  set('traces', values.traces);
-  set('origins', values.origins);
-  set('manufacturing_places', values.manufacturingPlaces);
-  set('stores', values.stores);
+  set('name', 'product_name', values.name);
+  set('brand', 'brands', values.brand);
+  set('quantity', 'quantity', values.quantity);
+  set('categories', 'categories', values.categories);
+  set('servingSize', 'serving_size', values.servingSize);
+  set('allergens', 'allergens', values.allergens);
+  set('traces', 'traces', values.traces);
+  set('origins', 'origins', values.origins);
+  set('manufacturingPlaces', 'manufacturing_places', values.manufacturingPlaces);
+  set('stores', 'stores', values.stores);
   for (const [lang, text] of Object.entries(values.ingredients)) {
-    set(`ingredients_text_${lang}`, text);
+    set('ingredients', `ingredients_text_${lang}`, text);
   }
 
-  const hasNutrients = NUTRIENT_FIELDS.some((f) => parseDecimal(values.nutriments[f.key]));
-  if (hasNutrients) {
+  for (const field of NUTRIENT_FIELDS) {
+    const parsed = parseDecimal(values.nutriments[field.key]);
+    if (!parsed || !included(`nutriments.${field.key}`)) continue;
     payload.nutrition_data_per = '100g';
-    for (const field of NUTRIENT_FIELDS) {
-      const parsed = parseDecimal(values.nutriments[field.key]);
-      if (!parsed) continue;
-      payload[`nutriment_${field.off}`] = `${parsed.lessThan ? '<' : ''}${parsed.value}`;
-      payload[`nutriment_${field.off}_unit`] = field.unit;
-    }
+    payload[`nutriment_${field.off}`] = `${parsed.lessThan ? '<' : ''}${parsed.value}`;
+    payload[`nutriment_${field.off}_unit`] = field.unit;
   }
   return payload;
 }

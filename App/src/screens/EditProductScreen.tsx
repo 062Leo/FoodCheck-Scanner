@@ -17,7 +17,6 @@ import type { TranslationKey } from '../i18n/translations';
 import {
   NUTRIENT_FIELDS,
   payloadSummary,
-  toOffPayload,
   type FormErrorKey,
   type NutrientField,
 } from '../domain/product/productForm';
@@ -137,6 +136,10 @@ export default function EditProductScreen() {
 
   const onUpload = async () => {
     if (!values) return;
+    if (Object.keys(form.offPayload).length === 0) {
+      setToast({ message: t('upload.nothingChanged'), type: 'info' });
+      return;
+    }
     const check = await form.prepareUpload();
     if (!check.ok) {
       if (check.reason === 'needs-account') setShowAccountSetup(true);
@@ -145,7 +148,7 @@ export default function EditProductScreen() {
       return;
     }
 
-    const fields = payloadSummary(toOffPayload(values)).map((part) => {
+    const fields = payloadSummary(form.offPayload).map((part) => {
       if (part.startsWith('ingredients:')) {
         return `• ${t('upload.field.ingredients', { langs: part.split(':')[1] })}`;
       }
