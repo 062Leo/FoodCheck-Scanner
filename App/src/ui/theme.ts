@@ -3,8 +3,9 @@
  * greys, green accent, traffic-light colours); components must not use literals.
  *
  * Contrast (against `bg` #121212): text 18.7:1, textSecondary 10.0:1,
- * textMuted 7.0:1, accent 6.7:1. Text on filled status/accent surfaces uses the
- * matching `on*` colour (all >= 4.5:1).
+ * textMuted 7.0:1, accent 6.7:1, danger 6.3:1 (5.2:1 on dangerSubtle, 5.1:1 on
+ * surfaceRaised). Text on filled status/accent surfaces uses the matching `on*` colour
+ * (all >= 4.5:1).
  */
 export const colors = {
   bg: '#121212',
@@ -24,7 +25,7 @@ export const colors = {
   /** Translucent fill for selections drawn on photos. */
   selectionFill: 'rgba(76,175,80,0.15)',
 
-  danger: '#EF5350',
+  danger: '#F26B69',
   dangerSubtle: '#3A1D1D',
   warning: '#FFC107',
   info: '#64B5F6',
@@ -65,13 +66,13 @@ export const colors = {
     d: '#EE8100',
     e: '#E63E11',
   } as Record<string, string>,
-  /** Text on Nutri-Score colours (dark on the light middle grades). */
+  /** Text on Nutri-Score colours: dark everywhere but on A (white on E reaches only 4.2:1). */
   onNutriScore: {
     a: '#FFFFFF',
     b: '#121212',
     c: '#121212',
     d: '#121212',
-    e: '#FFFFFF',
+    e: '#121212',
   } as Record<string, string>,
 
   scrim: 'rgba(0,0,0,0.6)',
