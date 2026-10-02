@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { OpenFoodFactsWriteClient } from '../infrastructure/api/OpenFoodFactsWriteClient';
 import { WRITE_HOST } from '../infrastructure/api/config';
 import { BackupError, BackupService } from '../infrastructure/db/BackupService';
@@ -79,10 +79,13 @@ export default function SettingsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadAccount();
-    void loadBackupState();
-  }, [loadAccount, loadBackupState]);
+  // The tab stays mounted: reload on every visit, e.g. after logging in from the editor.
+  useFocusEffect(
+    useCallback(() => {
+      loadAccount();
+      void loadBackupState();
+    }, [loadAccount, loadBackupState])
+  );
 
   const hasBackupFolder = backupDirLabel.length > 0;
   const lastBackupText = lastBackupTime
