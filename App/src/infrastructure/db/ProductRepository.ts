@@ -163,16 +163,40 @@ export class ProductRepository {
   }
 
   /** Writes new ratings in one transaction. */
-  async updateRatings(changes: Array<{ ean: string; rating: ScanStatus }>): Promise<void> {
+  /**
+   * Writes new ratings. A change with `basedOn` is skipped if the product's data
+   * changed since it was read, so a rating computed from old data never replaces
+   * the one saved with an edit or a fresh lookup meanwhile.
+   */
+  async updateRatings(
+    changes: Array<{ ean: string; rating: ScanStatus; basedOn?: RatingInput }>
+  ): Promise<void> {
     if (changes.length === 0) return;
     try {
       const database = await getDatabase();
       await database.withTransactionAsync(async () => {
-        for (const change of changes) {
-          await database.runAsync('UPDATE products SET rating = $rating WHERE ean = $ean;', {
-            $rating: change.rating,
-            $ean: change.ean,
-          });
+        for (const { ean, rating, basedOn } of changes) {
+          if (!basedOn) {
+            await database.runAsync('UPDATE products SET rating = $rating WHERE ean = $ean;', {
+              $rating: rating,
+              $ean: ean,
+            });
+            continue;
+          }
+          await database.runAsync(
+            `UPDATE products SET rating = $rating
+             WHERE ean = $ean AND raw_json IS $raw_json AND ingredients IS $ingredients
+               AND nova_score IS $nova_score AND name IS $name AND brands IS $brands;`,
+            {
+              $rating: rating,
+              $ean: ean,
+              $raw_json: basedOn.raw_json,
+              $ingredients: basedOn.ingredients,
+              $nova_score: basedOn.nova_score,
+              $name: basedOn.name,
+              $brands: basedOn.brands,
+            }
+          );
         }
       });
     } catch (error) {

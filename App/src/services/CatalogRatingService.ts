@@ -1,5 +1,4 @@
 import type { FilterRule } from '../types/FilterRule';
-import type { ScanStatus } from '../types/ScanResult';
 import { ProductRepository } from '../infrastructure/db/ProductRepository';
 import { getMetaValue, setMetaValue } from '../infrastructure/db/DatabaseService';
 import { rateProduct } from '../domain/analysis/rateProduct';
@@ -70,7 +69,7 @@ export class CatalogRatingService {
   /** Re-rates every stored product. Returns the number of changed ratings. */
   async rerateAll(rules: FilterRule[]): Promise<number> {
     const rows = await this.repository.findAllForRating();
-    const changes: Array<{ ean: string; rating: ScanStatus }> = [];
+    const changes: Parameters<ProductRepository['updateRatings']>[0] = [];
 
     for (const [index, row] of rows.entries()) {
       // Yield to the UI thread regularly so large catalogs do not freeze the app.
@@ -80,7 +79,7 @@ export class CatalogRatingService {
       const product = productFromRecord(row);
       const status = rateProduct(product, rules).status;
       if (status !== row.rating) {
-        changes.push({ ean: row.ean, rating: status });
+        changes.push({ ean: row.ean, rating: status, basedOn: row });
       }
     }
 

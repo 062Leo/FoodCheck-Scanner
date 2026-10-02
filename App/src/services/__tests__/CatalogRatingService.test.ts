@@ -52,6 +52,29 @@ describe('CatalogRatingService', () => {
     expect(await ratings()).toEqual({ '4000000000001': 'Unknown', '4000000000002': 'OK' });
   });
 
+  it('keeps a rating saved while the catalog was being re-rated', async () => {
+    const read = repository.findAllForRating.bind(repository);
+    const spy = jest.spyOn(repository, 'findAllForRating').mockImplementationOnce(async () => {
+      const rows = await read();
+      // The user edits the empty product meanwhile; the edit stores its own rating.
+      await repository.saveScan(
+        productRecord({
+          ean: '4000000000001',
+          ingredients: 'Wasser',
+          nova_score: 1,
+          raw_json: JSON.stringify({ ean: '4000000000001', name: 'Wasser', novaScore: 1 }),
+          rating: 'OK',
+        })
+      );
+      return rows;
+    });
+
+    await service.rerateAll(SEEDED_RULES);
+    spy.mockRestore();
+
+    expect((await ratings())['4000000000001']).toBe('OK');
+  });
+
   it('applies rule changes to the whole catalog', async () => {
     await service.rerateAll(SEEDED_RULES);
     await service.rerateAll(CUSTOMISED_RULES);
