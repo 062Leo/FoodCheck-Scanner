@@ -96,12 +96,23 @@ export function findOccurrences(lowerText: string, term: string): TextSpan[] {
   return spans;
 }
 
-/** Occurrences of `term` as a whole word only ("sel" in "sel marin", not in "sellerie"). */
-export function findWholeWords(lowerText: string, term: string): TextSpan[] {
-  return findOccurrences(lowerText, term).filter(
-    (span) =>
-      isBoundary(lowerText[span.start - 1], LETTER) && isBoundary(lowerText[span.end], LETTER)
-  );
+/** Endings a short word may carry: plurals ("œufs") and inflections, never more. */
+const WORD_FORM_ENDINGS = new Set(['', 's', 'es', 'x', 'e', 'n', 'en']);
+
+/**
+ * Occurrences of `term` at the start of a word, followed only by a plural or
+ * inflection ending: "sel" in "sel marin", not in "sellerie"; "œuf" in "œufs".
+ */
+export function findWordForms(lowerText: string, term: string): TextSpan[] {
+  return findOccurrences(lowerText, term).filter((span) => {
+    if (!isBoundary(lowerText[span.start - 1], LETTER)) return false;
+    let ending = '';
+    for (let i = span.end; i < lowerText.length && LETTER.test(lowerText[i]); i++) {
+      ending += lowerText[i];
+      if (ending.length > 2) return false;
+    }
+    return WORD_FORM_ENDINGS.has(ending);
+  });
 }
 
 /** True if `inner` lies inside `outer` and `outer` is strictly longer. */

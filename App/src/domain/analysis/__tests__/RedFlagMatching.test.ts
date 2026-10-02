@@ -10,6 +10,9 @@ import type { FilterRule } from '../../../types/FilterRule';
 
 const analyzer = new RedFlagAnalyzer();
 const keys = (text: string) => analyzer.analyze(text, SEEDED_RULES).map((f) => f.canonicalKey);
+/** Substances found: the E-number where there is one, so names and codes compare equal. */
+const substances = (text: string) =>
+  analyzer.analyze(text, SEEDED_RULES).map((f) => f.eNumber ?? f.canonicalKey);
 
 describe('IngredientMatching', () => {
   it('joins spaced and hyphenated E-numbers', () => {
@@ -116,13 +119,22 @@ describe('RedFlagAnalyzer matching', () => {
     expect(keys('Kakaobutter, Emulgator: Polyglycerin-Polyricinoleat')).toEqual(
       keys('Kakaobutter, Emulgator: E476')
     );
-    expect(keys('Hefe, Sorbitanmonostearat, Natriumaluminiumsilicat')).toEqual([]);
+    // ...and counts like its own E-number.
+    expect(substances('Hefe, Sorbitanmonostearat, Natriumaluminiumsilicat')).toEqual(
+      substances('Hefe, E491, E554')
+    );
+    expect(
+      substances('Zucker, Milchsäureester von Mono- und Diglyceriden von Speisefettsäuren')
+    ).toEqual(substances('Zucker, E472b'));
+    expect(
+      substances('flour, emulsifier lactic acid esters of mono- and diglycerides of fatty acids')
+    ).toEqual(substances('flour, emulsifier E472b'));
     // Still found where the word stands on its own or the compound really contains it.
     expect(keys('Sorbit, Glycerin')).toHaveLength(2);
     expect(keys('Süßungsmittel: Aspartam-Acesulfam-Salz').length).toBeGreaterThan(0);
   });
 
-  it('matches short translations of a rule only as whole words', () => {
+  it('matches short translations of a rule only as words of their own', () => {
     const salt: FilterRule = {
       id: 1,
       key: 'Salz',
@@ -138,6 +150,23 @@ describe('RedFlagAnalyzer matching', () => {
     expect(found('Sellerie, Karotten, Salami')).toBe(0);
     expect(found('Eau, sel, sucre')).toBe(1);
     expect(found('Meersalz')).toBe(1);
+  });
+
+  it('still finds plurals of short translations and compounds of longer ones', () => {
+    const rule = (key: string, translations: string): FilterRule => ({
+      id: 1,
+      key,
+      type: 'ingredient',
+      severity: 'red_flag',
+      category: 'Eigene',
+      translations,
+      created_at: '2026-01-01T00:00:00.000Z',
+    });
+    const found = (text: string, r: FilterRule) => analyzer.analyze(text, [r]).length;
+
+    expect(found('farine, œufs frais', rule('Ei', '{"fr":"Œuf"}'))).toBe(1);
+    expect(found('magere melkpoeder', rule('Milch', '{"nl":"Melk"}'))).toBe(1);
+    expect(found('suiker, walnoot', rule('Nuss', '{"nl":"Noot"}'))).toBe(1);
   });
 
   it('reports nothing for an empty text without nutriments', () => {

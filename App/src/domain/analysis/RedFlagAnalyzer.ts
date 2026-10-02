@@ -9,7 +9,7 @@ import { getAllSearchTerms, resolveIngredientKey } from '../rules/ingredientTran
 import {
   IngredientStructure,
   findOccurrences,
-  findWholeWords,
+  findWordForms,
   isENumberTerm,
   isStrictlyContained,
   lowerCasePreservingLength,
@@ -69,15 +69,28 @@ const CONTEXT_BOUND_E_NUMBERS: Record<string, RegExp> = {
 
 /**
  * Written-out E472a–f, e.g. "Mono- und Diacetylweinsäureester von Mono- und Diglyceriden
- * von Speisefettsäuren": one emulsifier, not tartaric acid, E471 and fatty acids.
+ * von Speisefettsäuren": one emulsifier, not tartaric acid, E471 and fatty acids. The
+ * first group names the acid, which decides the E-number.
  */
 const E472_NAMES = [
-  /[a-zäöüß-]*säureester\s+von\s+mono-?\s*und\s+diglyceriden\s+(?:von\s+|der\s+)?speisefettsäuren/g,
-  /[a-z-]+(?:\s+[a-z-]+)?\s+acid\s+esters\s+of\s+mono-?\s*and\s+di-?glycerides\s+of\s+fatty\s+acids/g,
+  /(?:mono-?\s*und\s+)?(diacetylweinsäure|essig-?\s*und\s+weinsäure|essigsäure|milchsäure|citronensäure|zitronensäure|weinsäure)ester\s+von\s+mono-?\s*und\s+diglyceriden\s+(?:von\s+|der\s+)?speisefettsäuren/g,
+  /(?:mono-?\s*and\s+)?(diacetyl\s+tartaric|mixed\s+acetic\s+and\s+tartaric|acetic|lactic|citric|tartaric)\s+acid\s+esters\s+of\s+mono-?\s*and\s+di-?glycerides\s+of\s+fatty\s+acids/g,
+];
+const E472_ACIDS: [RegExp, string][] = [
+  [/diacetyl/, 'E472e'],
+  [/(essig|acetic).*(wein|tartaric)/, 'E472f'],
+  [/essig|acetic/, 'E472a'],
+  [/milch|lactic/, 'E472b'],
+  [/citron|zitron|citric/, 'E472c'],
+  [/wein|tartaric/, 'E472d'],
 ];
 
-/** Translations of a rule up to this length match only as whole words. */
-const MAX_SHORT_TRANSLATION_LENGTH = 4;
+/**
+ * Translations of a rule up to this length match only as words of their own (with
+ * plural endings): "Sel" and "Sal" would otherwise hit "Sellerie" and "Salami". Longer
+ * ones match inside compounds, as Dutch and German need ("melkpoeder", "walnoot").
+ */
+const MAX_SHORT_TRANSLATION_LENGTH = 3;
 
 /** Additive names shorter than this are too generic to hide the words inside them. */
 const MIN_SHIELD_NAME_LENGTH = 8;
@@ -85,15 +98,28 @@ const MIN_SHIELD_NAME_LENGTH = 8;
 const NAMES_OF_REAL_PARTS = new Set(['E962']);
 
 /**
- * A written-out additive name that hides the words inside it: "Sorbit" in
- * "Sorbitanmonostearat" is not sorbitol. Without an E-number it hides every word inside.
+ * A written-out additive name. It counts for rules on its own E-number and hides the
+ * words of other additives inside it: "Sorbit" in "Sorbitanmonostearat" is not
+ * sorbitol. `hidesAll` also hides words without an E-number ("Speisefettsäuren").
  */
 interface NameShield {
   span: TextSpan;
-  eNumber?: string;
+  eNumber: string;
+  hidesAll: boolean;
 }
 
 const eNumberFamily = (eNumber: string) => eNumber.match(/^E\d+/)?.[0] ?? eNumber;
+
+/** Whether `shield` hides a match of a substance of the E-number family `family`. */
+const hides = (shield: NameShield, span: TextSpan, family: string | undefined) =>
+  isStrictlyContained(span, shield.span) &&
+  family !== eNumberFamily(shield.eNumber) &&
+  (shield.hidesAll || family !== undefined);
+
+/** A rule on "E472" also covers E472a–f, as it does for the written codes. */
+const ruleCoversENumber = (ruleENumber: string, eNumber: string) =>
+  ruleENumber === eNumber ||
+  (ruleENumber === eNumberFamily(ruleENumber) && ruleENumber === eNumberFamily(eNumber));
 
 /** E-number families whose members are interchangeable label variants (caramel colours). */
 const MERGEABLE_FAMILIES = new Set(['E150']);
@@ -133,10 +159,10 @@ export class RedFlagAnalyzer {
   private readonly parser: IngredientParser;
   private readonly taxonomy: IngredientTaxonomy;
   private readonly additiveNames: { name: string; eNumber: string }[];
-  /** Search terms per rule; they depend only on the rule, not on the product. */
-  private readonly searchTerms = new WeakMap<
+  /** Search terms and E-number per rule; they depend only on the rule, not on the product. */
+  private readonly ruleTerms = new WeakMap<
     FilterRule,
-    { translations: unknown; terms: string[] }
+    { translations: unknown; terms: string[]; eNumber?: string }
   >();
 
   constructor(private readonly defaultRules: AnalyzerRule[] = defaultRedFlagRules) {
@@ -236,11 +262,11 @@ export class RedFlagAnalyzer {
     whitelist: Whitelist
   ): RedFlagFinding[] {
     const structure = new IngredientStructure(text);
-    const candidates = this.collectCandidates(rules, text, lowerText, whitelist);
+    const shields = this.findAdditiveNames(lowerText);
+    const candidates = this.collectCandidates(rules, text, lowerText, whitelist, shields);
     const allOccurrences = candidates.flatMap((candidate) =>
       candidate.occurrences.map((span) => ({ candidate, span }))
     );
-    const shields = this.findAdditiveNames(lowerText);
 
     // 1. Drop occurrences inside a longer match of another rule, inside the written-out
     //    name of a different additive, and context-bound words outside their context.
@@ -253,11 +279,7 @@ export class RedFlagAnalyzer {
           (other) => other.candidate !== candidate && isStrictlyContained(span, other.span)
         );
         if (covered) return false;
-        const shielded = shields.some(
-          (shield) =>
-            isStrictlyContained(span, shield.span) &&
-            (!shield.eNumber || (family !== undefined && family !== eNumberFamily(shield.eNumber)))
-        );
+        const shielded = shields.some((shield) => hides(shield, span, family));
         if (shielded) return false;
         if (!context) return true;
         const item = structure.itemAt(span.start);
@@ -333,22 +355,30 @@ export class RedFlagAnalyzer {
       .map((entry) => entry.finding);
   }
 
-  private searchTermsOf(rule: FilterRule): string[] {
-    const cached = this.searchTerms.get(rule);
-    if (cached && cached.translations === rule.translations) return cached.terms;
+  private termsOf(rule: FilterRule): { terms: string[]; eNumber?: string } {
+    const cached = this.ruleTerms.get(rule);
+    if (cached && cached.translations === rule.translations) return cached;
     const terms = getAllSearchTerms(rule.key, rule.translations);
-    this.searchTerms.set(rule, { translations: rule.translations, terms });
-    return terms;
+    const eNumber = terms.map((term) => this.resolveENumber(term)).find(Boolean);
+    const entry = { translations: rule.translations, terms, eNumber };
+    this.ruleTerms.set(rule, entry);
+    return entry;
   }
 
   private findAdditiveNames(lowerText: string): NameShield[] {
     const shields: NameShield[] = [];
     for (const { name, eNumber } of this.additiveNames) {
-      for (const span of findOccurrences(lowerText, name)) shields.push({ span, eNumber });
+      for (const span of findOccurrences(lowerText, name)) {
+        shields.push({ span, eNumber, hidesAll: false });
+      }
     }
     for (const pattern of E472_NAMES) {
       for (const match of lowerText.matchAll(pattern)) {
-        shields.push({ span: { start: match.index, end: match.index + match[0].length } });
+        const eNumber = this.taxonomy.normalizeENumber(
+          E472_ACIDS.find(([acid]) => acid.test(match[1]))?.[1] ?? 'E472'
+        );
+        const span = { start: match.index, end: match.index + match[0].length };
+        shields.push({ span, eNumber, hidesAll: true });
       }
     }
     return shields;
@@ -358,7 +388,8 @@ export class RedFlagAnalyzer {
     rules: AnalyzerRule[],
     text: string,
     lowerText: string,
-    whitelist: Whitelist
+    whitelist: Whitelist,
+    shields: NameShield[]
   ): Candidate[] {
     const candidates: Candidate[] = [];
 
@@ -367,12 +398,15 @@ export class RedFlagAnalyzer {
       canonicalKey: string,
       category: string,
       severity: RedFlagSeverity,
-      occurrences: TextSpan[]
+      occurrences: TextSpan[],
+      knownENumber?: string
     ) => {
       if (occurrences.length === 0 || this.isWhitelistedKey(key, whitelist)) return;
       const first = occurrences.reduce((a, b) => (b.start < a.start ? b : a));
       const eNumber =
-        this.resolveENumber(key) ?? this.resolveENumber(text.substring(first.start, first.end));
+        knownENumber ??
+        this.resolveENumber(key) ??
+        this.resolveENumber(text.substring(first.start, first.end));
       if (eNumber && whitelist.eNumbers.has(eNumber)) return;
       candidates.push({
         key,
@@ -385,17 +419,17 @@ export class RedFlagAnalyzer {
       });
     };
 
+    const filterRules: { rule: FilterRule; eNumber?: string; occurrences: TextSpan[] }[] = [];
     for (const rule of rules) {
       if (this.isFilterRule(rule)) {
         if (rule.severity !== 'red_flag' || rule.type !== 'ingredient') continue;
-        // Short translations ("Sel", "Sal") hide inside unrelated words in other
-        // languages ("Sellerie", "Salami"), so they only count as whole words.
-        const occurrences = this.searchTermsOf(rule).flatMap((term, index) =>
+        const { terms, eNumber } = this.termsOf(rule);
+        const occurrences = terms.flatMap((term, index) =>
           index > 0 && term.trim().length <= MAX_SHORT_TRANSLATION_LENGTH
-            ? findWholeWords(lowerText, term)
+            ? findWordForms(lowerText, term)
             : findOccurrences(lowerText, term)
         );
-        add(rule.key, rule.key, rule.category, 'critical', occurrences);
+        filterRules.push({ rule, eNumber, occurrences });
         continue;
       }
 
@@ -406,6 +440,38 @@ export class RedFlagAnalyzer {
         rule.severity,
         findOccurrences(lowerText, rule.searchTerm)
       );
+    }
+
+    // A written-out name that hides another substance's word counts like its own
+    // E-number instead: "Natriumaluminiumsilicat" is E554, not aluminium. Names that hide
+    // nothing add nothing, so the rule list keeps its meaning. Outer names first, once.
+    const matches = [
+      ...filterRules.flatMap((entry) =>
+        entry.occurrences.map((span) => ({ span, eNumber: entry.eNumber }))
+      ),
+      ...candidates.flatMap((c) => c.occurrences.map((span) => ({ span, eNumber: c.eNumber }))),
+    ];
+    const byLength = [...shields].sort(
+      (a, b) => b.span.end - b.span.start - (a.span.end - a.span.start)
+    );
+    const credited: TextSpan[] = [];
+    for (const shield of byLength) {
+      const within = (outer: TextSpan) =>
+        outer.start <= shield.span.start && shield.span.end <= outer.end;
+      if (credited.some(within) || matches.some((match) => within(match.span))) continue;
+      const hidesSomething = matches.some((match) =>
+        hides(shield, match.span, match.eNumber ? eNumberFamily(match.eNumber) : undefined)
+      );
+      if (!hidesSomething) continue;
+      credited.push(shield.span);
+      for (const entry of filterRules) {
+        if (entry.eNumber && ruleCoversENumber(entry.eNumber, shield.eNumber)) {
+          entry.occurrences.push(shield.span);
+        }
+      }
+    }
+    for (const { rule, eNumber, occurrences } of filterRules) {
+      add(rule.key, rule.key, rule.category, 'critical', occurrences, eNumber);
     }
 
     return candidates;
