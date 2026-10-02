@@ -158,6 +158,21 @@ describe('OpenFoodFactsClient', () => {
       expect(product!.ingredientsText).toBe('Water, sugar');
     });
 
+    it('keeps the main-language text under its own language', async () => {
+      (fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          status: 1,
+          product: { product_name: 'Kofola', lang: 'cs', ingredients_text: 'voda, cukr' },
+        }),
+      });
+
+      const product = await client.getProductByEan('123');
+
+      expect(product!.ingredientsTextByLang).toEqual({ cs: 'voda, cukr' });
+      expect(product!.ingredientsText).toBe('voda, cukr');
+    });
+
     it('should handle minimal response gracefully', async () => {
       (fetch as jest.Mock).mockResolvedValue({
         ok: true,

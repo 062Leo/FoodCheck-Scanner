@@ -23,6 +23,7 @@ const PRODUCT_FIELDS = [
   'traces',
   'traces_tags',
   'additives_tags',
+  'lang',
   'ingredients_text',
   'ingredients_text_de',
   'ingredients_text_en',
@@ -84,6 +85,17 @@ function mapOffProduct(ean: string, p: Record<string, unknown>): Product {
       ingredientsTextByLang[lang] = value;
     }
   });
+  // The plain field is the text in the product's main language, which may be one not
+  // requested above (e.g. Czech): keep it under that language, never under another.
+  const mainLanguage = typeof p.lang === 'string' && /^[a-z]{2}$/.test(p.lang) ? p.lang : null;
+  if (
+    mainLanguage &&
+    typeof p.ingredients_text === 'string' &&
+    p.ingredients_text.trim() &&
+    !ingredientsTextByLang[mainLanguage]?.trim()
+  ) {
+    ingredientsTextByLang[mainLanguage] = p.ingredients_text;
+  }
 
   return {
     ean,
