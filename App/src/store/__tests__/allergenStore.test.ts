@@ -74,4 +74,17 @@ describe('allergenStore', () => {
     expect(useAllergenStore.getState().enabled).toBe(true);
     expect(selectActiveProfile(useAllergenStore.getState())).toEqual(['milk']);
   });
+
+  it('reports the warning as off when the settings cannot be read', async () => {
+    await useAllergenStore.getState().toggle('milk');
+    await useAllergenStore.getState().setEnabled(true);
+    jest.spyOn(DatabaseService, 'getMetaValue').mockRejectedValueOnce(new Error('locked'));
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await useAllergenStore.getState().loadProfile();
+
+    expect(useAllergenStore.getState().status).toBe('error');
+    expect(selectActiveProfile(useAllergenStore.getState())).toEqual([]);
+    expect(await DatabaseService.getMetaValue(DatabaseService.META_ALLERGEN_WARNING)).toBe('true');
+  });
 });

@@ -51,7 +51,8 @@ export const useAllergenStore = create<AllergenState>((set, get) => {
       set({ profile: parseAllergenProfile(profile), enabled: enabled === 'true', status: 'ready' });
     } catch (error) {
       console.error('Failed to load allergen profile:', error);
-      set({ status: 'error' });
+      // Without a readable profile nothing is checked, so the screens say the warning is off.
+      set({ status: 'error', enabled: false });
     }
   };
 

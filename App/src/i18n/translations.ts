@@ -504,6 +504,7 @@ const de = {
     'Deine Allergenauswahl konnte nicht geladen werden. Warnungen sind deshalb aus.',
   'allergenWarning.setting': 'Allergen-Warnung',
   'allergenWarning.settingHint': 'Warnt beim Scannen vor Allergenen aus deiner Liste',
+  'allergenWarning.saveFailed': 'Die Einstellung konnte nicht gespeichert werden.',
 };
 
 type Translations = typeof de;
@@ -992,6 +993,7 @@ const en: Translations = {
   'allergenProfile.loadFailed': 'Your allergen selection could not be loaded, so warnings are off.',
   'allergenWarning.setting': 'Allergen warning',
   'allergenWarning.settingHint': 'Warns about allergens from your list when scanning',
+  'allergenWarning.saveFailed': 'The setting could not be saved.',
 };
 
 export type TranslationKey = keyof typeof de;

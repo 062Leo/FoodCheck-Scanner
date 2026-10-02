@@ -177,6 +177,12 @@ export default function SettingsScreen() {
     }
   };
 
+  const toggleAllergenWarning = async (enabled: boolean) => {
+    if (!(await useAllergenStore.getState().setEnabled(enabled))) {
+      Alert.alert(t('allergenWarning.setting'), t('allergenWarning.saveFailed'));
+    }
+  };
+
   return (
     <View style={styles.container}>
       <PageTitle title={t('settings.title')} />
@@ -204,7 +210,7 @@ export default function SettingsScreen() {
             end={
               <Switch
                 value={allergenWarning}
-                onValueChange={(value) => void useAllergenStore.getState().setEnabled(value)}
+                onValueChange={(value) => void toggleAllergenWarning(value)}
                 disabled={allergenStatus !== 'ready'}
                 trackColor={{ false: colors.borderStrong, true: colors.accentSubtle }}
                 thumbColor={allergenWarning ? colors.accent : colors.textMuted}
@@ -213,6 +219,17 @@ export default function SettingsScreen() {
               />
             }
           />
+          {allergenStatus === 'error' && (
+            <>
+              <View style={styles.divider} />
+              <ListRow
+                icon="refresh"
+                title={t('common.retry')}
+                onPress={() => void useAllergenStore.getState().loadProfile()}
+                testID="allergen-retry"
+              />
+            </>
+          )}
           {allergenWarning && (
             <>
               <View style={styles.divider} />

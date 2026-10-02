@@ -145,6 +145,34 @@ describe('ScannerScreen', () => {
     expect(Haptics.notificationAsync).toHaveBeenLastCalledWith('warning');
   });
 
+  it('says nothing about allergens while the warning is switched off', async () => {
+    useAllergenStore.setState({ enabled: false, profile: ['milk'] });
+    const withMilk = {
+      ean: EAN,
+      name: 'Milchbrötchen',
+      ingredientsText: 'Wasser',
+      novaScore: 1 as const,
+      allergensTags: ['en:milk'],
+    };
+    mockLookup.mockResolvedValue({
+      status: 'found',
+      product: withMilk,
+      rating: rateProduct(withMilk, SEEDED_RULES),
+      record: null,
+      source: 'network',
+      networkFailed: false,
+      isStale: false,
+    });
+    render(<ScannerScreen />);
+
+    scan(EAN);
+
+    expect(await screen.findByText('Milchbrötchen')).toBeTruthy();
+    expect(screen.queryByText('Enthält Milch')).toBeNull();
+    expect(screen.queryByLabelText(/Enthält Milch/)).toBeNull();
+    expect(Haptics.notificationAsync).toHaveBeenLastCalledWith('success');
+  });
+
   it('ignores misreads with a wrong check digit', async () => {
     render(<ScannerScreen />);
 
