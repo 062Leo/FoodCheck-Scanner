@@ -1,4 +1,4 @@
-import { Alert } from 'react-native';
+import { Alert, Modal } from 'react-native';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import '../../testing/screenMocks';
 import { OcrCameraSheet } from '../OcrCameraSheet';
@@ -75,6 +75,34 @@ describe('OcrCameraSheet', () => {
     fireEvent.press(screen.getByTestId('ocr-confirm'));
     expect(onConfirm).toHaveBeenCalledWith('Zutaten: Wasser, Zucker, Salz');
     expect(mockCloud).not.toHaveBeenCalled();
+  });
+
+  it('asks before the Android back button throws away recognised text', async () => {
+    mockRecognize.mockResolvedValue('Wasser, Salz');
+    const onCancel = jest.fn();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    render(
+      <OcrCameraSheet
+        visible
+        mode="ingredients"
+        barcode="1"
+        lang="de"
+        onConfirm={jest.fn()}
+        onCancel={onCancel}
+      />
+    );
+    await photographAndRecognise();
+    await screen.findByTestId('ocr-text');
+
+    act(() => screen.UNSAFE_getByType(Modal).props.onRequestClose());
+
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenCalledWith(
+      'Ungespeicherte Änderungen',
+      expect.any(String),
+      expect.any(Array)
+    );
+    alert.mockRestore();
   });
 
   it('uploads to Open Food Facts only after explicit consent', async () => {

@@ -108,6 +108,20 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
     onCancel();
   };
 
+  // Android back: one step back instead of throwing away a photo or recognised text.
+  const back = () => {
+    if (phase === 'crop') {
+      setPhase('camera');
+    } else if (phase === 'review' && text.trim()) {
+      Alert.alert(t('edit.unsavedTitle'), t('edit.unsavedMsg'), [
+        { text: t('edit.cancel'), style: 'cancel' },
+        { text: t('edit.discard'), style: 'destructive', onPress: close },
+      ]);
+    } else {
+      close();
+    }
+  };
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -253,7 +267,7 @@ export function OcrCameraSheet({ visible, mode, barcode, lang, onConfirm, onCanc
   }
 
   return (
-    <Modal visible animationType="slide" statusBarTranslucent onRequestClose={close}>
+    <Modal visible animationType="slide" statusBarTranslucent onRequestClose={back}>
       <View style={styles.root}>
         {phase === 'camera' && (
           <>
