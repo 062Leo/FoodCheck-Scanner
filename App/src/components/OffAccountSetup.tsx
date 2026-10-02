@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
@@ -33,8 +33,15 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const attempt = useRef<AbortController | null>(null);
+
+  // Closing cancels a running check: a login the user abandoned must not complete.
+  useEffect(() => () => attempt.current?.abort(), []);
 
   const close = (success: boolean) => {
+    if (!success) attempt.current?.abort();
+    attempt.current = null;
+    setIsSaving(false);
     setPassword('');
     setError('');
     setShowPassword(false);
@@ -43,16 +50,20 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
   };
 
   const handleSave = async () => {
+    if (attempt.current) return;
     if (!username.trim() || !password.trim()) {
       setError(t('off.required'));
       return;
     }
+    const controller = new AbortController();
+    attempt.current = controller;
     setIsSaving(true);
     setError('');
     try {
-      await client.saveCredentials(username.trim(), password);
-      close(true);
+      await client.saveCredentials(username.trim(), password, controller.signal);
+      if (!controller.signal.aborted) close(true);
     } catch (err) {
+      if (controller.signal.aborted) return;
       setError(
         err instanceof UploadError && err.code === 'invalid-credentials'
           ? t('off.invalidCredentials')
@@ -61,7 +72,10 @@ export function OffAccountSetup({ visible, onSuccess, onCancel }: OffAccountSetu
             : t('off.saveError')
       );
     } finally {
-      setIsSaving(false);
+      if (attempt.current === controller) {
+        attempt.current = null;
+        setIsSaving(false);
+      }
     }
   };
 

@@ -62,7 +62,7 @@ function parseWriteResponse(text: string): { ok: boolean; message: string } {
 export class OpenFoodFactsWriteClient {
   private readonly uploadUrl = `${WRITE_BASE_URL}/cgi/product_jqm2.pl`;
 
-  async verifyCredentials(username: string, password: string): Promise<void> {
+  async verifyCredentials(username: string, password: string, signal?: AbortSignal): Promise<void> {
     const formData = new FormData();
     formData.append('user_id', username);
     formData.append('password', password);
@@ -71,7 +71,7 @@ export class OpenFoodFactsWriteClient {
     try {
       response = await fetchWithTimeout(
         this.uploadUrl,
-        { method: 'POST', body: formData, headers: writeHeaders() },
+        { method: 'POST', body: formData, headers: writeHeaders(), signal },
         WRITE_TIMEOUT_MS
       );
     } catch (error) {
@@ -87,8 +87,10 @@ export class OpenFoodFactsWriteClient {
     }
   }
 
-  async saveCredentials(username: string, password: string): Promise<void> {
-    await this.verifyCredentials(username, password);
+  /** Stores the credentials once Open Food Facts accepted them; nothing if `signal` aborted. */
+  async saveCredentials(username: string, password: string, signal?: AbortSignal): Promise<void> {
+    await this.verifyCredentials(username, password, signal);
+    if (signal?.aborted) throw new UploadError('Login was cancelled', 'network');
     await SecureStore.setItemAsync(USERNAME_KEY, username);
     await SecureStore.setItemAsync(PASSWORD_KEY, password);
   }
