@@ -122,6 +122,24 @@ describe('RedFlagAnalyzer matching', () => {
     expect(keys('Süßungsmittel: Aspartam-Acesulfam-Salz').length).toBeGreaterThan(0);
   });
 
+  it('matches short translations of a rule only as whole words', () => {
+    const salt: FilterRule = {
+      id: 1,
+      key: 'Salz',
+      type: 'ingredient',
+      severity: 'red_flag',
+      category: 'Eigene',
+      translations: '{"fr":"Sel","es":"Sal","it":"Sale"}',
+      created_at: '2026-01-01T00:00:00.000Z',
+    };
+    const found = (text: string) => analyzer.analyze(text, [salt]).length;
+
+    expect(found('Kopfsalat, Gurken, Essig')).toBe(0);
+    expect(found('Sellerie, Karotten, Salami')).toBe(0);
+    expect(found('Eau, sel, sucre')).toBe(1);
+    expect(found('Meersalz')).toBe(1);
+  });
+
   it('reports nothing for an empty text without nutriments', () => {
     expect(analyzer.analyze('', SEEDED_RULES)).toEqual([]);
   });

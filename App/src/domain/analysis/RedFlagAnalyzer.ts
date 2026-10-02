@@ -9,6 +9,7 @@ import { getAllSearchTerms, resolveIngredientKey } from '../rules/ingredientTran
 import {
   IngredientStructure,
   findOccurrences,
+  findWholeWords,
   isENumberTerm,
   isStrictlyContained,
   lowerCasePreservingLength,
@@ -74,6 +75,9 @@ const E472_NAMES = [
   /[a-zäöüß-]*säureester\s+von\s+mono-?\s*und\s+diglyceriden\s+(?:von\s+|der\s+)?speisefettsäuren/g,
   /[a-z-]+(?:\s+[a-z-]+)?\s+acid\s+esters\s+of\s+mono-?\s*and\s+di-?glycerides\s+of\s+fatty\s+acids/g,
 ];
+
+/** Translations of a rule up to this length match only as whole words. */
+const MAX_SHORT_TRANSLATION_LENGTH = 4;
 
 /** Additive names shorter than this are too generic to hide the words inside them. */
 const MIN_SHIELD_NAME_LENGTH = 8;
@@ -371,8 +375,12 @@ export class RedFlagAnalyzer {
     for (const rule of rules) {
       if (this.isFilterRule(rule)) {
         if (rule.severity !== 'red_flag' || rule.type !== 'ingredient') continue;
-        const occurrences = getAllSearchTerms(rule.key, rule.translations).flatMap((term) =>
-          findOccurrences(lowerText, term)
+        // Short translations ("Sel", "Sal") hide inside unrelated words in other
+        // languages ("Sellerie", "Salami"), so they only count as whole words.
+        const occurrences = getAllSearchTerms(rule.key, rule.translations).flatMap((term, index) =>
+          index > 0 && term.trim().length <= MAX_SHORT_TRANSLATION_LENGTH
+            ? findWholeWords(lowerText, term)
+            : findOccurrences(lowerText, term)
         );
         add(rule.key, rule.key, rule.category, 'critical', occurrences);
         continue;

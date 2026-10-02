@@ -96,6 +96,14 @@ export function findOccurrences(lowerText: string, term: string): TextSpan[] {
   return spans;
 }
 
+/** Occurrences of `term` as a whole word only ("sel" in "sel marin", not in "sellerie"). */
+export function findWholeWords(lowerText: string, term: string): TextSpan[] {
+  return findOccurrences(lowerText, term).filter(
+    (span) =>
+      isBoundary(lowerText[span.start - 1], LETTER) && isBoundary(lowerText[span.end], LETTER)
+  );
+}
+
 /** True if `inner` lies inside `outer` and `outer` is strictly longer. */
 export function isStrictlyContained(inner: TextSpan, outer: TextSpan): boolean {
   return (
