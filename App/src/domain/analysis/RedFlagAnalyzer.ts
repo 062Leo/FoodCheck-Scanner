@@ -133,6 +133,11 @@ export class RedFlagAnalyzer {
   private readonly parser: IngredientParser;
   private readonly taxonomy: IngredientTaxonomy;
   private readonly additiveNames: { name: string; eNumber: string }[];
+  /** Search terms per rule; they depend only on the rule, not on the product. */
+  private readonly searchTerms = new WeakMap<
+    FilterRule,
+    { translations: unknown; terms: string[] }
+  >();
 
   constructor(private readonly defaultRules: AnalyzerRule[] = defaultRedFlagRules) {
     this.parser = new IngredientParser();
@@ -328,6 +333,14 @@ export class RedFlagAnalyzer {
       .map((entry) => entry.finding);
   }
 
+  private searchTermsOf(rule: FilterRule): string[] {
+    const cached = this.searchTerms.get(rule);
+    if (cached && cached.translations === rule.translations) return cached.terms;
+    const terms = getAllSearchTerms(rule.key, rule.translations);
+    this.searchTerms.set(rule, { translations: rule.translations, terms });
+    return terms;
+  }
+
   private findAdditiveNames(lowerText: string): NameShield[] {
     const shields: NameShield[] = [];
     for (const { name, eNumber } of this.additiveNames) {
@@ -377,7 +390,7 @@ export class RedFlagAnalyzer {
         if (rule.severity !== 'red_flag' || rule.type !== 'ingredient') continue;
         // Short translations ("Sel", "Sal") hide inside unrelated words in other
         // languages ("Sellerie", "Salami"), so they only count as whole words.
-        const occurrences = getAllSearchTerms(rule.key, rule.translations).flatMap((term, index) =>
+        const occurrences = this.searchTermsOf(rule).flatMap((term, index) =>
           index > 0 && term.trim().length <= MAX_SHORT_TRANSLATION_LENGTH
             ? findWholeWords(lowerText, term)
             : findOccurrences(lowerText, term)
