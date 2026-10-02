@@ -233,7 +233,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 
 ## Testing
 
-- **49 Test-Suiten**, **414 Tests**, alle erfolgreich (`npx jest --maxWorkers=2 --silent`)
+- **49 Test-Suiten**, **418 Tests**, alle erfolgreich (`npx jest --maxWorkers=2 --silent`)
 - Datenbank- und Repository-Tests laufen gegen echtes SQLite (`node:sqlite`-Testdouble), nicht gegen String-Vergleichs-Mocks
 - **Golden-Ratings**: 32 Referenzprodukte mit fest hinterlegtem Bewertungsergebnis, damit Änderungen an der Bewertungslogik als bewusster, überprüfbarer Diff sichtbar werden
 - Getestete Module: Analyse (RedFlagAnalyzer, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating), Services (Lookup, Edit, Re-Rating), API-Clients, Repositories/Migrationen, Backup, OCR, Übersetzungen, Screens/Features
