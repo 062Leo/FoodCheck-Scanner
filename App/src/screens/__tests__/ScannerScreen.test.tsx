@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Linking } from 'react-native';
+import { AppState, Linking } from 'react-native';
 import { mockRouter } from '../../testing/screenMocks';
 import * as Haptics from 'expo-haptics';
 import { useTestDatabase } from '../../testing/testDatabase';
@@ -18,16 +18,24 @@ jest.mock('@react-native-community/netinfo', () => ({
 
 const mockPermission = { current: { granted: true, canAskAgain: true } };
 const mockRequestPermission = jest.fn();
-const mockCamera: { onBarcodeScanned?: (result: { data: string }) => void } = {};
+const mockGetPermission = jest.fn();
+const mockCamera: {
+  onBarcodeScanned?: (result: { data: string }) => void;
+  pausePreview: jest.Mock;
+  resumePreview: jest.Mock;
+} = { pausePreview: jest.fn(), resumePreview: jest.fn() };
 
 jest.mock('expo-camera', () => {
   const { forwardRef, useImperativeHandle } = jest.requireActual('react');
   const { View } = jest.requireActual('react-native');
   return {
-    useCameraPermissions: () => [mockPermission.current, mockRequestPermission],
+    useCameraPermissions: () => [mockPermission.current, mockRequestPermission, mockGetPermission],
     CameraView: forwardRef(
       (props: { onBarcodeScanned?: (result: { data: string }) => void }, ref: unknown) => {
-        useImperativeHandle(ref, () => ({ pausePreview: jest.fn(), resumePreview: jest.fn() }));
+        useImperativeHandle(ref, () => ({
+          pausePreview: () => mockCamera.pausePreview(),
+          resumePreview: () => mockCamera.resumePreview(),
+        }));
         mockCamera.onBarcodeScanned = props.onBarcodeScanned;
         return <View testID="camera" />;
       }
@@ -62,6 +70,9 @@ describe('ScannerScreen', () => {
     mockRouter.reset();
     mockLookup.mockReset();
     mockRequestPermission.mockReset();
+    mockGetPermission.mockReset();
+    mockCamera.pausePreview.mockReset();
+    mockCamera.resumePreview.mockReset();
     mockPermission.current = { granted: true, canAskAgain: true };
     useFilterStore.setState({ rules: SEEDED_RULES, isInitialized: true });
     useAllergenStore.setState({ enabled: false, profile: [] });
@@ -241,6 +252,34 @@ describe('ScannerScreen', () => {
     expect(openSettings).toHaveBeenCalled();
     expect(mockRequestPermission).not.toHaveBeenCalled();
     expect(screen.getByText('Barcode eingeben')).toBeTruthy();
+  });
+
+  it('asks for camera access by itself only once', () => {
+    mockPermission.current = { granted: false, canAskAgain: true };
+    const { rerender } = render(<ScannerScreen />);
+    expect(mockRequestPermission).toHaveBeenCalledTimes(1);
+
+    // "Don't allow" once: Android may still ask again, but only when the user taps the button.
+    mockPermission.current = { granted: false, canAskAgain: true };
+    rerender(<ScannerScreen />);
+    expect(mockRequestPermission).toHaveBeenCalledTimes(1);
+
+    fireEvent.press(screen.getByText('Erlauben'));
+    expect(mockRequestPermission).toHaveBeenCalledTimes(2);
+  });
+
+  it('rechecks camera access and restarts the camera when the app comes back', () => {
+    const listen = jest.spyOn(AppState, 'addEventListener');
+    render(<ScannerScreen />);
+    const onChange = listen.mock.calls.at(-1)?.[1] as (state: string) => void;
+
+    act(() => onChange('background'));
+    expect(mockCamera.pausePreview).toHaveBeenCalled();
+
+    mockCamera.resumePreview.mockClear();
+    act(() => onChange('active'));
+    expect(mockGetPermission).toHaveBeenCalled();
+    expect(mockCamera.resumePreview).toHaveBeenCalled();
   });
 
   it('looks up a typed barcode after a running camera lookup has finished', async () => {

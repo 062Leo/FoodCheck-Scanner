@@ -19,8 +19,10 @@ export default function ScannerScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [permission, requestPermission] = useCameraPermissions();
+  const [permission, requestPermission, getPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
+  const focused = useRef(false);
+  const askedOnce = useRef(false);
   const [active, setActive] = useState(true);
   const [torch, setTorch] = useState(false);
   const [offline, setOffline] = useState(false);
@@ -35,9 +37,11 @@ export default function ScannerScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      focused.current = true;
       setActive(true);
       cameraRef.current?.resumePreview();
       return () => {
+        focused.current = false;
         setActive(false);
         setTorch(false);
         cameraRef.current?.pausePreview();
@@ -48,6 +52,12 @@ export default function ScannerScreen() {
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
+        // Camera access may have been granted in the system settings meanwhile.
+        void getPermission();
+      }
+      // The camera is shared app-wide: an unfocused scanner must not take it from another screen.
+      if (!focused.current) return;
+      if (state === 'active') {
         cameraRef.current?.resumePreview();
       } else {
         cameraRef.current?.pausePreview();
@@ -55,12 +65,15 @@ export default function ScannerScreen() {
       }
     });
     return () => subscription.remove();
-  }, []);
+  }, [getPermission]);
 
   useEffect(() => subscribeToConnectivity((online) => setOffline(!online)), []);
 
+  // Ask by itself only once: after a "Don't allow" the button asks again, because a second
+  // refusal makes Android stop asking for good.
   useEffect(() => {
-    if (permission && !permission.granted && permission.canAskAgain) {
+    if (permission && !permission.granted && permission.canAskAgain && !askedOnce.current) {
+      askedOnce.current = true;
       void requestPermission();
     }
   }, [permission, requestPermission]);
