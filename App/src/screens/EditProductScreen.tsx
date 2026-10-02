@@ -81,6 +81,16 @@ export default function EditProductScreen() {
   const [showAccountSetup, setShowAccountSetup] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const leavingRef = useRef(false);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // An upload that finishes after the screen was closed must not navigate anymore.
+  useEffect(
+    () => () => {
+      leavingRef.current = true;
+      clearTimeout(leaveTimer.current);
+    },
+    []
+  );
 
   // Ask before leaving with unsaved changes.
   useEffect(() => {
@@ -99,7 +109,10 @@ export default function EditProductScreen() {
     });
   }, [form.isDirty, navigation, t]);
 
+  // Leaves once: a save during the upload's success toast must not navigate a second time.
   const leave = useCallback(() => {
+    if (leavingRef.current) return;
+    clearTimeout(leaveTimer.current);
     leavingRef.current = true;
     if (params.then === 'show' || !router.canGoBack()) {
       router.replace({ pathname: '/result', params: { ean, source: 'recent' } });
@@ -153,7 +166,7 @@ export default function EditProductScreen() {
           const result = await form.upload();
           if (result.ok) {
             setToast({ message: t('upload.success'), type: 'success' });
-            setTimeout(leave, 1200);
+            leaveTimer.current = setTimeout(leave, 1200);
           } else {
             const reason = result.reason === 'failed' ? uploadFailureReason(result.error, t) : '';
             setToast({ message: t('upload.failed', { reason }), type: 'error' });

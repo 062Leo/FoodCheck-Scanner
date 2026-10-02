@@ -1,5 +1,5 @@
 import { Alert, type AlertButton } from 'react-native';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { mockRouter } from '../../testing/screenMocks';
 import { productRecord, useTestDatabase } from '../../testing/testDatabase';
 import { ProductRepository } from '../../infrastructure/db/ProductRepository';
@@ -91,6 +91,27 @@ describe('EditProductScreen', () => {
       nutriment_sugars: '<0.5',
     });
     expect((await repository.findByEan(EAN))?.edited_fields).toBe('["nutriments.sugars100g"]');
+  });
+
+  it('leaves only once when saving during the upload success message', async () => {
+    await repository.saveScan(productRecord({ name: 'Müsli' }));
+    mockRouter.params = { ean: EAN };
+    const alert = jest.spyOn(Alert, 'alert');
+    render(<EditProductScreen />);
+
+    fireEvent.changeText(await screen.findByTestId('edit-sugars100g'), '5');
+    fireEvent.press(screen.getByText('An Open Food Facts senden'));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    const buttons = alert.mock.calls[0][2] as AlertButton[];
+    buttons.find((b) => b.text === 'Senden')?.onPress?.();
+    await waitFor(() => expect(mockUpdateProduct).toHaveBeenCalled());
+    await act(async () => {});
+
+    fireEvent.press(screen.getByText('Speichern'));
+    await waitFor(() => expect(mockRouter.back).toHaveBeenCalledTimes(1));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 1300)));
+
+    expect(mockRouter.back).toHaveBeenCalledTimes(1);
   });
 
   it('asks for an Open Food Facts account before sending', async () => {
