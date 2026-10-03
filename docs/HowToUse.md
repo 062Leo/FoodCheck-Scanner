@@ -75,10 +75,11 @@ Scan the QR code with Expo Go, or connect a device via USB.
 - Tap **+** to add a rule, or tap an existing rule to edit it in a sheet:
   - **Ingredient rule**: keyword (translated automatically into 7 languages) + category, severity **Red Flag** or **Erlaubt/Allowed** (whitelists the ingredient).
   - **Nutrient rule**: pick a nutrient (sugar, fat, saturated fat, salt, energy), operator (>, <, =), threshold (comma decimals accepted), and severity.
-  - **Marke / Konzern (brand / company)**: enter a brand or company you want to avoid. Optionally tap **"Konzern bei Wikidata suchen"**, pick the right entry, and the app collects the company's brands and subsidiaries (data from Wikidata, CC0) and stores them with the rule, so matching works offline. Without the lookup, or when Wikidata can't be reached, only the name itself is recognised. A match rates the product Critical, regardless of other findings.
-- **Product checks** (category Verarbeitung, Verpackung, Schadstoffe and others) can't be created, but tapping one explains when it applies; set it to **Erlaubt/Allowed** to switch it off, or delete it. For "Mehr als 5 Zutaten" you can change the limit (a whole number from 1). The checks: more than 5 ingredients, can/tin, large predatory fish (mercury), rice (arsenic), pesticide-prone crops without an organic label (mango, pepper, rice, tea, peanuts, green beans, cherries; German BVL report 2023), dairy without raw milk, alcohol, meat substitute, farmed fish.
+  - **Marke / Konzern (brand / company)**: enter a brand or company you want to avoid. Optionally tap **"Konzern bei Wikidata suchen"**, pick the right entry, and the app collects the company's brands and subsidiaries (data from Wikidata, CC0) and stores them with the rule, so matching works offline. Without the lookup, or when Wikidata can't be reached, only the name itself is recognised. The rule's own name may appear anywhere in a brand ("Nestlé Deutschland AG"); a brand collected from Wikidata must be the whole brand or its first words ("Maggi" matches "Maggi Fix", "Lion" does not match "Golden Lion Foods"). Spaces and hyphens don't matter ("Kit Kat" = "KitKat"). A match rates the product Critical, regardless of other findings.
+- **Product checks** (category Verarbeitung, Verpackung, Schadstoffe and others) can't be created or deleted, but tapping one explains when it applies; set it to **Erlaubt/Allowed** to switch it off. For "Mehr als 5 Zutaten" you can change the limit (a whole number from 1). The checks: more than 5 ingredients, can/tin, large predatory fish (mercury), rice (arsenic), pesticide-prone crops without an organic label (mango, pepper, rice, tea, peanuts, green beans, cherries; German BVL report 2023), dairy without raw milk, alcohol, meat substitute, farmed fish.
 - Editing a rule's category, threshold or severity keeps its stored translations; they are only replaced when you change the keyword itself.
-- Rules persist across app restarts; the built-in rules (777: 768 ingredient rules across 24 categories plus 9 product checks) are pre-loaded and can be overridden or deleted like any other rule. Updating from an older version adds only rules you don't already have and removes the former packaging/propellant gas rules.
+- Rules persist across app restarts; the built-in rules (777: 768 ingredient rules across 24 categories plus 9 product checks) are pre-loaded. Ingredient rules can be overridden or deleted like any other rule; product checks can only be switched off. Updating from an older version adds only rules you don't already have (most recently wine, beer and spirits in the category Alkohol) and removes the former packaging/propellant gas rules.
+- The alcohol rules also flag alcohol-free beer and wine (they may contain up to 0.5 % vol.), but not vinegar or yeast made from a drink ("Weinessig", "Branntweinessig", "Bierhefe"), tartaric acid ("Weinsäure"), grapes, vine leaves or "Rumpsteak".
 - Saving or deleting a rule re-rates the whole catalog in the background.
 
 ## 8. Egg Code
@@ -133,7 +134,7 @@ npx eas-cli build --platform android --profile production
 
 ```bash
 cd App
-npm test                 # Jest (63 suites, 700 tests)
+npm test                 # Jest (65 suites, 746 tests)
 npm run test:integration # Open Food Facts staging integration tests (opt-in)
 npm run typecheck        # TypeScript type-check
 npm run lint             # ESLint
@@ -152,7 +153,7 @@ npm run check            # typecheck + lint + format:check + test + doctor + bun
 - **PFAS** (e.g. Teflon coatings) in packaging or cookware can't be detected.
 - The **packager code** names the last processing or packing establishment, not the origin of the raw materials.
 - All checks depend on what Open Food Facts (or USDA) knows: if category, packaging or labels are missing, a check can't apply. No warning does not mean harmless.
-- Products saved by an older app version get categories, packaging and labels the next time they are scanned online.
+- Products saved by an older app version are fetched again in the background after the app starts (at most 10 requests per minute; offline it continues on the next start), so they get categories, packaging and labels without a new scan. Your own edits and USDA data are kept.
 
 ## 15. Troubleshooting
 

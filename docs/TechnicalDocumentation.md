@@ -6,7 +6,7 @@
 
 - **Language:** TypeScript (strict mode)
 - **Framework:** Expo SDK 54 (managed workflow) with Expo Router; `App/index.ts` only imports `expo-router/entry` — there is no separate root component
-- **State:** Zustand (4 stores)
+- **State:** Zustand (5 stores)
 - **Database:** expo-sqlite (SQLite)
 - **OCR:** @react-native-ml-kit/text-recognition (on-device, default) + Open Food Facts Cloud Vision pipeline (opt-in, after explicit consent)
 - **Translation:** DeepL API + MyMemory API (via the domain `Translator` interface)
@@ -73,7 +73,7 @@ App/
 │   │   ├── ApiKeyScreen.tsx           # Translation provider + API key management
 │   │   ├── UsdaKeyScreen.tsx          # The user's own api.data.gov key for USDA FoodData Central
 │   │   ├── EggCodeScreen.tsx          # Egg code reader (housing system, origin)
-│   │   ├── AboutScreen.tsx            # Guide, rating explanation, privacy, data source
+│   │   ├── AboutScreen.tsx            # Guide, rating explanation, privacy, data sources
 │   │   └── EditProductScreen.tsx      # Product edit + OFF contribution (OCR, upload)
 │   ├── features/                # Screen-specific hooks and subcomponents
 │   │   ├── scanner/                   # useScanSession, ScanGate, ScanResultCard, ManualEntrySheet
@@ -98,7 +98,8 @@ App/
 │   │   ├── ImageGallery.tsx           # Swipeable product image gallery
 │   │   └── NutritionTable.tsx         # Full nutrition facts table
 │   ├── store/                    # Zustand stores
-│   │   ├── catalogStore.ts, filterStore.ts, languageStore.ts, settingsStore.ts
+│   │   ├── catalogStore.ts, filterStore.ts, languageStore.ts, settingsStore.ts, allergenStore.ts
+│   │   ├── storedProductRefresh.ts    # Starts StoredProductRefreshService after the rules are loaded
 │   │   └── reloadStores.ts            # Reloads all stores after a backup restore
 │   ├── i18n/
 │   │   ├── translations.ts            # DE/EN UI strings (~800 keys)
@@ -188,7 +189,7 @@ App/
 | Expo SDK 54 (managed) | Framework, no native setup needed |
 | TypeScript (strict) | Type safety, no `any` |
 | Expo Router | File-based tab + stack navigation |
-| Zustand | Lightweight state management (4 stores) |
+| Zustand | Lightweight state management (5 stores) |
 | expo-sqlite | Local persistent relational database |
 | expo-camera | Barcode scanning + OCR photo capture |
 | @react-native-ml-kit/text-recognition | On-device OCR (no cloud, offline-capable) |
@@ -199,7 +200,7 @@ App/
 | expo-document-picker | Picking a backup file to restore |
 | expo-haptics | Scan/save feedback |
 | expo-build-properties | Android SDK version pins |
-| Jest + jest-expo | Unit testing (63 suites, 700 tests) |
+| Jest + jest-expo | Unit testing (65 suites, 746 tests) |
 | ESLint 10 (flat config) + Prettier | Code quality & formatting |
 
 ## 5. Data Flow
@@ -450,7 +451,7 @@ Migrations are append-only and run inside a transaction (or sequentially where t
 
 ### Product Checks (`productChecks.ts`)
 
-Whole-product checks stored as `check` rules; each finding counts like an ingredient red flag. A check rule set to `ok` is switched off.
+Whole-product checks stored as `check` rules; each finding counts like an ingredient red flag. A check rule set to `ok` is switched off. The rule editor offers no delete for checks (it explains that a check is switched off with "Allowed" instead), because a deleted check would not come back.
 
 | Key | Fires when | Category |
 |---|---|---|
@@ -464,7 +465,7 @@ Whole-product checks stored as `check` rules; each finding counts like an ingred
 | `meat_substitute` | category meat analogues/alternatives | Proteine & Fleischersatz |
 | `farmed_fish` | responsible-aquaculture label or a `farmed-` category | Zuchtfisch |
 
-The checks only see what Open Food Facts (or USDA) provides; products stored before this data was kept get it on their next online lookup.
+The checks only see what Open Food Facts (or USDA) provides; products stored before this data was kept get it from the background refresh (`StoredProductRefreshService`, see [Product Rating](#product-rating-productratingrate)) or their next online lookup.
 
 ### Avoided Companies (`companyRules.ts`)
 
@@ -515,7 +516,7 @@ Expo Router file-based routing in `App/app/`:
 
 - **Tabs** (in `(tabs)/` group): Scanner (`index`), Catalog, Favorites, Settings
 - **Stack screens**: `result` (Product screen, params: `ean`, `source: 'scan' | 'recent' | 'view'`), `edit/[ean]` (params: `ean`, `then: 'show'` to return to the product after saving), `egg-code` (egg code reader)
-- **Settings sub-routes**: `settings/filters`, `settings/allergens`, `settings/api-key` (translation provider & key), `settings/usda-key` (USDA FoodData Central key), `settings/about` (guide, rating explanation, privacy, data source)
+- **Settings sub-routes**: `settings/filters`, `settings/allergens`, `settings/api-key` (translation provider & key), `settings/usda-key` (USDA FoodData Central key), `settings/about` (guide, rating explanation, privacy, data sources: Open Food Facts, USDA FoodData Central and Wikidata with their licences)
 
 ### Route mapping
 
@@ -537,10 +538,10 @@ Expo Router file-based routing in `App/app/`:
 ## 12. Testing
 
 - **Framework:** Jest with the `jest-expo` preset
-- **Count:** 63 suites, 700 tests (all passing; measured with `npx jest`)
+- **Count:** 65 suites, 746 tests (all passing; measured with `npx jest`)
 - **Location:** `__tests__/` directories alongside source files
 - **No snapshot tests** — all assertion-based `expect()` calls
-- **Real SQLite in tests:** database and repository tests run against `node:sqlite` through a test double (`src/testing/nodeSqlite.ts`, `useTestDatabase()`), not string-matching mocks; migration tests start from literal legacy schemas with seeded data and check data survival, idempotency and rollback of a failing migration
+- **Real SQLite in tests:** database and repository tests run against `node:sqlite` through a test double (`src/testing/nodeSqlite.ts`, `useTestDatabase()`), not string-matching mocks; migration tests start from literal legacy schemas with seeded data (up to the v9 schema with user rules, products and favorites for migration 10) and check data survival, idempotency, fresh install = upgrade and rollback of a failing migration
 - **Golden ratings:** `src/domain/analysis/__fixtures__/` pins the rating output (status, Nova, red flags) of 32 realistic reference products under the seeded and a customised rule set, so a refactor either reproduces the same ratings or shows a reviewed diff
 - **Run all tests:** `npm test`
 - **Run a single file:** `npm test -- --testPathPattern=RedFlagAnalyzer`
@@ -550,14 +551,15 @@ Expo Router file-based routing in `App/app/`:
 
 | Module | Test files | Focus |
 |---|---|---|
-| API Clients | OpenFoodFactsClient, OpenFoodFactsWriteClient, OffOcrClient, UsdaClient, fetchWithTimeout, retry, debounce, config, ApiError, staging integration | HTTP, auth, timeouts, error handling |
+| API Clients | OpenFoodFactsClient, OpenFoodFactsWriteClient, OffOcrClient, UsdaClient, RobotoffClient, fetchWithTimeout, retry, debounce, config, ApiError, staging integration | HTTP, auth, timeouts, error handling |
 | DB / Repositories | ProductRepository, FilterRuleRepository, FavoritesRepository, migrations, BackupService | CRUD, migrations, backup/restore against real SQLite |
-| Domain Analysis | RedFlagAnalyzer, RedFlagMatching, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating, productChecks, companyRules, golden ratings | Rating rules, checks, company matching, matching correctness |
-| Domain Product/Catalog/OCR/Barcode/Eggs | productForm, productBadges, packagerCode, almondInfo, catalogQuery, nutritionLabel, ocrGeometry, barcode, eggCode | Validation, parsing, pure logic |
+| Domain Analysis | RedFlagAnalyzer, RedFlagMatching, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductNormalizer, ProductRating, productChecks, companyRules, golden ratings | Rating rules, checks, company matching, matching correctness (incl. the alcohol shields) |
+| Domain Product/Catalog/OCR/Barcode/Eggs/Allergens | productForm, productBadges, packagerCode, almondInfo, catalogQuery, nutritionLabel, ocrGeometry, barcode, eggCode, allergenProfile | Validation, parsing, pure logic |
 | Domain Rules | ingredientTranslations, ruleGroups | Multi-language lookup, grouping/sorting |
-| Services | ProductLookupService, ProductEditService, CatalogRatingService, CompanyLookupService | Cache-first lookup incl. USDA fallback, edit tracking, re-rating, Wikidata lookup |
+| Services | ProductLookupService, ProductEditService, CatalogRatingService, StoredProductRefreshService, CompanyLookupService | Cache-first lookup incl. USDA fallback, edit tracking, re-rating, background refresh, Wikidata lookup |
+| Stores / i18n | allergenStore, aboutTexts, allergenLabels | Allergen switch and profile, About texts naming every data source, allergen names |
 | OCR / Translation | OcrService, DeepLClient, MyMemoryClient | Recognition, quota/error handling |
-| Screens / Features | CatalogScreen, EditProductScreen, EggCodeScreen, FilterScreen, ProductScreen, ScannerScreen, SettingsScreen, UsdaKeyScreen, ScanGate, RuleEditorSheet, FindingsList, OcrCameraSheet | Screen behaviour with React Native Testing Library |
+| Screens / Features | AllergenProfileScreen, ApiKeyScreen, CatalogScreen, EditProductScreen, EggCodeScreen, FilterScreen, ProductScreen, ScannerScreen, SettingsScreen, UsdaKeyScreen, ScanGate, RuleEditor, FindingsList, IngredientsSection, OcrCameraSheet, OffAccountSetup, Toast | Screen behaviour with React Native Testing Library |
 
 ## 13. Commands (run from `App/`)
 
@@ -584,12 +586,14 @@ Expo Router file-based routing in `App/app/`:
 | Manual barcode entry | Done |
 | Scan result card (scan in a row without leaving the camera) | Done |
 | OFF API product lookup with offline/cache fallback | Done |
-| Red flag ingredient analysis (768 rules, additive-risk taxonomy) | Done |
+| Red flag ingredient analysis (768 rules incl. wine, beer and spirits, additive-risk taxonomy) | Done |
 | Product checks (ingredient count, can, mercury fish, rice, pesticide-risk crops, heated milk, alcohol, meat substitute, farmed fish) | Done |
-| Avoided brands/companies with optional Wikidata lookup | Done |
+| Avoided brands/companies with optional Wikidata lookup (brand-start and spelling-variant matching) | Done |
+| Deselecting single brand names of a company rule | Planned (see [OpenTasks.md](OpenTasks.md)) |
 | Label badges, packager code, almond pollination note | Done |
 | Egg code reader | Done |
-| USDA FoodData Central fallback (user's own key) | Done |
+| USDA FoodData Central fallback (user's own key; fills gaps of a later sparse Open Food Facts entry) | Done |
+| Background refresh of products stored with an older Open Food Facts field set (≤ 10 requests/min) | Done |
 | Nova classification and traffic-light rating (OK/Warning/Critical/Unknown) | Done |
 | Local catalog (SQLite) with search, filter, sort, undoable delete | Done |
 | Favorites with undoable remove | Done |
@@ -610,8 +614,9 @@ Expo Router file-based routing in `App/app/`:
 
 - `npm run typecheck` — clean (0 errors)
 - `npm run lint` — clean (0 errors, ESLint 10 flat config)
-- `npm test` — 63 suites, 700 tests, all passing
+- `npm test` — 65 suites, 746 tests, all passing
 - `npm run test:integration` requires network access to the OFF staging server and is not part of `npm run check`
+- Open work, open questions and known limits are tracked in [OpenTasks.md](OpenTasks.md)
 
 ## 16. Non-Functional Requirements
 

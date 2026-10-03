@@ -14,7 +14,7 @@
 | `/settings/allergens` | **Meine Allergene** | Auswahl aus den 14 EU-Allergenen (nur bei eingeschalteter Allergen-Warnung) |
 | `/settings/api-key` | **Übersetzung** | DeepL/MyMemory auswählen und API-Key verwalten |
 | `/settings/usda-key` | **USDA FoodData Central** | Eigenen kostenlosen api.data.gov-Schlüssel speichern/löschen |
-| `/settings/about` | **Über FoodCheck** | Anleitung, Erklärung der Ampel-Bewertung, Datenschutz, Datenquelle, Version |
+| `/settings/about` | **Über FoodCheck** | Anleitung, Erklärung der Ampel-Bewertung, Datenschutz, Datenquellen (Open Food Facts, USDA FoodData Central, Wikidata, jeweils mit Lizenz), Version |
 | `/edit/[ean]` | **Edit Product** | Produktdaten bearbeiten + an Open Food Facts beitragen: Zutaten (8 Sprachen), Nährwerte, Allergene, Herkunft — lokal + Upload an OFF |
 
 ---
@@ -47,7 +47,7 @@
 - **Vier Typen**:
   - **Zutaten-Regel**: Keyword-Matching in der Zutatenliste, span-basiert (ein Treffer innerhalb eines längeren Treffers einer anderen Regel zählt nicht); mehrsprachig (de/en/fr/it/es/nl/pt/pl)
   - **Nährwert-Regel**: Schwellwert-Vergleich (gt/lt/eq) gegen die Produkt-Nährwerte (sugars_100g, fat_100g, saturated-fat_100g, salt_100g, energy-kcal_100g)
-  - **Produkt-Prüfung**: schaut auf das ganze Produkt (Kategorien, Verpackung, Siegel, Nährwerte), siehe unten; kann nicht neu angelegt, aber ausgeschaltet, gelöscht und (Zutatenzahl) eingestellt werden
+  - **Produkt-Prüfung**: schaut auf das ganze Produkt (Kategorien, Verpackung, Siegel, Nährwerte), siehe unten; kann weder neu angelegt noch gelöscht, aber über die Severity „Erlaubt“ ausgeschaltet und (Zutatenzahl) eingestellt werden
   - **Marke / Konzern**: gemiedene Marke oder gemiedener Konzern, siehe unten
 - **Verneinungen zählen nicht**: „nicht pasteurisiert“, „unpasteurisiert“, „ohne Gentechnik“, „aus nicht gentechnisch veränderten Sojabohnen“, „alkoholfrei“, „entalkoholisiert“, „Zuckeralkohole“ oder Alkoholessig lösen die Regeln für Gentechnik, erhitzte Milch und Alkohol nicht aus
 - **Kein Getränk**: Essig und Hefe aus einem Getränk (Branntwein-, Wein-, Sherryessig, „wine vinegar“, „vinaigre de vin“, Bierhefe, „levure de bière“, „lievito di birra“) sowie Weinsäure, Weinstein, Weintrauben, Weinbeeren, Weinblätter, Weinbergschnecken, Weinraute, Schweinefleisch, Erdbeeren, Bierschinken, Bierwurst, Biertreber, Portobello, Lakritz („licorice“) oder Rumpsteak lösen die Regeln für Wein, Bier und Spirituosen nicht aus; Rum zählt nur am Wortanfang („Rumaroma“ ja, „Krume“ nein), Sake nur als eigenes Wort, Port nur als Portwein/„port wine“/„porto“ (nicht „Portion“, „Portugal“)
@@ -70,11 +70,12 @@ Jede Prüfung ist eine Regel vom Typ „Prüfung“ in der Filterliste und zähl
 | **Fleischersatz** | Kategorie Fleischersatz/Fleischalternative | Proteine & Fleischersatz |
 | **Zuchtfisch** | Aquakultur-Siegel (z. B. ASC) oder Kategorie „farmed“ | Zuchtfisch |
 
-Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open Food Facts sie liefert. Fehlen diese Angaben, schlägt die Prüfung nicht an. Produkte, die mit einer älteren App-Version gespeichert wurden, bekommen die neuen Angaben erst beim nächsten Online-Scan.
+Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open Food Facts sie liefert. Fehlen diese Angaben, schlägt die Prüfung nicht an. Produkte, die mit einer älteren App-Version gespeichert wurden, werden nach dem App-Start im Hintergrund neu geladen (höchstens 10 Anfragen pro Minute, siehe [Datenbank-Schema](#datenbank-schema)) und bekommen die neuen Angaben so auch ohne erneuten Scan.
 
 ### Marken & Konzerne meiden
 - **Regeltyp „Marke / Konzern“** in der Filterliste: ein Treffer bewertet das Produkt sofort als **Kritisch**, unabhängig von der Zahl der Red Flags; die Begründung nennt den Konzern
-- **Abgleich** gegen Marke(n) und Markeninhaber (`brand_owner`) des Produkts; Rechtsformen und Zusätze (GmbH, AG, Deutschland …) und Schreibweisen („Kit Kat“/„KitKat“) werden ausgeglichen
+- **Abgleich** gegen Marke(n) und Markeninhaber (`brand_owner`) des Produkts; Rechtsformen und Zusätze (GmbH, AG, Deutschland …) und Schreibweisen ohne Leerzeichen oder Bindestrich („Kit Kat“/„KitKat“, „Coca-Cola“/„CocaCola“) werden ausgeglichen
+- **Markenanfang**: Der Name der Regel darf irgendwo in der Marke stehen („Nestlé Deutschland AG“); bei Wikidata gesammelte Namen müssen der ganzen Marke oder ihren ersten ganzen Wörtern entsprechen („Maggi“ trifft „Maggi Fix“, „Lion“ trifft nicht „Golden Lion Foods“)
 - **Optionale Wikidata-Abfrage**: Konzern bei Wikidata suchen, passenden Eintrag wählen; die App sammelt Marken und Tochterfirmen (bis zu 3 Ebenen, höchstens 1.000 Namen) und speichert sie mit der Regel, sodass der Abgleich offline funktioniert; „Erneut abfragen“ aktualisiert die Liste. Daten: Wikidata (CC0)
 - **Ohne Abfrage** (oder wenn Wikidata nicht erreichbar ist) wird nur der Name selbst erkannt, nicht die Marken des Konzerns
 - Eine Marke bzw. ein Konzern kann nur einmal in der Liste stehen
@@ -167,16 +168,16 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 - **777 vordefinierte Regeln** (768 Zutaten-Regeln + 9 Produkt-Prüfungen) — automatisch bei erster DB-Erstellung, ergänzt durch spätere App-Updates; die Migrationen 9 und 10 fügen bei bestehenden Installationen nur Regeln hinzu, die es mit gleichem Typ und Schlüssel noch nicht gibt (eigene Regeln werden weder doppelt angelegt noch überschrieben)
 - **Kategorie-Gruppierung**: nur Kategorien mit Regeln werden angezeigt, sortiert nach angezeigtem Namen; bei Suche werden alle Kategorien mit Treffer aufgeklappt
 - **Suche**: filtert nach Zutat/Kategorie (auch übersetzte Namen)
-- **Regel-Editor als Sheet**: Chips statt Rohschlüssel und gt/lt/eq, Komma-Schwellwerte, Validierungsmeldungen, Speicher-Fortschritt und Fehler-Feedback, Löschen direkt im Editor
+- **Regel-Editor als Sheet**: Chips statt Rohschlüssel und gt/lt/eq, Komma-Schwellwerte, Validierungsmeldungen, Speicher-Fortschritt und Fehler-Feedback, Löschen direkt im Editor (nicht bei Produkt-Prüfungen)
 - **Regel hinzufügen/bearbeiten**:
-  - **Zutaten-Regel**: Keyword + Kategorie (19 Presets)
+  - **Zutaten-Regel**: Keyword + Kategorie (25 Presets)
   - **Nährwert-Regel**: Nährwert (5 Optionen) + Operator (gt/lt/eq) + Grenzwert + feste Kategorie „Nährwerte“
   - **Marke / Konzern**: Name + optionale Wikidata-Abfrage (Eintrag wählen, zugehörige Marken ansehen) + feste Kategorie „Marken & Konzerne“
-  - **Produkt-Prüfung** (nur bearbeiten): Erklärung, wann die Prüfung anschlägt; Severity; bei der Zutatenzahl das Limit (ganze Zahl ab 1)
+  - **Produkt-Prüfung** (nur bearbeiten): Erklärung, wann die Prüfung anschlägt; Severity; bei der Zutatenzahl das Limit (ganze Zahl ab 1); kein Löschen-Button, stattdessen der Hinweis, die Prüfung mit „Erlaubt“ auszuschalten (eine gelöschte Prüfung ließe sich nicht wiederherstellen)
   - **Severity**: RED FLAG / Erlaubt (mit Erklärung der jeweiligen Wirkung)
 - **Bearbeiten ohne Datenverlust**: eine gespeicherte Übersetzung bleibt erhalten, solange sich das Keyword nicht ändert
 - **Auto-Translation**: Neue Zutaten werden parallel in 7 Sprachen übersetzt
-- **Löschen** mit Bestätigungsdialog
+- **Löschen** mit Bestätigungsdialog (Zutaten-, Nährwert- und Marken-/Konzern-Regeln; Produkt-Prüfungen nicht)
 - **25 Kategorie-Presets**: Süßungsmittel, Farbstoffe, Konservierungsstoffe, Geschmacksverstärker & Aromen, Emulgatoren & Stabilisatoren, Verdickungs- & Geliermittel, Säuren & Säureregulatoren, Antioxidationsmittel, Gehärtete Fette & raffinierte Öle, Zucker & Sirupe, Modifizierte Stärken, Phosphate & Mineralstoffe, Füll- & Trägerstoffe, Proteine & Fleischersatz, Trenn- & Überzugsmittel, Treib- & Schutzgase, Metalle, E-Nummern, Sonstige Zusatzstoffe, Gentechnik, Insekten, Samenöle, Zuchtfisch, Alkohol, Erhitzte Milch
 - **Kategorien der Prüfungen und Marken**: Verarbeitung, Verpackung, Schadstoffe sowie Marken & Konzerne erscheinen in der Liste, sind aber keine Presets für Zutaten-Regeln
 
@@ -258,7 +259,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 | **SQLite** | Produkte, Favoriten, Filter-Regeln, Meta (Migrationsstand, Backup-Einstellungen) | expo-sqlite |
 | **SecureStore** | OFF-Zugangsdaten, Übersetzungs-API-Keys, USDA-Schlüssel, Sprache, Provider | expo-secure-store |
 | **FileSystem** | Backup-Datei (Kopie der SQLite-Datenbank) | expo-file-system |
-| **Zustand** | In-Memory State (4 Stores: filter, catalog, language, settings) | zustand |
+| **Zustand** | In-Memory State (5 Stores: filter, catalog, language, settings, allergen) | zustand |
 
 ### Datenbank-Schema
 - **`meta`**: key (PK), value — Migrations-Tracking, Rating-Fingerprint, Backup-Einstellungen
@@ -317,10 +318,10 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 
 ## Testing
 
-- **63 Test-Suiten**, **700 Tests**, alle erfolgreich (`npx jest`)
+- **65 Test-Suiten**, **746 Tests**, alle erfolgreich (`npx jest`)
 - Datenbank- und Repository-Tests laufen gegen echtes SQLite (`node:sqlite`-Testdouble), nicht gegen String-Vergleichs-Mocks
 - **Golden-Ratings**: 32 Referenzprodukte mit fest hinterlegtem Bewertungsergebnis, damit Änderungen an der Bewertungslogik als bewusster, überprüfbarer Diff sichtbar werden
-- Getestete Module: Analyse (RedFlagAnalyzer, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating, Produkt-Prüfungen, Marken/Konzerne), Produkt (Badges, Identitätskennzeichen, Mandel-Hinweis), Eiercode, Services (Lookup inkl. USDA-Fallback, Edit, Re-Rating, Wikidata-Abfrage), API-Clients (inkl. USDA), Repositories/Migrationen, Backup, OCR, Übersetzungen, Screens/Features
+- Getestete Module: Analyse (RedFlagAnalyzer, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating, Produkt-Prüfungen, Marken/Konzerne), Produkt (Badges, Identitätskennzeichen, Mandel-Hinweis), Eiercode, Services (Lookup inkl. USDA-Fallback, Edit, Re-Rating, Hintergrund-Aktualisierung gespeicherter Produkte, Wikidata-Abfrage), API-Clients (inkl. USDA), Repositories/Migrationen (inkl. Migration 9 und 10 ab einer Datenbank mit Nutzerdaten), Backup, OCR, Übersetzungen, Über-Texte (alle Datenquellen genannt), Allergen-Store, Screens/Features
 - Integrationstests gegen die echte Open Food Facts API sind opt-in (`npm run test:integration`) und laufen ausschließlich gegen den Staging-Server
 
 ---
@@ -331,6 +332,6 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 - **TypeScript strict mode**
 - **Schichtenarchitektur**: `app/` (Routen) → `src/screens/` → `src/features/` (Screen-Hooks/-Komponenten) → `src/services/` → `src/domain/` → `src/infrastructure/`; Design-System in `src/ui/`
 - **Navigation**: Expo Router (file-based), 4 Tabs + Stack-Screens (Product, Edit, Eiercode) + 5 Settings-Unterseiten
-- **State Management**: Zustand (4 Stores: filter, catalog, language, settings)
+- **State Management**: Zustand (5 Stores: filter, catalog, language, settings, allergen)
 - **DI-Pattern**: Constructor Injection für Domain-Klassen und Services, Module-Level-Singletons für Repositories
 - **ESLint 10** (Flat Config, `.mjs`) + Prettier (`endOfLine: auto`, damit CRLF-Arbeitskopien unter Windows lintfrei bleiben)
