@@ -4,7 +4,7 @@ import { seedRules } from '../../domain/rules/seedRules';
 import { getErrorMessage } from '../../shared/errors';
 
 export const DATABASE_NAME = 'foodscanner.db';
-export const DATABASE_VERSION = 8;
+export const DATABASE_VERSION = 9;
 const META_SCHEMA_VERSION_KEY = 'schema_version';
 
 type Migration = (database: SQLite.SQLiteDatabase) => Promise<void>;
@@ -31,6 +31,7 @@ const migrations: Record<number, Migration> = {
   6: addTranslationsColumn,
   7: addFavoritesUniquenessAndEditTracking,
   8: addEditedFieldsColumn,
+  9: updateFilterList,
 };
 
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -445,6 +446,188 @@ async function addFavoritesUniquenessAndEditTracking(
  */
 async function addEditedFieldsColumn(database: SQLite.SQLiteDatabase): Promise<void> {
   await addColumnIfMissing(database, 'products', 'edited_fields TEXT');
+}
+
+/** v9: packaging and propellant gases, no longer part of the filter list. */
+const V9_REMOVED_INGREDIENT_KEYS = [
+  'Carbon Dioxide',
+  'Nitrous Oxide',
+  'Packaging Gas',
+  'Propellants',
+  'E290',
+  'E938',
+  'E939',
+  'E941',
+  'E942',
+  'E948',
+  'E949',
+];
+
+/**
+ * v9: ingredient rules added to the filter list. A frozen copy instead of `seedRules`:
+ * later changes to the seed list must not change what this migration does.
+ */
+const V9_ADDED_INGREDIENT_RULES: { key: string; category: string }[] = [
+  { key: 'E120', category: 'E-Nummern' },
+  { key: 'E200', category: 'E-Nummern' },
+  { key: 'E203', category: 'E-Nummern' },
+  { key: 'E214', category: 'E-Nummern' },
+  { key: 'E215', category: 'E-Nummern' },
+  { key: 'E219', category: 'E-Nummern' },
+  { key: 'E460', category: 'E-Nummern' },
+  { key: 'E461', category: 'E-Nummern' },
+  { key: 'E462', category: 'E-Nummern' },
+  { key: 'E463', category: 'E-Nummern' },
+  { key: 'E464', category: 'E-Nummern' },
+  { key: 'E465', category: 'E-Nummern' },
+  { key: 'E466', category: 'E-Nummern' },
+  { key: 'E476', category: 'E-Nummern' },
+  { key: 'E492', category: 'E-Nummern' },
+  { key: 'E493', category: 'E-Nummern' },
+  { key: 'E494', category: 'E-Nummern' },
+  { key: 'E495', category: 'E-Nummern' },
+  { key: 'E952', category: 'E-Nummern' },
+  { key: 'E1404', category: 'E-Nummern' },
+  { key: 'E1410', category: 'E-Nummern' },
+  { key: 'E1412', category: 'E-Nummern' },
+  { key: 'E1413', category: 'E-Nummern' },
+  { key: 'E1414', category: 'E-Nummern' },
+  { key: 'E1420', category: 'E-Nummern' },
+  { key: 'E1422', category: 'E-Nummern' },
+  { key: 'E1440', category: 'E-Nummern' },
+  { key: 'E1442', category: 'E-Nummern' },
+  { key: 'E1450', category: 'E-Nummern' },
+  { key: 'E1452', category: 'E-Nummern' },
+  { key: 'E1520', category: 'E-Nummern' },
+  { key: 'Carboxymethylcellulose', category: 'Verdickungs- & Geliermittel' },
+  { key: 'Methylcellulose', category: 'Verdickungs- & Geliermittel' },
+  { key: 'Hydroxypropyl Methylcellulose', category: 'Verdickungs- & Geliermittel' },
+  { key: 'Cellulose', category: 'Verdickungs- & Geliermittel' },
+  { key: 'Polyglycerol Polyricinoleate', category: 'Emulgatoren & Stabilisatoren' },
+  { key: 'Sorbitan Tristearate', category: 'Emulgatoren & Stabilisatoren' },
+  { key: 'Sorbitan Monolaurate', category: 'Emulgatoren & Stabilisatoren' },
+  { key: 'Sorbitan Monooleate', category: 'Emulgatoren & Stabilisatoren' },
+  { key: 'Sorbitan Monopalmitate', category: 'Emulgatoren & Stabilisatoren' },
+  { key: 'Cyclamate', category: 'Süßungsmittel' },
+  { key: 'Carmine', category: 'Farbstoffe' },
+  { key: 'Cochineal', category: 'Farbstoffe' },
+  { key: 'Sorbic Acid', category: 'Konservierungsstoffe' },
+  { key: 'Ethylparaben', category: 'Konservierungsstoffe' },
+  { key: 'PHB-Ester', category: 'Konservierungsstoffe' },
+  { key: 'Celery Extract', category: 'Konservierungsstoffe' },
+  { key: 'Selleriesaftpulver', category: 'Konservierungsstoffe' },
+  { key: 'Propylene Glycol', category: 'Füll- & Trägerstoffe' },
+  { key: 'Propylenglycol', category: 'Füll- & Trägerstoffe' },
+  { key: 'Citronensäure', category: 'Säuren & Säureregulatoren' },
+  { key: 'Genetically Modified', category: 'Gentechnik' },
+  { key: 'gentechnisch verändert', category: 'Gentechnik' },
+  { key: 'Acheta domesticus', category: 'Insekten' },
+  { key: 'Tenebrio molitor', category: 'Insekten' },
+  { key: 'Locusta migratoria', category: 'Insekten' },
+  { key: 'Alphitobius diaperinus', category: 'Insekten' },
+  { key: 'Insects', category: 'Insekten' },
+  { key: 'Sunflower Oil', category: 'Samenöle' },
+  { key: 'Sonnenblumenkernöl', category: 'Samenöle' },
+  { key: 'Rapeseed Oil', category: 'Samenöle' },
+  { key: 'Canola Oil', category: 'Samenöle' },
+  { key: 'Corn Oil', category: 'Samenöle' },
+  { key: 'Maisöl', category: 'Samenöle' },
+  { key: 'Safflower Oil', category: 'Samenöle' },
+  { key: 'Grapeseed Oil', category: 'Samenöle' },
+  { key: 'Rice Bran Oil', category: 'Samenöle' },
+  { key: 'Vegetable Oil', category: 'Samenöle' },
+  { key: 'Meat Substitute', category: 'Proteine & Fleischersatz' },
+  { key: 'Pea Protein', category: 'Proteine & Fleischersatz' },
+  { key: 'Erbseneiweiß', category: 'Proteine & Fleischersatz' },
+  { key: 'Wheat Protein', category: 'Proteine & Fleischersatz' },
+  { key: 'Weizeneiweiß', category: 'Proteine & Fleischersatz' },
+  { key: 'Seitan', category: 'Proteine & Fleischersatz' },
+  { key: 'Mycoprotein', category: 'Proteine & Fleischersatz' },
+  { key: 'Fava Bean Protein', category: 'Proteine & Fleischersatz' },
+  { key: 'Aquaculture', category: 'Zuchtfisch' },
+  { key: 'gezüchtet', category: 'Zuchtfisch' },
+  { key: 'Alcohol', category: 'Alkohol' },
+  { key: 'Ethanol', category: 'Alkohol' },
+  { key: 'Pasteurised', category: 'Erhitzte Milch' },
+  { key: 'Pasteurized', category: 'Erhitzte Milch' },
+  { key: 'UHT', category: 'Erhitzte Milch' },
+  { key: 'ultrahocherhitzt', category: 'Erhitzte Milch' },
+  { key: 'wärmebehandelt', category: 'Erhitzte Milch' },
+  { key: 'H-Milch', category: 'Erhitzte Milch' },
+];
+
+/** v9: the product checks, a frozen copy of `CHECK_SEEDS` at this version. */
+const V9_CHECK_RULES: {
+  key: string;
+  category: string;
+  threshold: number | null;
+  operator: 'gt' | null;
+}[] = [
+  { key: 'ingredient_count', category: 'Verarbeitung', threshold: 5, operator: 'gt' },
+  { key: 'canned', category: 'Verpackung', threshold: null, operator: null },
+  { key: 'mercury_fish', category: 'Schadstoffe', threshold: null, operator: null },
+  { key: 'rice_arsenic', category: 'Schadstoffe', threshold: null, operator: null },
+  { key: 'pesticide_risk', category: 'Schadstoffe', threshold: null, operator: null },
+  { key: 'not_raw_milk', category: 'Erhitzte Milch', threshold: null, operator: null },
+  { key: 'alcoholic', category: 'Alkohol', threshold: null, operator: null },
+  { key: 'meat_substitute', category: 'Proteine & Fleischersatz', threshold: null, operator: null },
+  { key: 'farmed_fish', category: 'Zuchtfisch', threshold: null, operator: null },
+];
+
+/**
+ * v9: updates the filter list.
+ * - removes the packaging and propellant gas rules
+ * - adds the new ingredient rules and the product checks, unless a rule of the same
+ *   type and key (any case, any severity) already exists, so the user's own rules are
+ *   neither duplicated nor overridden
+ */
+async function updateFilterList(database: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    for (const key of V9_REMOVED_INGREDIENT_KEYS) {
+      await database.runAsync(
+        "DELETE FROM filter_rules WHERE type = 'ingredient' AND lower(key) = lower($key)",
+        { $key: key }
+      );
+    }
+
+    const existing = await database.getAllAsync<{ type: string; key: string }>(
+      "SELECT type, key FROM filter_rules WHERE type IN ('ingredient', 'check')"
+    );
+    const existingKeys = new Set(existing.map((r) => `${r.type}|${r.key.toLowerCase()}`));
+    const now = new Date().toISOString();
+
+    for (const rule of V9_ADDED_INGREDIENT_RULES) {
+      if (existingKeys.has(`ingredient|${rule.key.toLowerCase()}`)) continue;
+      await database.runAsync(
+        `
+          INSERT INTO filter_rules (type, key, category, threshold, operator, severity, created_at)
+          VALUES ('ingredient', $key, $category, NULL, NULL, 'red_flag', $created_at);
+        `,
+        { $key: rule.key, $category: rule.category, $created_at: now }
+      );
+    }
+
+    for (const rule of V9_CHECK_RULES) {
+      if (existingKeys.has(`check|${rule.key.toLowerCase()}`)) continue;
+      await database.runAsync(
+        `
+          INSERT INTO filter_rules (type, key, category, threshold, operator, severity, created_at)
+          VALUES ('check', $key, $category, $threshold, $operator, 'red_flag', $created_at);
+        `,
+        {
+          $key: rule.key,
+          $category: rule.category,
+          $threshold: rule.threshold,
+          $operator: rule.operator,
+          $created_at: now,
+        }
+      );
+    }
+  } catch (error) {
+    throw new Error(`Failed to update the filter list: ${getErrorMessage(error)}`, {
+      cause: error,
+    });
+  }
 }
 
 export function hasLocalEditMarkers(rawJson: string): boolean {

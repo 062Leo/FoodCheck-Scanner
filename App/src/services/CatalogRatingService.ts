@@ -8,7 +8,7 @@ import { productFromRecord } from './ProductLookupService';
  * Bump when the rating logic changes in a way that alters results, so stored
  * catalog ratings are recomputed on the next start.
  */
-export const RATING_LOGIC_VERSION = 3;
+export const RATING_LOGIC_VERSION = 4;
 
 const META_RATING_FINGERPRINT = 'rating_fingerprint';
 const RATING_BATCH_SIZE = 25;

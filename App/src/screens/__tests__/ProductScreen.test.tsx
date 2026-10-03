@@ -70,7 +70,7 @@ describe('ProductScreen', () => {
     expect(await screen.findByText('Zitronenlimo')).toBeTruthy();
     expect(screen.getByText('Kritisch')).toBeTruthy();
     expect(screen.getByText('Hochverarbeitet (NOVA 4)')).toBeTruthy();
-    expect(screen.getByText('2 kritische Inhaltsstoffe')).toBeTruthy();
+    expect(screen.getByText('2 Red Flags')).toBeTruthy();
     expect(screen.getByText('Red Flags (2)')).toBeTruthy();
     expect(mockLookup).toHaveBeenCalledWith(EAN, 'scan', SEEDED_RULES);
   });

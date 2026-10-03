@@ -8,12 +8,16 @@ import {
   resetDatabaseState,
 } from '../DatabaseService';
 import { seedRules } from '../../../domain/rules/seedRules';
+import { CHECK_SEEDS } from '../../../domain/analysis/productChecks';
 import { NodeSqliteDatabase } from '../../../testing/nodeSqlite';
 import {
   EDITED_RAW_JSON,
   LEGACY_V2_SCHEMA,
   SCANNED_RAW_JSON,
+  SEED_KEYS_ADDED_IN_V9,
+  SEED_RULES_REMOVED_IN_V9,
   V6_SCHEMA,
+  V8_SCHEMA,
   createDatabase,
 } from '../../../testing/databaseFixtures';
 
@@ -68,7 +72,7 @@ describe('database migrations', () => {
     const rules = await database.getFirstAsync<{ n: number }>(
       'SELECT COUNT(*) AS n FROM filter_rules'
     );
-    expect(rules?.n).toBe(seedRules.length);
+    expect(rules?.n).toBe(seedRules.length + CHECK_SEEDS.length);
   });
 
   it('migrates a legacy v2 database without losing user data', async () => {
@@ -213,6 +217,186 @@ describe('database migrations', () => {
 
     expect(await getSchemaVersion(database as unknown as SQLite.SQLiteDatabase)).toBe(99);
     expect(await columnsOf(database, 'products')).not.toContain('edited_at');
+  });
+});
+
+/** The seed rules a v8 installation has: before the filter list update of v9. */
+const V8_SEED_RULES = [
+  ...seedRules.filter((rule) => !SEED_KEYS_ADDED_IN_V9.includes(rule.key)),
+  ...SEED_RULES_REMOVED_IN_V9,
+];
+
+/** A v8 database with the v8 seed rules, except `skip`. */
+function createV8Database(skip: string[] = []): NodeSqliteDatabase {
+  const database = createDatabase(V8_SCHEMA);
+  const insert = database.native.prepare(
+    `INSERT INTO filter_rules (type, key, category, threshold, operator, severity, created_at)
+     VALUES ('ingredient', ?, ?, NULL, NULL, 'red_flag', '2025-01-01T00:00:00.000Z')`
+  );
+  for (const rule of V8_SEED_RULES) {
+    if (!skip.includes(rule.key)) insert.run(rule.key, rule.category);
+  }
+  return database;
+}
+
+interface RuleRow {
+  type: string;
+  key: string;
+  category: string;
+  threshold: number | null;
+  operator: string | null;
+  severity: string;
+}
+
+async function ruleSet(database: NodeSqliteDatabase): Promise<string[]> {
+  const rows = await database.getAllAsync<RuleRow>(
+    'SELECT type, key, category, threshold, operator, severity FROM filter_rules'
+  );
+  return rows
+    .map((r) => [r.type, r.key, r.category, r.threshold, r.operator, r.severity].join('|'))
+    .sort();
+}
+
+describe('migration 9: filter list update', () => {
+  beforeEach(() => {
+    resetDatabaseState();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('starts from the v8 seed list', () => {
+    expect(V8_SEED_RULES).toHaveLength(678);
+    expect(SEED_KEYS_ADDED_IN_V9.every((key) => seedRules.some((r) => r.key === key))).toBe(true);
+  });
+
+  it('updates the filter list and keeps user data, custom and changed rules', async () => {
+    // The user deleted "Sugar" and created their own "alcohol" rule.
+    const database = createV8Database(['Sugar']);
+    database.native.exec(`
+      INSERT INTO products (ean, name, ingredients, raw_json, scanned_at, rating, visit_count,
+                            last_seen_at, edited_at, edited_fields)
+      VALUES
+        ('4000000000101', 'Müsli', 'Hafer, Rosinen', '${SCANNED_RAW_JSON}',
+         '2025-01-02T10:00:00.000Z', 'OK', 3, '2025-02-01T10:00:00.000Z', NULL, NULL),
+        ('4000000000102', 'Eigener Name', 'Wasser, Zucker', '${EDITED_RAW_JSON}',
+         '2025-01-02T10:00:00.000Z', 'Warning', 1, NULL, '2025-01-05T10:00:00.000Z',
+         '["name"]');
+      INSERT INTO favorites (product_id, added_at) VALUES (2, '2025-01-06T00:00:00.000Z');
+      UPDATE filter_rules SET severity = 'ok' WHERE key = 'Palm Oil';
+      UPDATE filter_rules SET category = 'Meine Kategorie' WHERE key = 'Aspartame';
+      INSERT INTO filter_rules (type, key, category, threshold, operator, severity, translations,
+                                created_at)
+      VALUES
+        ('ingredient', 'Meine Zutat', 'Eigene', NULL, NULL, 'red_flag', '{"fr":"Mon ingrédient"}',
+         '2025-03-01T00:00:00.000Z'),
+        ('ingredient', 'alcohol', 'Eigene', NULL, NULL, 'ok', NULL, '2025-03-01T00:00:00.000Z'),
+        ('nutrient', 'sugars_100g', 'Nährwerte', 20, 'gt', 'red_flag', NULL,
+         '2025-03-01T00:00:00.000Z');
+    `);
+    const productsBefore = await database.getAllAsync('SELECT * FROM products ORDER BY id');
+    const favoritesBefore = await database.getAllAsync('SELECT * FROM favorites ORDER BY id');
+    useDatabase(database);
+
+    await initDatabase();
+
+    expect(await getSchemaVersion(database as unknown as SQLite.SQLiteDatabase)).toBe(9);
+    expect(await database.getAllAsync('SELECT * FROM products ORDER BY id')).toEqual(
+      productsBefore
+    );
+    expect(await database.getAllAsync('SELECT * FROM favorites ORDER BY id')).toEqual(
+      favoritesBefore
+    );
+
+    const gases = await database.getAllAsync<{ key: string }>(
+      `SELECT key FROM filter_rules WHERE lower(key) IN (${SEED_RULES_REMOVED_IN_V9.map(
+        (r) => `lower('${r.key}')`
+      ).join(', ')})`
+    );
+    expect(gases).toEqual([]);
+
+    const rows = await database.getAllAsync<RuleRow & { translations: string | null }>(
+      'SELECT type, key, category, threshold, operator, severity, translations FROM filter_rules'
+    );
+    const byKey = (key: string) => rows.filter((r) => r.key.toLowerCase() === key.toLowerCase());
+    for (const key of SEED_KEYS_ADDED_IN_V9) {
+      expect(byKey(key)).toHaveLength(1);
+    }
+    // Existing rules stay as the user left them.
+    expect(byKey('alcohol')).toEqual([
+      expect.objectContaining({ key: 'alcohol', severity: 'ok', category: 'Eigene' }),
+    ]);
+    expect(byKey('Sugar')).toEqual([]);
+    expect(byKey('Palm Oil')).toEqual([expect.objectContaining({ severity: 'ok' })]);
+    expect(byKey('Aspartame')).toEqual([
+      expect.objectContaining({ category: 'Meine Kategorie', severity: 'red_flag' }),
+    ]);
+    expect(byKey('Meine Zutat')).toEqual([
+      expect.objectContaining({ category: 'Eigene', translations: '{"fr":"Mon ingrédient"}' }),
+    ]);
+    expect(byKey('sugars_100g')).toEqual([
+      expect.objectContaining({ type: 'nutrient', threshold: 20, operator: 'gt' }),
+    ]);
+    expect(byKey('Cellulose')).toEqual([
+      expect.objectContaining({
+        type: 'ingredient',
+        category: 'Verdickungs- & Geliermittel',
+        severity: 'red_flag',
+        translations: null,
+      }),
+    ]);
+
+    const checks = rows.filter((r) => r.type === 'check');
+    expect(checks.map((r) => r.key).sort()).toEqual(CHECK_SEEDS.map((c) => c.key).sort());
+    expect(byKey('ingredient_count')).toEqual([
+      expect.objectContaining({
+        category: 'Verarbeitung',
+        threshold: 5,
+        operator: 'gt',
+        severity: 'red_flag',
+      }),
+    ]);
+  });
+
+  it('gives fresh installs and upgraded installs the same rules', async () => {
+    const fresh = new NodeSqliteDatabase();
+    useDatabase(fresh);
+    await initDatabase();
+
+    resetDatabaseState();
+    const upgraded = createV8Database();
+    useDatabase(upgraded);
+    await initDatabase();
+
+    expect(await ruleSet(upgraded)).toEqual(await ruleSet(fresh));
+    const checks = await fresh.getAllAsync<RuleRow>(
+      "SELECT type, key, category, threshold, operator, severity FROM filter_rules WHERE type = 'check'"
+    );
+    expect(checks).toEqual(
+      CHECK_SEEDS.map((seed) => ({
+        type: 'check',
+        key: seed.key,
+        category: seed.category,
+        threshold: seed.threshold ?? null,
+        operator: seed.operator ?? null,
+        severity: 'red_flag',
+      }))
+    );
+  });
+
+  it('adds nothing twice when it runs again', async () => {
+    const database = createV8Database();
+    useDatabase(database);
+    await initDatabase();
+    const before = await ruleSet(database);
+
+    database.native.exec("UPDATE meta SET value = '8' WHERE key = 'schema_version'");
+    resetDatabaseState();
+    await initDatabase();
+
+    expect(await ruleSet(database)).toEqual(before);
   });
 });
 

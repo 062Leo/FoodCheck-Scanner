@@ -68,6 +68,59 @@ const CONTEXT_BOUND_E_NUMBERS: Record<string, RegExp> = {
 };
 
 /**
+ * Labels that state the opposite of what a rule looks for: "nicht pasteurisiert",
+ * "aus nicht gentechnisch veränderten Sojabohnen", "alkoholfrei". For the keys below a
+ * match does not count when the text right before or after it negates it.
+ */
+const NEGATION_WORD_BEFORE =
+  /(?:^|[^\p{L}])(?:nicht|ohne|kein(?:e[mnrs]?)?|frei\s+von|not|non|no|free\s+(?:from|of)|sans|senza|sin|sem|não|nao|niet|zonder|nie|bez)[\s-]+(?:aus\s+|from\s+)?$/u;
+/** "unpasteurisiert", "ongepasteuriseerd", "niepasteryzowany". */
+const NEGATING_PREFIX = /(?:^|[^\p{L}])(?:un|on|nie)-?$/u;
+/**
+ * Not a drink's alcohol: "Zuckeralkohole", "sugar alcohols", "entalkoholisiert",
+ * "analcolico", "bezalkoholowy", "0,0 % Alkohol" and spirit vinegar ("vinaigre d'alcool").
+ */
+const NOT_ALCOHOL_BEFORE =
+  /(?:zucker|sugar\s|suiker|(?:^|[^\p{L}])(?:ent|de-?|dés|des|an|bez))$|0[,.]0\s*%\s*(?:vol\.?\s*)?$|(?:vinaigre\s+d['’]|vinagre\s+de\s+)$/u;
+/** "alkoholfrei", "alcohol-free", "alcoholvrij", "Alkoholessig". */
+const NOT_ALCOHOL_AFTER = /^(?:[\s-]*(?:frei|free|vrij)|essig)/u;
+
+interface Negation {
+  before: RegExp[];
+  after?: RegExp;
+}
+
+const NOT_GENETICALLY_MODIFIED: Negation = { before: [NEGATION_WORD_BEFORE] };
+const NOT_HEAT_TREATED: Negation = { before: [NEGATION_WORD_BEFORE, NEGATING_PREFIX] };
+const NO_ALCOHOL: Negation = {
+  before: [NEGATION_WORD_BEFORE, NOT_ALCOHOL_BEFORE],
+  after: NOT_ALCOHOL_AFTER,
+};
+
+/** Rule keys (lower case) whose matches are checked for a negation. */
+const NEGATABLE_KEYS: Record<string, Negation> = {
+  'genetically modified': NOT_GENETICALLY_MODIFIED,
+  'gentechnisch verändert': NOT_GENETICALLY_MODIFIED,
+  pasteurised: NOT_HEAT_TREATED,
+  pasteurized: NOT_HEAT_TREATED,
+  uht: NOT_HEAT_TREATED,
+  ultrahocherhitzt: NOT_HEAT_TREATED,
+  wärmebehandelt: NOT_HEAT_TREATED,
+  'h-milch': NOT_HEAT_TREATED,
+  alcohol: NO_ALCOHOL,
+  ethanol: NO_ALCOHOL,
+};
+
+/** Characters around a match that are searched for a negation. */
+const NEGATION_WINDOW = 24;
+
+function isNegated(lowerText: string, span: TextSpan, negation: Negation): boolean {
+  const before = lowerText.slice(Math.max(0, span.start - NEGATION_WINDOW), span.start);
+  const after = lowerText.slice(span.end, span.end + NEGATION_WINDOW);
+  return negation.before.some((pattern) => pattern.test(before)) || !!negation.after?.test(after);
+}
+
+/**
  * Written-out E472a–f, e.g. "Mono- und Diacetylweinsäureester von Mono- und Diglyceriden
  * von Speisefettsäuren": one emulsifier, not tartaric acid, E471 and fatty acids. The
  * first group names the acid, which decides the E-number.
@@ -269,10 +322,12 @@ export class RedFlagAnalyzer {
     );
 
     // 1. Drop occurrences inside a longer match of another rule, inside the written-out
-    //    name of a different additive, and context-bound words outside their context.
+    //    name of a different additive, negated ones ("nicht pasteurisiert") and
+    //    context-bound words outside their context.
     const located: Located[] = [];
     for (const candidate of candidates) {
       const context = CONTEXT_BOUND_KEYS[candidate.canonicalKey.toLowerCase()];
+      const negation = NEGATABLE_KEYS[resolveIngredientKey(candidate.canonicalKey).toLowerCase()];
       const family = candidate.eNumber ? eNumberFamily(candidate.eNumber) : undefined;
       const surviving = candidate.occurrences.filter((span) => {
         const covered = allOccurrences.some(
@@ -281,6 +336,7 @@ export class RedFlagAnalyzer {
         if (covered) return false;
         const shielded = shields.some((shield) => hides(shield, span, family));
         if (shielded) return false;
+        if (negation && isNegated(lowerText, span, negation)) return false;
         if (!context) return true;
         const item = structure.itemAt(span.start);
         return context.test(text.slice(item.start, item.end));

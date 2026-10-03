@@ -14,7 +14,17 @@ const LETTER = /\p{L}/u;
 const DIGIT = /\d/;
 
 /** Abbreviations that must stand as whole words (they occur inside ordinary words). */
-const ABBREVIATIONS = new Set(['bha', 'bht', 'bpa', 'edta', 'hfcs', 'msg', 'tbhq']);
+const ABBREVIATIONS = new Set([
+  'bha',
+  'bht',
+  'bpa',
+  'edta',
+  'hfcs',
+  'msg',
+  'tbhq',
+  'uht',
+  'h-milch',
+]);
 
 /**
  * Joins E-numbers written with a space or hyphen ("E 330", "E-211") so that they
