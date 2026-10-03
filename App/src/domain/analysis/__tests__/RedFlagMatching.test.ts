@@ -341,6 +341,16 @@ describe('RedFlagAnalyzer filter list additions', () => {
     expect(keys('bevanda analcolica, alcohol-free beer, sans alcool')).toEqual([]);
   });
 
+  it('finds talc but not "talk" inside de-alcoholised', () => {
+    expect(keys('Trennmittel: Talkum')).toEqual(['Talc']);
+    expect(keys('Trennmittel: Talk')).toEqual(['Talc']);
+    expect(substances('Trennmittel: E553b')).toEqual(['E553B']);
+    expect(keys('Talk, entalkoholisierter Wein')).toEqual(['Talc']);
+    expect(keys('Wein, entalkoholisiert')).toEqual([]);
+    expect(keys('entalkoholisierter Wein, Traubensaft')).not.toContain('Talc');
+    expect(keys('Zucker, Alkohol')).toEqual(['Sugar', 'Alcohol']);
+  });
+
   it('finds heat-treated milk but not raw or unpasteurised milk', () => {
     expect(keys('Milch, pasteurisiert')).toEqual(['Pasteurised']);
     expect(keys('pasteurized milk')).toEqual(['Pasteurized']);

@@ -121,6 +121,29 @@ function isNegated(lowerText: string, span: TextSpan, negation: Negation): boole
 }
 
 /**
+ * Words that contain a rule's term but name something else. For the keys below a match
+ * does not count when it overlaps such a word: the Dutch and Polish "talk" (talc) inside
+ * "entalkoholisiert" (de-alcoholised).
+ */
+const OTHER_WORDS: Record<string, RegExp> = {
+  talc: /alkohol|alcohol/gu,
+};
+
+const WORD_LETTER = /\p{L}/u;
+
+function isPartOfOtherWord(lowerText: string, span: TextSpan, otherWords: RegExp): boolean {
+  let start = span.start;
+  while (start > 0 && WORD_LETTER.test(lowerText[start - 1])) start--;
+  let end = span.end;
+  while (end < lowerText.length && WORD_LETTER.test(lowerText[end])) end++;
+  for (const match of lowerText.slice(start, end).matchAll(otherWords)) {
+    const otherStart = start + match.index;
+    if (otherStart < span.end && span.start < otherStart + match[0].length) return true;
+  }
+  return false;
+}
+
+/**
  * Written-out E472a–f, e.g. "Mono- und Diacetylweinsäureester von Mono- und Diglyceriden
  * von Speisefettsäuren": one emulsifier, not tartaric acid, E471 and fatty acids. The
  * first group names the acid, which decides the E-number.
@@ -322,12 +345,14 @@ export class RedFlagAnalyzer {
     );
 
     // 1. Drop occurrences inside a longer match of another rule, inside the written-out
-    //    name of a different additive, negated ones ("nicht pasteurisiert") and
-    //    context-bound words outside their context.
+    //    name of a different additive, negated ones ("nicht pasteurisiert"), parts of
+    //    other words ("entalkoholisiert") and context-bound words outside their context.
     const located: Located[] = [];
     for (const candidate of candidates) {
       const context = CONTEXT_BOUND_KEYS[candidate.canonicalKey.toLowerCase()];
-      const negation = NEGATABLE_KEYS[resolveIngredientKey(candidate.canonicalKey).toLowerCase()];
+      const resolvedKey = resolveIngredientKey(candidate.canonicalKey).toLowerCase();
+      const negation = NEGATABLE_KEYS[resolvedKey];
+      const otherWords = OTHER_WORDS[resolvedKey];
       const family = candidate.eNumber ? eNumberFamily(candidate.eNumber) : undefined;
       const surviving = candidate.occurrences.filter((span) => {
         const covered = allOccurrences.some(
@@ -337,6 +362,7 @@ export class RedFlagAnalyzer {
         const shielded = shields.some((shield) => hides(shield, span, family));
         if (shielded) return false;
         if (negation && isNegated(lowerText, span, negation)) return false;
+        if (otherWords && isPartOfOtherWord(lowerText, span, otherWords)) return false;
         if (!context) return true;
         const item = structure.itemAt(span.start);
         return context.test(text.slice(item.start, item.end));
