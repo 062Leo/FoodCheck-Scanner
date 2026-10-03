@@ -1,9 +1,10 @@
 import type { NovaScore } from './Product';
 import type { AIInsightFinding } from './Robotoff';
+import type { CheckDetail } from '../domain/analysis/productChecks';
 
 /**
  * Traffic-light status of a product. `Unknown` means there is not enough data
- * (no ingredient list, no NOVA group and no nutrient finding) to rate it.
+ * (no ingredient list, no NOVA group and no finding) to rate it.
  */
 export type ScanStatus = 'OK' | 'Warning' | 'Critical' | 'Unknown';
 
@@ -38,6 +39,17 @@ export interface RedFlagFinding {
   eNumber?: string;
   /** Set for findings produced by a nutrient threshold rule. */
   nutrient?: NutrientFindingDetail;
+  /** Set for findings produced by a whole-product check rule. */
+  check?: CheckDetail;
+  /** Set when the product belongs to a brand or company the user avoids. */
+  company?: CompanyFindingDetail;
+}
+
+export interface CompanyFindingDetail {
+  /** The avoided name as the user entered it, e.g. "Nestlé". */
+  name: string;
+  /** The brand or owner of the product that matched, e.g. "Maggi". */
+  matched: string;
 }
 
 export interface NovaDetails {
@@ -51,6 +63,7 @@ export interface NovaDetails {
 export type RatingReason =
   | { code: 'nova'; nova: 3 | 4 }
   | { code: 'redFlags'; count: number }
+  | { code: 'avoidedCompany'; company: string }
   | { code: 'ingredientsMissing' }
   | { code: 'insufficientData' }
   | { code: 'noFindings' };

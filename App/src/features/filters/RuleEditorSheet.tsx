@@ -88,7 +88,8 @@ function initialState(rule: FilterRule | null): FormState {
     };
   }
   return {
-    type: rule.type,
+    // Check and company rules have no form of their own yet; see buildRuleChange.
+    type: rule.type === 'nutrient' ? 'nutrient' : 'ingredient',
     keyword: rule.type === 'ingredient' ? rule.key : '',
     category: rule.category,
     nutrient: isNutrientKey(rule.key) ? rule.key : 'sugars_100g',
@@ -107,6 +108,15 @@ export function buildRuleChange(
   editing: FilterRule | null,
   form: FormState
 ): RuleChange | { error: 'ingredient' | 'category' | 'threshold' } {
+  // Check and company rules are not edited here; only their severity can change.
+  if (editing && (editing.type === 'check' || editing.type === 'company')) {
+    return {
+      kind: 'update',
+      id: editing.id,
+      changes: { severity: form.severity },
+      translate: false,
+    };
+  }
   if (form.type === 'ingredient') {
     const raw = form.keyword.trim();
     if (!raw) return { error: 'ingredient' };

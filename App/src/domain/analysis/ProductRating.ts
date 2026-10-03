@@ -3,6 +3,8 @@ import type { NovaScore, Product } from '../../types/Product';
 import type { RatingReason, RedFlagFinding, ScanResult, ScanStatus } from '../../types/ScanResult';
 import { RedFlagAnalyzer } from './RedFlagAnalyzer';
 import { NovaScoreEvaluator } from './NovaScoreEvaluator';
+import { runProductChecks } from './productChecks';
+import { findAvoidedCompanies } from './companyRules';
 
 /** Number of red flags from which a product is rated critical. */
 export const CRITICAL_RED_FLAG_COUNT = 3;
@@ -29,22 +31,31 @@ export class ProductRating {
     const taxonomyFlags = ingredientsText
       ? this.redFlagAnalyzer.analyzeTaxonomy(ingredientsText, activeRules)
       : [];
-    const redFlags = this.mergeFindings(keywordFlags, taxonomyFlags);
+    // Product checks count like ingredient red flags; an avoided company alone is critical.
+    const checkFlags = runProductChecks(product, rules ?? []);
+    const companyFlags = findAvoidedCompanies(product, rules ?? []);
+    const redFlags = [...this.mergeFindings(keywordFlags, taxonomyFlags), ...checkFlags];
+    const companies = companyFlags.map((flag) => flag.company?.name ?? flag.ingredient);
 
     const novaScore = toNovaScore(product.novaScore);
     const novaDetails = this.novaEvaluator.evaluate(novaScore);
     const hasIngredients = ingredientsText.length > 0;
-    const status = this.determineStatus(redFlags.length, novaScore, hasIngredients);
+    const status = this.determineStatus(
+      redFlags.length,
+      novaScore,
+      hasIngredients,
+      companies.length > 0
+    );
 
     return {
       status,
-      redFlags,
+      redFlags: [...companyFlags, ...redFlags],
       nova: {
         score: novaScore,
         label: novaDetails.label,
         color: novaDetails.color,
       },
-      reasons: this.buildReasons(status, redFlags.length, novaScore, hasIngredients),
+      reasons: this.buildReasons(status, redFlags.length, novaScore, hasIngredients, companies),
     };
   }
 
@@ -82,9 +93,10 @@ export class ProductRating {
   private determineStatus(
     redFlagCount: number,
     novaScore: NovaScore | undefined,
-    hasIngredients: boolean
+    hasIngredients: boolean,
+    hasAvoidedCompany: boolean
   ): ScanStatus {
-    if (novaScore === 4 || redFlagCount >= CRITICAL_RED_FLAG_COUNT) {
+    if (hasAvoidedCompany || novaScore === 4 || redFlagCount >= CRITICAL_RED_FLAG_COUNT) {
       return 'Critical';
     }
     if (redFlagCount >= 1 || novaScore === 3) {
@@ -100,13 +112,17 @@ export class ProductRating {
     status: ScanStatus,
     redFlagCount: number,
     novaScore: NovaScore | undefined,
-    hasIngredients: boolean
+    hasIngredients: boolean,
+    companies: string[]
   ): RatingReason[] {
     if (status === 'Unknown') {
       return [{ code: 'insufficientData' }];
     }
 
-    const reasons: RatingReason[] = [];
+    const reasons: RatingReason[] = companies.map((company) => ({
+      code: 'avoidedCompany',
+      company,
+    }));
     if (novaScore === 3 || novaScore === 4) {
       reasons.push({ code: 'nova', nova: novaScore });
     }

@@ -81,6 +81,20 @@ describe('buildRuleChange', () => {
       error: 'threshold',
     });
   });
+
+  it('changes only the severity of check and company rules', () => {
+    const checkRule: FilterRule = { ...customRule, type: 'check', key: 'canned' };
+    const companyRule: FilterRule = { ...customRule, type: 'company', key: 'Nestlé' };
+
+    for (const rule of [checkRule, companyRule]) {
+      expect(buildRuleChange(rule, { ...form, keyword: '' })).toEqual({
+        kind: 'update',
+        id: 7,
+        changes: { severity: 'ok' },
+        translate: false,
+      });
+    }
+  });
 });
 
 describe('translateRuleKeyword', () => {
