@@ -13,6 +13,12 @@ import { useProductDetails, type FoundProduct } from '../features/product/usePro
 import { useRobotoffInsights } from '../features/product/useRobotoffInsights';
 import { FindingsList } from '../features/product/FindingsList';
 import { IngredientsSection } from '../features/product/IngredientsSection';
+import { ProductBadges } from '../features/product/ProductBadges';
+import { AlmondPollinationNote } from '../features/product/AlmondPollinationNote';
+import { productBadges } from '../domain/product/productBadges';
+import { parsePackagerCodes } from '../domain/product/packagerCode';
+import { almondPollinationInfo } from '../domain/product/almondInfo';
+import { describePackagerCode } from '../i18n/countryNames';
 import { AllergenWarning } from '../features/allergens/AllergenWarning';
 import { SkeletonLoadingScreen } from '../components/SkeletonLoading';
 import { Accordion } from '../components/Accordion';
@@ -131,6 +137,15 @@ function ProductDetails({
   const footnote = [sourceNote, staleNote].filter(Boolean).join(' · ') || undefined;
 
   const gallery = useMemo(() => galleryImages(product, t), [product, t]);
+  const badges = useMemo(() => productBadges(product), [product]);
+  const almondInfo = useMemo(() => almondPollinationInfo(product), [product]);
+  const packagedIn = useMemo(
+    () =>
+      parsePackagerCodes(product.embCodesTags)
+        .map((code) => describePackagerCode(code, language))
+        .join('\n'),
+    [product, language]
+  );
 
   const onToggleFavorite = async () => {
     if (productId === undefined) return;
@@ -162,29 +177,32 @@ function ProductDetails({
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}
       >
-        <View style={styles.identity}>
-          {product.imageUrl ? (
-            <Image
-              source={{ uri: product.imageUrl }}
-              style={styles.thumbnail}
-              resizeMode="contain"
-              accessibilityIgnoresInvertColors
-            />
-          ) : null}
-          <View style={styles.identityText}>
-            <Text style={styles.name} accessibilityRole="header">
-              {displayProductName(product.name, t('product.unknown'))}
-            </Text>
-            {product.brand || product.quantity ? (
-              <Text style={styles.brand}>
-                {[product.brand, product.quantity].filter(Boolean).join(' · ')}
+        <View style={styles.header}>
+          <View style={styles.identity}>
+            {product.imageUrl ? (
+              <Image
+                source={{ uri: product.imageUrl }}
+                style={styles.thumbnail}
+                resizeMode="contain"
+                accessibilityIgnoresInvertColors
+              />
+            ) : null}
+            <View style={styles.identityText}>
+              <Text style={styles.name} accessibilityRole="header">
+                {displayProductName(product.name, t('product.unknown'))}
               </Text>
-            ) : null}
-            <Text style={styles.ean}>{t('product.ean', { ean: product.ean })}</Text>
-            {record?.edited_at ? (
-              <Text style={styles.edited}>{t('product.editedLocally')}</Text>
-            ) : null}
+              {product.brand || product.quantity ? (
+                <Text style={styles.brand}>
+                  {[product.brand, product.quantity].filter(Boolean).join(' · ')}
+                </Text>
+              ) : null}
+              <Text style={styles.ean}>{t('product.ean', { ean: product.ean })}</Text>
+              {record?.edited_at ? (
+                <Text style={styles.edited}>{t('product.editedLocally')}</Text>
+              ) : null}
+            </View>
           </View>
+          <ProductBadges badges={badges} t={t} />
         </View>
 
         <StatusHero status={rating.status} reasons={rating.reasons} t={t} footnote={footnote} />
@@ -265,7 +283,9 @@ function ProductDetails({
           </View>
         )}
 
-        {product.origins || product.manufacturingPlaces || product.stores ? (
+        {almondInfo && <AlmondPollinationNote origin={almondInfo.origin} t={t} />}
+
+        {product.origins || product.manufacturingPlaces || product.stores || packagedIn ? (
           <Accordion
             items={[
               {
@@ -278,6 +298,12 @@ function ProductDetails({
                       value={product.manufacturingPlaces}
                     />
                     <InfoRow label={t('product.stores')} value={product.stores} />
+                    {packagedIn ? (
+                      <View style={styles.infoRow}>
+                        <InfoRow label={t('product.packager')} value={packagedIn} />
+                        <Text style={styles.infoHint}>{t('product.packagerHint')}</Text>
+                      </View>
+                    ) : null}
                   </View>
                 ),
               },
@@ -404,6 +430,7 @@ function galleryImages(product: Product, t: TranslateFn) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.lg, gap: spacing.xl },
+  header: { gap: spacing.md },
   identity: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
   thumbnail: {
     width: 72,
@@ -469,5 +496,6 @@ const styles = StyleSheet.create({
   infoRow: { gap: 2 },
   infoLabel: { ...typography.caption, color: colors.textMuted },
   infoValue: { ...typography.body, color: colors.text },
+  infoHint: { ...typography.caption, color: colors.textSecondary },
   disclaimer: { ...typography.caption, color: colors.textMuted, textAlign: 'center' },
 });
