@@ -169,19 +169,6 @@ function hasWordStart(text: string, term: string): boolean {
   return false;
 }
 
-/** True if `term` occurs as a whole word or as the end of a compound ("Basmatireis"). */
-function hasWordOrCompoundEnd(text: string, term: string): boolean {
-  let index = text.indexOf(term);
-  while (index !== -1) {
-    const end = index + term.length;
-    const startsWord = index === 0 || !LETTER.test(text[index - 1]);
-    const endsWord = end >= text.length || !LETTER.test(text[end]);
-    if (startsWord || endsWord) return true;
-    index = text.indexOf(term, index + 1);
-  }
-  return false;
-}
-
 function hasTag(tags: string[] | undefined, test: (tag: string) => boolean): boolean {
   return (tags ?? []).some(test);
 }
@@ -225,14 +212,20 @@ function containsMercuryFish(product: Product, lowerText: string): boolean {
   return MERCURY_FISH_WORDS.some((word) => hasWordStart(lowerText, word));
 }
 
-const RICE_WORDS = ['reis', 'rice', 'riz', 'riso', 'arroz', 'rijst', 'ryż'];
+/**
+ * German "Reis" as a word, at the start of a compound ("Reismehl", "Reisessig") or at
+ * its end ("Basmatireis", "Vollkornreis"), but not "Reise..." or "Preiselbeeren".
+ */
+const GERMAN_RICE = /(?:^|[^\p{L}])reis(?!e(?!ssig))|reis(?!\p{L})/u;
+/** Other languages only at the start of a word: "rice flour", but not "licorice". */
+const OTHER_RICE = /(?:^|[^\p{L}])(?:rice|riz|riso|arroz|rijst|ryż)/u;
 
 function isRiceBased(product: Product, lowerText: string): boolean {
   if (hasTag(product.categoriesTags, (tag) => tag === 'en:rices' || /(^|[:-])rice-/.test(tag))) {
     return true;
   }
   const first = parser.parse(lowerText)[0]?.normalized ?? '';
-  return RICE_WORDS.some((word) => hasWordOrCompoundEnd(first, word));
+  return GERMAN_RICE.test(first) || OTHER_RICE.test(first);
 }
 
 const PESTICIDE_CROPS: { crop: PesticideCrop; tags: RegExp }[] = [

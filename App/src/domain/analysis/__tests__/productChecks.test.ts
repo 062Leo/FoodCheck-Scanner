@@ -155,6 +155,20 @@ describe('product checks', () => {
     expect(keysOf(product({ ingredientsText: 'Hafer, Reismehl' }))).not.toContain('rice_arsenic');
   });
 
+  it.each(['Vollkornreis', 'Reismehl, Salz', 'rice flour', 'brown rice', 'riz', 'arroz', 'ryż'])(
+    'flags rice as the main ingredient in "%s"',
+    (ingredientsText) => {
+      expect(keysOf(product({ ingredientsText }))).toContain('rice_arsenic');
+    }
+  );
+
+  it.each(['licorice extract', 'liquorice', 'Preiselbeeren', 'Reiseproviant'])(
+    'does not mistake "%s" for rice',
+    (ingredientsText) => {
+      expect(keysOf(product({ ingredientsText }))).not.toContain('rice_arsenic');
+    }
+  );
+
   it('flags crops with many residue findings unless organic', () => {
     const findings = runProductChecks(product({ categoriesTags: ['en:mangoes'] }), [
       checkRule('pesticide_risk'),
