@@ -675,6 +675,22 @@ const de = {
   'eggCode.error.invalidFarmNumber': 'Auf „DE“ folgen nur Ziffern.',
   'eggCode.error.unknownState':
     'Unbekanntes Bundesland: Die ersten beiden Ziffern nach „DE“ müssen zwischen 01 und 16 liegen.',
+  'settings.usda': 'USDA FoodData Central',
+  'settings.usdaHint': 'Eigener Schlüssel für Produkte, die Open Food Facts nicht kennt',
+  'usda.title': 'USDA FoodData Central',
+  'usda.help':
+    'Kennt Open Food Facts einen Barcode nicht, sieht die App in USDA FoodData Central nach – der Lebensmitteldatenbank des US-Landwirtschaftsministeriums, vor allem mit Produkten aus den USA. Dafür brauchst du einen eigenen, kostenlosen Schlüssel von api.data.gov. Ohne Schlüssel wird USDA nie abgefragt.',
+  'usda.signup': 'Kostenlosen Schlüssel anfordern',
+  'usda.placeholder': 'USDA API Key einfügen',
+  'usda.noKey': 'Kein Key – USDA wird nicht abgefragt',
+  'usda.error.invalid-key': 'USDA-Abfrage fehlgeschlagen: Schlüssel ungültig.',
+  'usda.error.rate-limit': 'USDA-Abfrage fehlgeschlagen: Limit erreicht.',
+  'usda.error.timeout': 'USDA-Abfrage fehlgeschlagen: keine Antwort.',
+  'usda.error.network': 'USDA-Abfrage fehlgeschlagen: keine Verbindung.',
+  'usda.error.server': 'USDA-Abfrage fehlgeschlagen.',
+  'product.source.usda': 'Datenquelle: USDA FoodData Central (gemeinfrei, CC0)',
+  'edit.usdaNoUpload':
+    'Diese Angaben stammen aus USDA FoodData Central und werden nicht an Open Food Facts gesendet. Deine Änderungen bleiben auf dem Gerät.',
 };
 
 type Translations = typeof de;
@@ -1331,6 +1347,22 @@ const en: Translations = {
   'eggCode.error.invalidFarmNumber': 'Only digits follow “DE”.',
   'eggCode.error.unknownState':
     'Unknown federal state: the first two digits after “DE” must be between 01 and 16.',
+  'settings.usda': 'USDA FoodData Central',
+  'settings.usdaHint': 'Your own key for products unknown to Open Food Facts',
+  'usda.title': 'USDA FoodData Central',
+  'usda.help':
+    'If Open Food Facts does not know a barcode, the app looks it up in USDA FoodData Central – the food database of the US Department of Agriculture, mostly with products from the USA. This needs your own free key from api.data.gov. Without a key, USDA is never asked.',
+  'usda.signup': 'Get a free key',
+  'usda.placeholder': 'Insert USDA API Key',
+  'usda.noKey': 'No key – USDA is not asked',
+  'usda.error.invalid-key': 'USDA lookup failed: invalid key.',
+  'usda.error.rate-limit': 'USDA lookup failed: limit reached.',
+  'usda.error.timeout': 'USDA lookup failed: no response.',
+  'usda.error.network': 'USDA lookup failed: no connection.',
+  'usda.error.server': 'USDA lookup failed.',
+  'product.source.usda': 'Data source: USDA FoodData Central (public domain, CC0)',
+  'edit.usdaNoUpload':
+    'This data comes from USDA FoodData Central and is not sent to Open Food Facts. Your changes stay on the device.',
 };
 
 export type TranslationKey = keyof typeof de;

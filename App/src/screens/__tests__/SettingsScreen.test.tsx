@@ -42,6 +42,14 @@ describe('SettingsScreen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/egg-code');
   });
 
+  it('opens the USDA key settings', async () => {
+    render(<SettingsScreen />);
+
+    fireEvent.press(await screen.findByText('USDA FoodData Central'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith('/settings/usda-key');
+  });
+
   it('switches the app language immediately', async () => {
     render(<SettingsScreen />);
 

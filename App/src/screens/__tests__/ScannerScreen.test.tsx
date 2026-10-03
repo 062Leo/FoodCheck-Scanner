@@ -228,6 +228,17 @@ describe('ScannerScreen', () => {
     expect(screen.queryByTestId('scan-card')).toBeNull();
   });
 
+  it('shows the not-found card with a hint when the USDA lookup failed', async () => {
+    mockLookup.mockResolvedValue({ status: 'not-found', usdaError: 'rate-limit' });
+    render(<ScannerScreen />);
+
+    scan(EAN);
+
+    expect(await screen.findByText('USDA-Abfrage fehlgeschlagen: Limit erreicht.')).toBeTruthy();
+    expect(screen.getByText('Open Food Facts kennt diesen Barcode nicht.')).toBeTruthy();
+    expect(screen.getByText('Produkt erfassen')).toBeTruthy();
+  });
+
   it('validates manually entered barcodes', async () => {
     render(<ScannerScreen />);
 

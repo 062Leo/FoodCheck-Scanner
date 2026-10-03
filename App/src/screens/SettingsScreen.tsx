@@ -268,6 +268,13 @@ export default function SettingsScreen() {
             description={t('settings.translationHint')}
             onPress={() => router.push('/settings/api-key')}
           />
+          <View style={styles.divider} />
+          <ListRow
+            icon="nutrition-outline"
+            title={t('settings.usda')}
+            description={t('settings.usdaHint')}
+            onPress={() => router.push('/settings/usda-key')}
+          />
         </Group>
 
         <Group title={t('settings.offAccount')}>

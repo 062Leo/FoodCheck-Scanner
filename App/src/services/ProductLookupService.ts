@@ -4,6 +4,7 @@ import type { ScanResult } from '../types/ScanResult';
 import { ProductRepository } from '../infrastructure/db/ProductRepository';
 import { OpenFoodFactsClient } from '../infrastructure/api/OpenFoodFactsClient';
 import { NetworkError } from '../infrastructure/api/fetchWithTimeout';
+import { UsdaClient, UsdaError, type UsdaErrorCode } from '../infrastructure/api/UsdaClient';
 import { isOnline } from '../infrastructure/network/connectivity';
 import { ProductNormalizer, PRODUCT_DATA_VERSION } from '../domain/analysis/ProductNormalizer';
 import { rateProduct } from '../domain/analysis/rateProduct';
@@ -25,16 +26,21 @@ export type LookupResult =
       rating: ScanResult;
       record: ProductRecord | null;
       /**
-       * Where the shown data comes from: fresh from Open Food Facts, from the device
-       * because the network is unavailable ('cache'), or from the device by choice
-       * ('device': just saved, or unknown to Open Food Facts).
+       * Where the shown data comes from: fresh from Open Food Facts (or, for a barcode
+       * Open Food Facts does not know, from USDA FoodData Central; see product.source),
+       * from the device because the network is unavailable ('cache'), or from the
+       * device by choice ('device': just saved, or unknown to Open Food Facts).
        */
       source: 'network' | 'cache' | 'device';
       /** True if cached data is shown although fresh data could not be loaded. */
       networkFailed: boolean;
       isStale: boolean;
     }
-  | { status: LookupFailure };
+  | {
+      status: LookupFailure;
+      /** Set when the USDA fallback was tried for an unknown barcode and failed. */
+      usdaError?: UsdaErrorCode;
+    };
 
 export function isStale(record: Pick<ProductRecord, 'last_api_fetch'>, now = Date.now()): boolean {
   if (!record.last_api_fetch) return false;
@@ -85,6 +91,9 @@ export function toProductRecord(
 export interface ProductLookupDependencies {
   repository?: ProductRepository;
   api?: Pick<OpenFoodFactsClient, 'getProductByEan'>;
+  usda?: Pick<UsdaClient, 'findByGtin'>;
+  /** The user's own api.data.gov key; without one USDA is never asked. */
+  getUsdaKey?: () => Promise<string | null>;
   isOnline?: () => Promise<boolean>;
   now?: () => Date;
 }
@@ -94,18 +103,26 @@ export interface ProductLookupDependencies {
  *
  * - Online: fetches fresh data (with timeout), merges it with local edits, rates and
  *   stores it. On timeout/server error the cached product is shown instead.
+ * - Unknown to Open Food Facts and not stored: asks USDA FoodData Central, but only
+ *   with the user's own key. A stored product is never asked for again, so a product
+ *   that came from USDA stays as it is until Open Food Facts knows the barcode.
  * - Offline: shows the cached product if there is one.
  * - A scan counts as a visit; merely viewing a product does not.
  */
 export class ProductLookupService {
   private readonly repository: ProductRepository;
   private readonly api: Pick<OpenFoodFactsClient, 'getProductByEan'>;
+  private readonly usda: Pick<UsdaClient, 'findByGtin'>;
+  private readonly getUsdaKey: () => Promise<string | null>;
   private readonly checkOnline: () => Promise<boolean>;
   private readonly now: () => Date;
 
   constructor(dependencies: ProductLookupDependencies = {}) {
     this.repository = dependencies.repository ?? new ProductRepository();
     this.api = dependencies.api ?? new OpenFoodFactsClient();
+    const usdaClient = new UsdaClient();
+    this.usda = dependencies.usda ?? usdaClient;
+    this.getUsdaKey = dependencies.getUsdaKey ?? (() => usdaClient.getApiKey());
     this.checkOnline = dependencies.isOnline ?? isOnline;
     this.now = dependencies.now ?? (() => new Date());
   }
@@ -121,6 +138,7 @@ export class ProductLookupService {
     }
 
     let fresh: Product | null;
+    let usdaError: UsdaErrorCode | undefined;
     try {
       // With a cached product at hand, do not keep the user waiting for a retry.
       fresh = await this.api.getProductByEan(ean, { retries: cached ? 0 : 1 });
@@ -129,10 +147,16 @@ export class ProductLookupService {
       return { status: error instanceof NetworkError ? 'offline' : 'error' };
     }
 
+    if (!fresh && cached) {
+      return this.fromCache(record!, cached, intent, rules, 'device', false);
+    }
     if (!fresh) {
-      return cached
-        ? this.fromCache(record!, cached, intent, rules, 'device', false)
-        : { status: 'not-found' };
+      const usda = await this.lookupUsda(ean);
+      fresh = usda.product;
+      usdaError = usda.error;
+    }
+    if (!fresh) {
+      return usdaError ? { status: 'not-found', usdaError } : { status: 'not-found' };
     }
 
     const product = mergeProductData(
@@ -155,6 +179,19 @@ export class ProductLookupService {
       networkFailed: false,
       isStale: false,
     };
+  }
+
+  /** Fallback for barcodes unknown to Open Food Facts; errors never stop the lookup. */
+  private async lookupUsda(
+    ean: string
+  ): Promise<{ product: Product | null; error?: UsdaErrorCode }> {
+    const key = (await this.getUsdaKey().catch(() => null))?.trim();
+    if (!key) return { product: null };
+    try {
+      return { product: await this.usda.findByGtin(ean, key) };
+    } catch (error) {
+      return { product: null, error: error instanceof UsdaError ? error.code : 'server' };
+    }
   }
 
   /** Re-reads a stored product without network access (e.g. after editing it). */

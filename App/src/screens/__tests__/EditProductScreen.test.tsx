@@ -93,6 +93,23 @@ describe('EditProductScreen', () => {
     expect((await repository.findByEan(EAN))?.edited_fields).toBe('["nutriments.sugars100g"]');
   });
 
+  it('does not offer to send USDA data to Open Food Facts', async () => {
+    await repository.saveScan(
+      productRecord({
+        name: 'Oat Cereal Rings',
+        raw_json: JSON.stringify({
+          product: { ean: EAN, name: 'Oat Cereal Rings', source: 'usda' },
+        }),
+      })
+    );
+    mockRouter.params = { ean: EAN };
+    render(<EditProductScreen />);
+
+    expect(await screen.findByText(/stammen aus USDA FoodData Central/)).toBeTruthy();
+    expect(screen.queryByText('An Open Food Facts senden')).toBeNull();
+    expect(screen.getByTestId('edit-save')).toBeTruthy();
+  });
+
   it('leaves only once when saving during the upload success message', async () => {
     await repository.saveScan(productRecord({ name: 'Müsli' }));
     mockRouter.params = { ean: EAN };

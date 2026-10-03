@@ -245,6 +245,8 @@ export default function EditProductScreen() {
   }
 
   const isNew = !form.session?.record;
+  // USDA data is not Open Food Facts data and must not be sent there as if it were.
+  const fromUsda = form.session?.product.source === 'usda';
 
   return (
     <View style={styles.container}>
@@ -259,6 +261,7 @@ export default function EditProductScreen() {
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.ean}>{t('product.ean', { ean })}</Text>
+          {fromUsda && <Text style={styles.hint}>{t('edit.usdaNoUpload')}</Text>}
 
           <View style={styles.section}>
             <SectionTitle>{t('edit.section.product')}</SectionTitle>
@@ -423,15 +426,17 @@ export default function EditProductScreen() {
         </ScrollView>
 
         <View style={[styles.actions, { paddingBottom: insets.bottom + spacing.md }]}>
-          <Button
-            title={t('edit.uploadOff')}
-            icon="cloud-upload-outline"
-            variant="secondary"
-            onPress={() => void onUpload()}
-            loading={busy === 'upload'}
-            disabled={busy !== null}
-            style={styles.flex}
-          />
+          {!fromUsda && (
+            <Button
+              title={t('edit.uploadOff')}
+              icon="cloud-upload-outline"
+              variant="secondary"
+              onPress={() => void onUpload()}
+              loading={busy === 'upload'}
+              disabled={busy !== null}
+              style={styles.flex}
+            />
+          )}
           <Button
             title={t('edit.saveLocal')}
             icon="checkmark"

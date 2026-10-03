@@ -1,6 +1,8 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { TranslateFn } from '../../i18n/useTranslation';
+import type { TranslationKey } from '../../i18n/translations';
+import type { UsdaErrorCode } from '../../infrastructure/api/UsdaClient';
 import { displayProductName } from '../../domain/product/productName';
 import { Button, IconButton } from '../../ui/components';
 import { STATUS_ICONS, reasonText, statusLabel } from '../../ui/status';
@@ -14,6 +16,11 @@ import {
 import { allergenAnnouncement } from '../allergens/AllergenWarning';
 import { selectActiveProfile, useAllergenStore } from '../../store/allergenStore';
 
+/** Short note that the USDA fallback was tried but failed (e.g. invalid key). */
+export function usdaErrorText(code: UsdaErrorCode | undefined, t: TranslateFn): string {
+  return code ? t(`usda.error.${code}` as TranslationKey) : '';
+}
+
 /** Text read out by screen readers when a scan result arrives. */
 export function scanCardAnnouncement(
   card: ScanCard,
@@ -22,11 +29,13 @@ export function scanCardAnnouncement(
 ): string {
   if (card.phase === 'loading') return t('scanner.searching', { ean: card.ean });
   if (card.phase === 'failed') {
-    return card.reason === 'offline'
-      ? t('scanner.offlineResult')
-      : card.reason === 'not-found'
-        ? t('scanner.notFoundResult')
-        : t('scanner.errorResult');
+    const message =
+      card.reason === 'offline'
+        ? t('scanner.offlineResult')
+        : card.reason === 'not-found'
+          ? t('scanner.notFoundResult')
+          : t('scanner.errorResult');
+    return [message, usdaErrorText(card.usdaError, t)].filter(Boolean).join(' ');
   }
   const { product, rating } = card.data;
   const summary = t('scanner.cardA11y', {
@@ -82,6 +91,9 @@ export function ScanResultCard({
           <Ionicons name="help-circle" size={28} color={colors.textMuted} />
           <View style={styles.flex}>
             <Text style={styles.body}>{message}</Text>
+            {card.usdaError ? (
+              <Text style={styles.caption}>{usdaErrorText(card.usdaError, t)}</Text>
+            ) : null}
             <Text style={styles.caption}>{t('product.ean', { ean: card.ean })}</Text>
           </View>
           <IconButton icon="close" label={t('scanner.close')} onPress={onClose} />

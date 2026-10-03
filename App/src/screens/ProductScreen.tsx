@@ -20,6 +20,7 @@ import { parsePackagerCodes } from '../domain/product/packagerCode';
 import { almondPollinationInfo } from '../domain/product/almondInfo';
 import { describePackagerCode } from '../i18n/countryNames';
 import { AllergenWarning } from '../features/allergens/AllergenWarning';
+import { usdaErrorText } from '../features/scanner/ScanResultCard';
 import { SkeletonLoadingScreen } from '../components/SkeletonLoading';
 import { Accordion } from '../components/Accordion';
 import { NutritionTable } from '../components/NutritionTable';
@@ -87,7 +88,13 @@ export default function ProductScreen() {
         <EmptyState
           icon={content.icon}
           title={content.title}
-          message={`${content.body}\n${ean ? t('product.ean', { ean }) : ''}`.trim()}
+          message={[
+            content.body,
+            usdaErrorText(state.usdaError, t),
+            ean ? t('product.ean', { ean }) : '',
+          ]
+            .filter(Boolean)
+            .join('\n')}
           action={
             state.reason === 'not-found' ? (
               <Button title={t('product.addProduct')} icon="create-outline" onPress={openEditor} />
@@ -197,6 +204,9 @@ function ProductDetails({
                 </Text>
               ) : null}
               <Text style={styles.ean}>{t('product.ean', { ean: product.ean })}</Text>
+              {product.source === 'usda' ? (
+                <Text style={styles.ean}>{t('product.source.usda')}</Text>
+              ) : null}
               {record?.edited_at ? (
                 <Text style={styles.edited}>{t('product.editedLocally')}</Text>
               ) : null}

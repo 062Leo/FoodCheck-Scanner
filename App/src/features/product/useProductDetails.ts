@@ -5,6 +5,7 @@ import {
   type LookupIntent,
   type LookupResult,
 } from '../../services/ProductLookupService';
+import type { UsdaErrorCode } from '../../infrastructure/api/UsdaClient';
 import { useFilterStore } from '../../store/filterStore';
 import { useCatalogStore } from '../../store/catalogStore';
 
@@ -12,7 +13,7 @@ export type FoundProduct = Extract<LookupResult, { status: 'found' }>;
 
 export type ProductDetailsState =
   | { phase: 'loading' }
-  | { phase: 'failed'; reason: LookupFailure }
+  | { phase: 'failed'; reason: LookupFailure; usdaError?: UsdaErrorCode }
   | { phase: 'ready'; data: FoundProduct };
 
 const lookupService = new ProductLookupService();
@@ -68,7 +69,7 @@ export function useProductDetails(ean: string | undefined, intent: OpenIntent) {
     setState(
       result.status === 'found'
         ? { phase: 'ready', data: result }
-        : { phase: 'failed', reason: result.status }
+        : { phase: 'failed', reason: result.status, usdaError: result.usdaError }
     );
     void useCatalogStore.getState().loadAll();
   }, [ean]);

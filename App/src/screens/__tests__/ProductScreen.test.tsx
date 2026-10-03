@@ -178,6 +178,35 @@ describe('ProductScreen', () => {
     });
   });
 
+  it('adds a hint when the USDA lookup for an unknown product failed', async () => {
+    mockLookup.mockResolvedValue({ status: 'not-found', usdaError: 'invalid-key' });
+
+    render(<ProductScreen />);
+
+    expect(await screen.findByText('Produkt unbekannt')).toBeTruthy();
+    expect(screen.getByText(/USDA-Abfrage fehlgeschlagen: Schlüssel ungültig\./)).toBeTruthy();
+    expect(screen.getByText('Produkt erfassen')).toBeTruthy();
+  });
+
+  it('names USDA FoodData Central as the source of a USDA product', async () => {
+    mockLookup.mockResolvedValue(found({ ...limo, source: 'usda' }));
+
+    render(<ProductScreen />);
+
+    expect(
+      await screen.findByText('Datenquelle: USDA FoodData Central (gemeinfrei, CC0)')
+    ).toBeTruthy();
+  });
+
+  it('shows no USDA source line for Open Food Facts products', async () => {
+    mockLookup.mockResolvedValue(found(limo));
+
+    render(<ProductScreen />);
+
+    await screen.findByText('Zitronenlimo');
+    expect(screen.queryByText(/USDA/)).toBeNull();
+  });
+
   it('retries after a failed offline lookup without counting another scan', async () => {
     mockLookup.mockResolvedValueOnce({ status: 'offline' }).mockResolvedValueOnce(found(limo));
 
