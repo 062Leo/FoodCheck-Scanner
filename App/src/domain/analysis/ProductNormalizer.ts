@@ -155,6 +155,21 @@ export class ProductNormalizer {
       const addTags = p.additivesTags ?? p.additives_tags;
       if (Array.isArray(addTags)) product.additivesTags = addTags as string[];
 
+      const strings = (...keys: string[]): string[] | undefined => {
+        for (const k of keys) {
+          const v = p[k];
+          if (Array.isArray(v)) return v.filter((item): item is string => typeof item === 'string');
+        }
+        return undefined;
+      };
+      product.labelsTags = strings('labelsTags', 'labels_tags');
+      product.miscTags = strings('miscTags', 'misc_tags');
+      product.categoriesTags = strings('categoriesTags', 'categories_tags');
+      product.packagingTags = strings('packagingTags');
+      product.embCodesTags = strings('embCodesTags', 'emb_codes_tags');
+      product.brandOwner = strOr('brandOwner', 'brand_owner');
+      if (p.source === 'usda') product.source = 'usda';
+
       const nutriments = p.nutriments;
       if (nutriments && typeof nutriments === 'object' && !Array.isArray(nutriments)) {
         const n = nutriments as Record<string, unknown>;
@@ -175,6 +190,7 @@ export class ProductNormalizer {
         setNut('fiber100g', 'fiber100g', 'fiber_100g');
         setNut('proteins100g', 'proteins100g', 'proteins_100g');
         setNut('salt100g', 'salt100g', 'salt_100g');
+        setNut('alcohol100g', 'alcohol100g', 'alcohol_100g');
         if (Object.keys(nut).length > 0) product.nutriments = nut;
       }
     } catch {

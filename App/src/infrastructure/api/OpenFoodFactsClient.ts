@@ -15,6 +15,12 @@ const PRODUCT_FIELDS = [
   'product_name',
   'brands',
   'categories',
+  'categories_tags',
+  'packaging_shapes_tags',
+  'packaging_materials_tags',
+  'packaging_tags',
+  'brand_owner',
+  'emb_codes_tags',
   'nutrition_grades',
   'nova_group',
   'ecoscore_grade',
@@ -74,7 +80,19 @@ function parseNutriments(raw: unknown): ProductNutriments | undefined {
     fiber100g: get('fiber_100g'),
     proteins100g: get('proteins_100g'),
     salt100g: get('salt_100g'),
+    alcohol100g: get('alcohol_100g'),
   };
+}
+
+function stringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const strings = value.filter((item): item is string => typeof item === 'string');
+  return strings.length > 0 ? strings : undefined;
+}
+
+function mergeTags(...lists: unknown[]): string[] | undefined {
+  const merged = [...new Set(lists.flatMap((list) => stringArray(list) ?? []))];
+  return merged.length > 0 ? merged : undefined;
 }
 
 function mapOffProduct(ean: string, p: Record<string, unknown>): Product {
@@ -122,6 +140,11 @@ function mapOffProduct(ean: string, p: Record<string, unknown>): Product {
     categories: p.categories as string | undefined,
     miscTags: Array.isArray(p.misc_tags) ? (p.misc_tags as string[]) : undefined,
     labelsTags: Array.isArray(p.labels_tags) ? (p.labels_tags as string[]) : undefined,
+    categoriesTags: stringArray(p.categories_tags),
+    packagingTags: mergeTags(p.packaging_shapes_tags, p.packaging_materials_tags, p.packaging_tags),
+    brandOwner:
+      typeof p.brand_owner === 'string' && p.brand_owner.trim() ? p.brand_owner.trim() : undefined,
+    embCodesTags: stringArray(p.emb_codes_tags),
     quantity: p.quantity as string | undefined,
     servingSize: p.serving_size as string | undefined,
     imageNutritionUrl: p.image_nutrition_url as string | undefined,
