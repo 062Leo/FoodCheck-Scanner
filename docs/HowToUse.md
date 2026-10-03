@@ -29,6 +29,8 @@ Scan the QR code with Expo Go, or connect a device via USB.
 - Optional: with **Settings → Allergen-Warnung / Allergen warning** switched on (off by default), a product that declares an allergen from **Meine Allergene / My allergens** shows it in an extra line ("Enthält Milch", "Kann Spuren enthalten: Erdnüsse").
 - Tap the card to open the full Product screen; the close button dismisses it without leaving the scanner.
 - No camera, or the code won't scan? Use **"Barcode eingeben" / "Enter barcode"** to type it in manually.
+- **"Eiercode prüfen" / "Check egg code"** next to it opens the egg code reader (see [Egg Code](#8-egg-code)).
+- A barcode Open Food Facts doesn't know is looked up at USDA FoodData Central, but only if you saved your own key (see [USDA FoodData Central](#9-usda-fooddata-central)); if that lookup fails, the "not found" message says why (invalid key, limit reached, no answer, no connection).
 - The offline badge ("Offline – nur gespeicherte Produkte") appears whenever there is no network; a lookup then falls back to a previously saved product if there is one.
 
 ## 4. Product Screen
@@ -36,6 +38,11 @@ Scan the QR code with Expo Go, or connect a device via USB.
 - **Traffic-light banner** at the top: OK, Warning, Critical, or Unknown (not enough data), together with the reason (e.g. Nova level, number of red flags, missing ingredient list).
 - **Allergen warning** (only when switched on in the settings) right below the banner when the product contains, or may contain traces of, an allergen from your profile (based on Open Food Facts data — always check the package).
 - Shows: product name, brand, red flags found, Nova score, Nutri-Score (if available), full nutrition table, allergens, multi-language ingredients, image gallery.
+- **Red flags** include ingredient matches, nutrient limits and **product checks** (e.g. "Konserve oder Dose", "Reis oder Reisprodukt", "Mehr als 5 Zutaten"), each with a short explanation. A product from a **brand or company you avoid** is rated Critical right away; the finding at the top names the company and the brand it was recognised by.
+- **Badges** below the name show labels from Open Food Facts: organic (with Demeter/Bioland/Naturland), GMO-free, contains GMO, husbandry level 1–5, free range, MSC, ASC, raw milk.
+- **"Verarbeitet/verpackt in" / "Processed/packed in"** shows the country (for German codes also the state) and the packager code. It names the establishment that last processed or packed the product — not where the raw materials come from.
+- Products with almonds from the USA or of unknown origin show a background note on almond pollination in California; it is for information only and does not affect the rating.
+- Products from USDA FoodData Central show a data-source note below the EAN.
 - **Star icon** (top right): toggle favorite.
 - **Edit icon** (top right): opens the Edit Product screen for corrections or contributing new data to Open Food Facts.
 - A footnote shows when the data comes from the offline cache, or is older than 7 days.
@@ -68,11 +75,29 @@ Scan the QR code with Expo Go, or connect a device via USB.
 - Tap **+** to add a rule, or tap an existing rule to edit it in a sheet:
   - **Ingredient rule**: keyword (translated automatically into 7 languages) + category, severity **Red Flag** or **Erlaubt/Allowed** (whitelists the ingredient).
   - **Nutrient rule**: pick a nutrient (sugar, fat, saturated fat, salt, energy), operator (>, <, =), threshold (comma decimals accepted), and severity.
+  - **Marke / Konzern (brand / company)**: enter a brand or company you want to avoid. Optionally tap **"Konzern bei Wikidata suchen"**, pick the right entry, and the app collects the company's brands and subsidiaries (data from Wikidata, CC0) and stores them with the rule, so matching works offline. Without the lookup, or when Wikidata can't be reached, only the name itself is recognised. A match rates the product Critical, regardless of other findings.
+- **Product checks** (category Verarbeitung, Verpackung, Schadstoffe and others) can't be created, but tapping one explains when it applies; set it to **Erlaubt/Allowed** to switch it off, or delete it. For "Mehr als 5 Zutaten" you can change the limit (a whole number from 1). The checks: more than 5 ingredients, can/tin, large predatory fish (mercury), rice (arsenic), pesticide-prone crops without an organic label (mango, pepper, rice, tea, peanuts, green beans, cherries; German BVL report 2023), dairy without raw milk, alcohol, meat substitute, farmed fish.
 - Editing a rule's category, threshold or severity keeps its stored translations; they are only replaced when you change the keyword itself.
-- Rules persist across app restarts; the built-in rules (678 across 18 seeded categories) are pre-loaded and can be overridden or deleted like any other rule.
+- Rules persist across app restarts; the built-in rules (762: 753 ingredient rules across 24 categories plus 9 product checks) are pre-loaded and can be overridden or deleted like any other rule. Updating from an older version adds only rules you don't already have and removes the former packaging/propellant gas rules.
 - Saving or deleting a rule re-rates the whole catalog in the background.
 
-## 8. OCR & Product Contribution
+## 8. Egg Code
+
+- Open it from the **Scanner** ("Eiercode prüfen") or **Settings → Hilfe & Info → Eiercode prüfen**.
+- Type in the code printed on the egg, e.g. `0-DE-0312345`. Works offline.
+- The first digit is the housing system: 0 organic, 1 free range, 2 barn, 3 cage (enriched colony cage). The app shows it with a short explanation.
+- Then follows the country code; German codes also show the state, farm number and stall number.
+- If the code is incomplete or wrong, a message says what is missing (e.g. unknown country code, too short).
+
+## 9. USDA FoodData Central
+
+- **Settings → USDA FoodData Central**: an optional fallback for barcodes Open Food Facts doesn't know, mostly products from the USA (data from the US Department of Agriculture, public domain/CC0).
+- **You need your own free key** from api.data.gov ("Kostenlosen Schlüssel anfordern" opens the sign-up page). The app ships no key; without one, USDA is never asked.
+- Paste the key and save it; it is stored in the device secure store and can be deleted again.
+- A product found at USDA is saved like any other product and shows a data-source note. It is not looked up at USDA again; once Open Food Facts knows the barcode, its data is used.
+- Products from USDA can't be sent to Open Food Facts; your edits to them stay on the device.
+
+## 10. OCR & Product Contribution
 
 When editing a product (via the Edit icon on the Product screen, or from a failed lookup):
 
@@ -85,7 +110,7 @@ When editing a product (via the Edit icon on the Product screen, or from a faile
 - Sending to Open Food Facts asks for confirmation first and lists which fields will be published; it saves your changes locally before attempting the upload, so nothing is lost if it fails (offline, rejected, invalid credentials).
 - Fields you leave untouched keep updating from Open Food Facts on the next lookup; fields you explicitly change stay as you set them, even after a later refresh.
 
-## 9. Backup & Restore
+## 11. Backup & Restore
 
 - **Settings → Datenbank-Backup**: on Android, choose a folder once, then create a backup — it copies the database file itself into that folder with a timestamped name.
 - **Automatic backup**: enable the switch to back up at most once a day on app start.
@@ -94,7 +119,7 @@ When editing a product (via the Edit icon on the Product screen, or from a faile
 - iOS does not support folder backups yet (Storage Access Framework is Android-only); the settings screen shows a note instead.
 - Works fully offline — no cloud account needed.
 
-## 10. Build a Standalone APK (Android)
+## 12. Build a Standalone APK (Android)
 
 ```bash
 npx eas-cli build --platform android --profile production
@@ -104,11 +129,11 @@ npx eas-cli build --platform android --profile production
 - The **production** profile builds an installable `.apk` (see `App/eas.json`) — there is currently no separate `preview` profile.
 - Find the download link in the Expo dashboard or terminal output after the build completes.
 
-## 11. Development Commands
+## 13. Development Commands
 
 ```bash
 cd App
-npm test                 # Jest (52 suites, 437 tests)
+npm test                 # Jest (63 suites, 700 tests)
 npm run test:integration # Open Food Facts staging integration tests (opt-in)
 npm run typecheck        # TypeScript type-check
 npm run lint             # ESLint
@@ -120,12 +145,23 @@ npm run bundle:check     # verifies the Android bundle exports
 npm run check            # typecheck + lint + format:check + test + doctor + bundle:check
 ```
 
-## 12. Troubleshooting
+## 14. What the App Can't Know
+
+- **Pesticides**: there are no residue values per product. The pesticide check only flags crops that stand out in the 2023 monitoring report, when the product has no organic label.
+- **Vertical farming** can't be detected; there is no such field in the product data.
+- **PFAS** (e.g. Teflon coatings) in packaging or cookware can't be detected.
+- The **packager code** names the last processing or packing establishment, not the origin of the raw materials.
+- All checks depend on what Open Food Facts (or USDA) knows: if category, packaging or labels are missing, a check can't apply. No warning does not mean harmless.
+- Products saved by an older app version get categories, packaging and labels the next time they are scanned online.
+
+## 15. Troubleshooting
 
 - **expo-camera / native module errors**: ensure Expo SDK version matches installed packages.
 - **Peer dependency errors on `npm install`**: use `--legacy-peer-deps`.
 - **Haptics not working (simulator)**: test on a real device.
 - **Camera permission denied**: re-enable it in the system settings (the app links there directly after a permanent denial).
-- **Credentials lost**: Open Food Facts account credentials and translation API keys are stored in the device secure store; re-enter them if you clear app data.
+- **Credentials lost**: Open Food Facts account credentials, translation API keys and the USDA key are stored in the device secure store; re-enter them if you clear app data.
+- **USDA lookup fails**: "Schlüssel ungültig" means the key was rejected — check it in Settings → USDA FoodData Central; "Limit erreicht" means the request limit of your api.data.gov key is used up for now.
+- **Wikidata lookup fails**: you can still save the brand/company rule; it then only recognises the name itself. Open the rule later and run the lookup again.
 - **A backup file is rejected on restore**: it must be an unmodified `.db` file created by FoodCheck's own backup; your existing data is left untouched.
 - **Lint errors about `␍` (CRLF)**: Prettier is configured with `endOfLine: auto`, so this should no longer happen; run `npm run format` if it does.
