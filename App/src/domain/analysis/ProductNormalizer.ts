@@ -1,7 +1,13 @@
 import type { Product, ProductNutriments } from '../../types/Product';
 import { hasProductName } from '../product/productName';
 
-export const PRODUCT_DATA_VERSION = 1;
+/**
+ * The set of Open Food Facts fields a stored product holds. Bump when the client
+ * requests new fields, so products stored before are fetched again in the background
+ * (see StoredProductRefreshService).
+ * 2: categories_tags, packaging tags, brand_owner, emb_codes_tags, alcohol_100g.
+ */
+export const PRODUCT_DATA_VERSION = 2;
 
 export interface NormalizedProduct {
   ean: string;

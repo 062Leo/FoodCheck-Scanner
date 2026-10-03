@@ -54,6 +54,54 @@ describe('ProductRepository (SQLite)', () => {
     });
   });
 
+  it('lists products stored with an older data version, most recently seen first', async () => {
+    await repository.saveScan(productRecord({ ean: '1', data_version: 1 }));
+    await repository.saveScan(
+      productRecord({ ean: '2', data_version: null, scanned_at: '2026-02-01T10:00:00.000Z' })
+    );
+    await repository.saveScan(productRecord({ ean: '3', data_version: 2 }));
+
+    expect(await repository.findEansWithDataVersionBelow(2)).toEqual(['2', '1']);
+
+    await repository.markDataVersion('2', 2);
+    expect(await repository.findEansWithDataVersionBelow(2)).toEqual(['1']);
+  });
+
+  it('saveBackgroundRefresh updates data but keeps visits, deletions and new edits', async () => {
+    await repository.saveScan(productRecord({ data_version: 1 }));
+    await repository.saveScan(productRecord({ scanned_at: '2026-01-05T10:00:00.000Z' }));
+    const refreshed = productRecord({
+      name: 'Frisch',
+      rating: 'Critical',
+      data_version: 2,
+      scanned_at: '2026-03-01T10:00:00.000Z',
+      last_api_fetch: '2026-03-01T10:00:00.000Z',
+    });
+
+    expect(await repository.saveBackgroundRefresh(refreshed, null)).toBe(true);
+    expect(await repository.findByEan('4000000000001')).toMatchObject({
+      name: 'Frisch',
+      rating: 'Critical',
+      data_version: 2,
+      last_api_fetch: '2026-03-01T10:00:00.000Z',
+      visit_count: 2,
+      scanned_at: '2026-01-05T10:00:00.000Z',
+    });
+
+    // Edited after the refresh read the product: the edit wins.
+    await repository.saveEdit(
+      productRecord({ name: 'Eigener Name', edited_at: '2026-03-02T00:00:00.000Z' }),
+      '["name"]'
+    );
+    expect(await repository.saveBackgroundRefresh(refreshed, null)).toBe(false);
+    expect((await repository.findByEan('4000000000001'))?.name).toBe('Eigener Name');
+
+    // Deleted meanwhile: not brought back.
+    await repository.deleteByEan('4000000000001');
+    expect(await repository.saveBackgroundRefresh(refreshed, null)).toBe(false);
+    expect(await repository.findByEan('4000000000001')).toBeNull();
+  });
+
   it('findAllSummaries omits raw_json and reports whether ingredients exist', async () => {
     await repository.saveScan(productRecord());
     await repository.saveScan(

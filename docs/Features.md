@@ -265,6 +265,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 - **`filter_rules`**: id, type (`ingredient`/`nutrient`/`check`/`company`), key, category, threshold, operator, severity, translations (JSON; bei Marken/Konzernen die Wikidata-ID und die zugehörigen Marken), created_at
 - **9 Migrationen** (Datenbank-Version 9): initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte → Favoriten-Eindeutigkeit + edited_at → edited_fields → Filterliste aktualisiert (11 Gase entfernt, 86 Zutaten-Regeln und 9 Prüfungen ergänzt)
 - **Neu-Bewertung**: `RATING_LOGIC_VERSION` 4 – gespeicherte Produkte werden nach dem Update einmal neu bewertet
+- **Daten nachladen**: `PRODUCT_DATA_VERSION` 2 – Produkte, die vor den neuen Open-Food-Facts-Feldern (Kategorien, Verpackung, Markeninhaber, Identitätskennzeichen, Alkoholgehalt) gespeichert wurden, werden nach dem App-Start im Hintergrund neu geladen und bewertet: höchstens 10 Anfragen pro Minute, nacheinander; offline oder bei einem Fehler geht es beim nächsten Start weiter. Eigene Änderungen und USDA-Daten bleiben erhalten.
 
 ### Backup & Wiederherstellung
 - **Backup**: Kopiert die SQLite-Datenbankdatei selbst (kein JSON-Export) in einen vom Nutzer gewählten Ordner (Android: Storage Access Framework); der Dateiname trägt Zeitstempel

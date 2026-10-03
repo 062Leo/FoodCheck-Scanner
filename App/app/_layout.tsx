@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
 import { useFilterStore } from '../src/store/filterStore';
+import { refreshOutdatedProducts } from '../src/store/storedProductRefresh';
 import { useLanguageStore } from '../src/store/languageStore';
 import { useAllergenStore } from '../src/store/allergenStore';
 import { BackupService } from '../src/infrastructure/db/BackupService';
@@ -14,7 +15,8 @@ export default function RootLayout() {
   const loadAllergenProfile = useAllergenStore((state) => state.loadProfile);
 
   useEffect(() => {
-    void loadRules();
+    // Products stored with older data are completed in the background once the rules are there.
+    void loadRules().then(refreshOutdatedProducts);
     void loadLanguage();
     void loadAllergenProfile();
     void BackupService.performAutoBackup();

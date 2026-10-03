@@ -87,6 +87,7 @@ App/
 │   │   ├── ProductLookupService.ts    # Cache-first lookup, merge, rate, persist
 │   │   ├── ProductEditService.ts      # Load/save an edit session, contribute to OFF
 │   │   ├── CatalogRatingService.ts    # Re-rates stored products when rules/logic change
+│   │   ├── StoredProductRefreshService.ts # Fetches products stored with an older OFF field set
 │   │   ├── CompanyLookupService.ts    # Wikidata: find a company, collect its brands/subsidiaries
 │   │   └── RuleTranslationService.ts  # Translates a new rule keyword into search languages
 │   ├── components/               # Shared, screen-agnostic components
@@ -488,6 +489,7 @@ The checks only see what Open Food Facts (or USDA) provides; products stored bef
 - The result also carries machine-readable `reasons` (`avoidedCompany`, `nova`, `redFlags`, `ingredientsMissing`, `insufficientData`, `noFindings`) used to build the "why" text shown in the UI.
 - `rateProduct()` (`domain/analysis/rateProduct.ts`) is the single entry point used by the scanner, the product screen and the edit screen.
 - `CatalogRatingService` re-rates every stored product (in batches of 25, yielding to the UI thread) whenever the rule set or the rating logic changes. A fingerprint (`RATING_LOGIC_VERSION` + a hash of all rules) stored in `meta.rating_fingerprint` decides whether a re-rate is needed; `RATING_LOGIC_VERSION` is bumped whenever a change in the rating code would alter results, forcing a one-time recompute for existing installs (currently 4).
+- `StoredProductRefreshService` completes products stored with an older Open Food Facts field set. `PRODUCT_DATA_VERSION` (stored in `products.data_version`) is bumped whenever the client requests new fields (2: categories_tags, packaging tags, brand_owner, emb_codes_tags, alcohol_100g). After the rules are loaded at app start, products with an older or unknown version are fetched again in the background: one request at a time, at most 10 per minute, most recently seen first. It stops when the device is offline or a request fails (e.g. HTTP 429) and continues with the remaining products on the next start. The fresh data is merged like a lookup (edited fields and USDA data are kept), re-rated and stored without counting a visit; the update is skipped if the product was edited or deleted meanwhile. A product unknown to Open Food Facts keeps its data and is only marked with the current version. Editing a product keeps its data version.
 
 ## 10. UI Design Tokens (`src/ui/theme.ts`)
 

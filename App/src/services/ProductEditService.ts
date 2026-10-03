@@ -76,6 +76,9 @@ export class ProductEditService {
       last_seen_at: previous?.last_seen_at ?? timestamp,
       edited_at: timestamp,
     };
+    // An edit adds no Open Food Facts data: a product stored with an older field set
+    // stays marked as such, so the background refresh still completes it.
+    if (previous) record.data_version = previous.data_version ?? null;
     const edited = mergeEditedFields(
       parseEditedFields(previous?.edited_fields, previous?.edited_at),
       changedFields(session.initial, values)

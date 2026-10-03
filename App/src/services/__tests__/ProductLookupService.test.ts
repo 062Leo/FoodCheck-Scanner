@@ -233,6 +233,90 @@ describe('ProductLookupService', () => {
     expect(isStale({ last_api_fetch: null }, now)).toBe(false);
   });
 
+  describe('background refresh of products stored with older data', () => {
+    const oldRecord = (product: Product, overrides = {}) =>
+      productRecord({
+        ean: EAN,
+        name: product.name,
+        brands: product.brand ?? null,
+        ingredients: product.ingredientsText ?? null,
+        raw_json: JSON.stringify({ product }),
+        rating: 'OK',
+        data_version: 1,
+        ...overrides,
+      });
+
+    it('stores the new fields, re-rates and keeps visits', async () => {
+      const stored: Product = { ean: EAN, name: 'Thunfisch', ingredientsText: 'Thunfisch, Salz' };
+      await repository.saveScan(oldRecord(stored));
+      api.getProductByEan.mockResolvedValue({
+        ...stored,
+        categoriesTags: ['en:canned-foods', 'en:canned-tunas'],
+        packagingTags: ['en:can', 'en:metal'],
+      });
+
+      expect(await service.refreshStored(EAN, SEEDED_RULES)).toBe(true);
+
+      expect(api.getProductByEan).toHaveBeenCalledWith(EAN, { retries: 0 });
+      const record = await repository.findByEan(EAN);
+      expect(record).toMatchObject({
+        data_version: 2,
+        last_api_fetch: NOW.toISOString(),
+        visit_count: 1,
+        scanned_at: '2026-01-01T10:00:00.000Z',
+      });
+      expect(record?.rating).not.toBe('OK');
+      expect(JSON.parse(record!.raw_json!).product.packagingTags).toContain('en:can');
+    });
+
+    it('keeps the fields the user edited', async () => {
+      await repository.saveEdit(
+        oldRecord({ ean: EAN, name: 'Mein Name', ingredientsText: 'Wasser' }),
+        '["name"]'
+      );
+      api.getProductByEan.mockResolvedValue({ ...freshProduct, name: 'OFF-Name' });
+
+      await service.refreshStored(EAN, SEEDED_RULES);
+
+      const record = await repository.findByEan(EAN);
+      expect(record).toMatchObject({ name: 'Mein Name', data_version: 2 });
+      expect(record?.ingredients).toBe(freshProduct.ingredientsText);
+    });
+
+    it('keeps a USDA product Open Food Facts does not know and marks it as checked', async () => {
+      const usdaOnly: Product = {
+        ean: EAN,
+        name: 'Oat Cereal Rings',
+        ingredientsText: 'WHOLE GRAIN OATS, SUGAR',
+        source: 'usda',
+      };
+      await repository.saveScan(oldRecord(usdaOnly));
+      api.getProductByEan.mockResolvedValue(null);
+
+      expect(await service.refreshStored(EAN, SEEDED_RULES)).toBe(false);
+
+      const record = await repository.findByEan(EAN);
+      expect(record).toMatchObject({ name: 'Oat Cereal Rings', data_version: 2 });
+      expect(JSON.parse(record!.raw_json!).product.source).toBe('usda');
+      expect(usda.findByGtin).not.toHaveBeenCalled();
+    });
+
+    it('does not ask again for a product that is already up to date', async () => {
+      await repository.saveScan(oldRecord(freshProduct, { data_version: 2 }));
+
+      expect(await service.refreshStored(EAN, SEEDED_RULES)).toBe(false);
+      expect(api.getProductByEan).not.toHaveBeenCalled();
+    });
+
+    it('passes errors on and leaves the product unchanged', async () => {
+      await repository.saveScan(oldRecord(freshProduct));
+      api.getProductByEan.mockRejectedValue(new Error('HTTP 429'));
+
+      await expect(service.refreshStored(EAN, SEEDED_RULES)).rejects.toThrow('HTTP 429');
+      expect((await repository.findByEan(EAN))?.data_version).toBe(1);
+    });
+  });
+
   describe('USDA FoodData Central fallback', () => {
     const usdaProduct: Product = {
       ean: EAN,

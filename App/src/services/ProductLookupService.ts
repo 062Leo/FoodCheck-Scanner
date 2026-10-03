@@ -160,11 +160,7 @@ export class ProductLookupService {
       return usdaError ? { status: 'not-found', usdaError } : { status: 'not-found' };
     }
 
-    const product = mergeProductData(
-      fillFromUsda(fresh, cached),
-      cached,
-      parseEditedFields(record?.edited_fields, record?.edited_at)
-    );
+    const product = this.combine(fresh, record, cached);
     const rating = rateProduct(product, rules);
     const timestamp = this.now().toISOString();
     const saved = toProductRecord(product, rating, timestamp, timestamp);
@@ -180,6 +176,43 @@ export class ProductLookupService {
       networkFailed: false,
       isStale: false,
     };
+  }
+
+  /**
+   * Fetches a stored product again because it was saved with an older Open Food Facts
+   * field set (data_version), merges it like a lookup (local edits and USDA data are
+   * kept) and stores it with a new rating, without counting a visit. A product Open
+   * Food Facts does not know keeps its data and is only marked as checked.
+   * Returns true if new data was stored. Network and server errors are thrown, so a
+   * caller running through many products can stop.
+   */
+  async refreshStored(ean: string, rules: FilterRule[]): Promise<boolean> {
+    const record = await this.repository.findByEan(ean);
+    if (!record || (record.data_version ?? 0) >= PRODUCT_DATA_VERSION) return false;
+    const cached = productFromRecord(record);
+
+    const fresh = await this.api.getProductByEan(ean, { retries: 0 });
+    if (!fresh) {
+      await this.repository.markDataVersion(ean, PRODUCT_DATA_VERSION);
+      return false;
+    }
+
+    const product = this.combine(fresh, record, cached);
+    const rating = rateProduct(product, rules);
+    const timestamp = this.now().toISOString();
+    return this.repository.saveBackgroundRefresh(
+      toProductRecord(product, rating, record.scanned_at, timestamp),
+      record.edited_at ?? null
+    );
+  }
+
+  /** Fresh Open Food Facts data merged with the stored product (edits, USDA data). */
+  private combine(fresh: Product, record: ProductRecord | null, cached: Product | null): Product {
+    return mergeProductData(
+      fillFromUsda(fresh, cached),
+      cached,
+      parseEditedFields(record?.edited_fields, record?.edited_at)
+    );
   }
 
   /** Fallback for barcodes unknown to Open Food Facts; errors never stop the lookup. */
