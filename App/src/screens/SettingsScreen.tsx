@@ -346,6 +346,13 @@ export default function SettingsScreen() {
 
         <Group title={t('settings.group.help')}>
           <ListRow
+            icon="egg-outline"
+            title={t('settings.eggCode')}
+            description={t('settings.eggCodeHint')}
+            onPress={() => router.push('/egg-code')}
+          />
+          <View style={styles.divider} />
+          <ListRow
             icon="help-circle-outline"
             title={t('settings.howToUse')}
             description={t('settings.howToUseHint')}

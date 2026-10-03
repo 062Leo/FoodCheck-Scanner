@@ -68,6 +68,11 @@ export function countryName(code: string, language: SupportedLanguage): string {
   return COUNTRIES[upper]?.[language] ?? upper;
 }
 
+/** Name of a German state, e.g. "Bayern" / "Bavaria" for "BY". */
+export function germanStateName(state: GermanState, language: SupportedLanguage): string {
+  return GERMAN_STATE_NAMES[state][language];
+}
+
 /** "Deutschland, Bayern (DE BY 123 EG)", or only the code if it names no country. */
 export function describePackagerCode(code: PackagerCode, language: SupportedLanguage): string {
   if (!code.country) return code.formatted;

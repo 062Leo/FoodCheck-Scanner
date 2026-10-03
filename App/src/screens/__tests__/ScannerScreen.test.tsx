@@ -242,6 +242,15 @@ describe('ScannerScreen', () => {
     await waitFor(() => expect(mockLookup).toHaveBeenCalledWith(EAN, 'scan', SEEDED_RULES));
   });
 
+  it('opens the egg code reader', () => {
+    render(<ScannerScreen />);
+
+    fireEvent.press(screen.getByTestId('egg-code-button'));
+
+    expect(screen.getByText('Eiercode prüfen')).toBeTruthy();
+    expect(mockRouter.push).toHaveBeenCalledWith('/egg-code');
+  });
+
   it('sends the user to the system settings when camera access was denied', async () => {
     mockPermission.current = { granted: false, canAskAgain: false };
     const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue();

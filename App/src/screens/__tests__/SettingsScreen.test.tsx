@@ -34,6 +34,14 @@ describe('SettingsScreen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/settings/filters');
   });
 
+  it('opens the egg code reader', async () => {
+    render(<SettingsScreen />);
+
+    fireEvent.press(await screen.findByText('Eiercode prüfen'));
+
+    expect(mockRouter.push).toHaveBeenCalledWith('/egg-code');
+  });
+
   it('switches the app language immediately', async () => {
     render(<SettingsScreen />);
 

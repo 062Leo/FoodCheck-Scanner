@@ -632,6 +632,49 @@ const de = {
     'Schlägt an bei Fleischersatzprodukten. Sie sind meist hochverarbeitet und aus isolierten Proteinen, Ölen und Zusatzstoffen zusammengesetzt.',
   'filter.check.farmed_fish.explanation':
     'Schlägt an bei Fisch aus Aquakultur, erkannt an Kategorie oder Aquakultur-Siegel.',
+
+  // Egg code
+  'scanner.checkEggCode': 'Eiercode prüfen',
+  'settings.eggCode': 'Eiercode prüfen',
+  'settings.eggCodeHint': 'Haltungsform und Herkunft aus dem Code auf dem Ei',
+  'eggCode.title': 'Eiercode prüfen',
+  'eggCode.inputLabel': 'Code vom Ei',
+  'eggCode.inputHint':
+    'Der Code ist auf das Ei selbst gedruckt, z. B. 0-DE-0312345. Die erste Ziffer steht für die Haltungsform.',
+  'eggCode.housingLabel': 'Haltungsform {{housing}}: {{name}}',
+  'eggCode.housing.0.assessment': 'Bio – beste Haltungsform',
+  'eggCode.housing.1.assessment': 'Freiland',
+  'eggCode.housing.2.assessment': 'Bodenhaltung – kein Auslauf',
+  'eggCode.housing.3.assessment': 'Käfighaltung',
+  'eggCode.housing.0.name': 'Ökologische Erzeugung (Bio)',
+  'eggCode.housing.1.name': 'Freilandhaltung',
+  'eggCode.housing.2.name': 'Bodenhaltung',
+  'eggCode.housing.3.name': 'Käfighaltung (Kleingruppenhaltung / ausgestalteter Käfig)',
+  'eggCode.housing.0.detail': 'Auslauf im Freien, mehr Platz im Stall und Bio-Futter.',
+  'eggCode.housing.1.detail':
+    'Auslauf im Freien (mindestens 4 m² pro Henne), aber konventionelles Futter.',
+  'eggCode.housing.2.detail': 'Die Hennen leben nur im Stall, bis zu 9 Tiere pro m² Nutzfläche.',
+  'eggCode.housing.3.detail':
+    'In Deutschland Kleingruppenhaltung bzw. ausgestalteter Käfig: sehr wenig Platz pro Henne und kein Auslauf.',
+  'eggCode.code': 'Code',
+  'eggCode.country': 'Land',
+  'eggCode.state': 'Bundesland',
+  'eggCode.farm': 'Betriebsnummer',
+  'eggCode.stall': 'Stallnummer',
+  'eggCode.structureTitle': 'So ist der Code aufgebaut',
+  'eggCode.structure':
+    'Die erste Ziffer ist die Haltungsform: 0 Bio, 1 Freiland, 2 Bodenhaltung, 3 Käfighaltung. Danach folgt der Ländercode, z. B. DE für Deutschland, und die Nummer des Betriebs. In Deutschland sind das 7 Ziffern: 2 für das Bundesland, 4 für den Betrieb und 1 für den Stall.',
+  'eggCode.error.missingHousing': 'Der Code beginnt mit einer Ziffer für die Haltungsform (0–3).',
+  'eggCode.error.invalidHousing': 'Die erste Ziffer muss 0, 1, 2 oder 3 sein.',
+  'eggCode.error.invalidCountry':
+    'Nach der ersten Ziffer folgt ein Ländercode aus zwei Buchstaben, z. B. DE.',
+  'eggCode.error.unknownCountry': 'Diesen Ländercode gibt es nicht.',
+  'eggCode.error.tooShort': 'Der Code ist zu kurz – in Deutschland folgen auf „DE“ 7 Ziffern.',
+  'eggCode.error.tooLong': 'Der Code ist zu lang – in Deutschland folgen auf „DE“ genau 7 Ziffern.',
+  'eggCode.error.invalidCharacters': 'Der Code besteht nur aus Ziffern und Buchstaben.',
+  'eggCode.error.invalidFarmNumber': 'Auf „DE“ folgen nur Ziffern.',
+  'eggCode.error.unknownState':
+    'Unbekanntes Bundesland: Die ersten beiden Ziffern nach „DE“ müssen zwischen 01 und 16 liegen.',
 };
 
 type Translations = typeof de;
@@ -1245,6 +1288,49 @@ const en: Translations = {
     'Applies to meat substitutes. They are mostly highly processed and made from isolated proteins, oils and additives.',
   'filter.check.farmed_fish.explanation':
     'Applies to fish from aquaculture, recognised by category or an aquaculture label.',
+
+  // Egg code
+  'scanner.checkEggCode': 'Check egg code',
+  'settings.eggCode': 'Check egg code',
+  'settings.eggCodeHint': 'Housing system and origin from the code on the egg',
+  'eggCode.title': 'Check egg code',
+  'eggCode.inputLabel': 'Code from the egg',
+  'eggCode.inputHint':
+    'The code is printed on the egg itself, e.g. 0-DE-0312345. The first digit stands for the housing system.',
+  'eggCode.housingLabel': 'Housing system {{housing}}: {{name}}',
+  'eggCode.housing.0.assessment': 'Organic – best housing system',
+  'eggCode.housing.1.assessment': 'Free range',
+  'eggCode.housing.2.assessment': 'Barn – no outdoor access',
+  'eggCode.housing.3.assessment': 'Caged',
+  'eggCode.housing.0.name': 'Organic',
+  'eggCode.housing.1.name': 'Free range',
+  'eggCode.housing.2.name': 'Barn',
+  'eggCode.housing.3.name': 'Caged (enriched cages)',
+  'eggCode.housing.0.detail': 'Outdoor access, more space in the barn and organic feed.',
+  'eggCode.housing.1.detail': 'Outdoor access (at least 4 m² per hen), but conventional feed.',
+  'eggCode.housing.2.detail': 'The hens stay indoors only, up to 9 birds per m² of usable area.',
+  'eggCode.housing.3.detail':
+    'Enriched cages (in Germany: small group housing): very little space per hen and no outdoor access.',
+  'eggCode.code': 'Code',
+  'eggCode.country': 'Country',
+  'eggCode.state': 'Federal state',
+  'eggCode.farm': 'Farm number',
+  'eggCode.stall': 'Stall number',
+  'eggCode.structureTitle': 'How the code is built',
+  'eggCode.structure':
+    'The first digit is the housing system: 0 organic, 1 free range, 2 barn, 3 caged. Then comes the country code, e.g. DE for Germany, and the number of the farm. In Germany these are 7 digits: 2 for the federal state, 4 for the farm and 1 for the stall.',
+  'eggCode.error.missingHousing': 'The code starts with a digit for the housing system (0–3).',
+  'eggCode.error.invalidHousing': 'The first digit must be 0, 1, 2 or 3.',
+  'eggCode.error.invalidCountry':
+    'The first digit is followed by a two-letter country code, e.g. DE.',
+  'eggCode.error.unknownCountry': 'This country code does not exist.',
+  'eggCode.error.tooShort': 'The code is too short – in Germany “DE” is followed by 7 digits.',
+  'eggCode.error.tooLong':
+    'The code is too long – in Germany “DE” is followed by exactly 7 digits.',
+  'eggCode.error.invalidCharacters': 'The code consists of digits and letters only.',
+  'eggCode.error.invalidFarmNumber': 'Only digits follow “DE”.',
+  'eggCode.error.unknownState':
+    'Unknown federal state: the first two digits after “DE” must be between 01 and 16.',
 };
 
 export type TranslationKey = keyof typeof de;
