@@ -94,7 +94,7 @@ Scan the QR code with Expo Go, or connect a device via USB.
 - **Settings → USDA FoodData Central**: an optional fallback for barcodes Open Food Facts doesn't know, mostly products from the USA (data from the US Department of Agriculture, public domain/CC0).
 - **You need your own free key** from api.data.gov ("Kostenlosen Schlüssel anfordern" opens the sign-up page). The app ships no key; without one, USDA is never asked.
 - Paste the key and save it; it is stored in the device secure store and can be deleted again.
-- A product found at USDA is saved like any other product and shows a data-source note. It is not looked up at USDA again; once Open Food Facts knows the barcode, its data is used.
+- A product found at USDA is saved like any other product and shows a data-source note. It is not looked up at USDA again; once Open Food Facts knows the barcode, its data is used, and whatever is missing there (e.g. ingredients or nutrition facts) still comes from the saved USDA data, with the data-source note shown as long as it does.
 - Products from USDA can't be sent to Open Food Facts; your edits to them stay on the device.
 
 ## 10. OCR & Product Contribution

@@ -208,7 +208,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 - Fallback für Barcodes, die Open Food Facts nicht kennt: USDA FoodData Central, die Lebensmitteldatenbank des US-Landwirtschaftsministeriums (vor allem Produkte aus den USA; Daten gemeinfrei, CC0)
 - **Jeder Nutzer braucht einen eigenen, kostenlosen Schlüssel** von api.data.gov (Link „Kostenlosen Schlüssel anfordern“); die App enthält keinen Schlüssel. Ohne Schlüssel wird USDA nie abgefragt
 - **Key speichern/löschen** (SecureStore); der Schlüssel wird im Header gesendet, nie in der URL
-- Ein einmal gespeichertes USDA-Produkt wird nicht erneut bei USDA abgefragt; kennt Open Food Facts den Barcode später, gelten dessen Daten
+- Ein einmal gespeichertes USDA-Produkt wird nicht erneut bei USDA abgefragt; kennt Open Food Facts den Barcode später, gelten dessen Daten – was dort fehlt (z. B. Zutaten oder Nährwerte bei einem Eintrag nur mit Foto), kommt weiter aus den gespeicherten USDA-Daten, und solange Zutaten oder Nährwerte von USDA stammen, bleibt der USDA-Quellenhinweis sichtbar
 - USDA-Produkte können nicht an Open Food Facts gesendet werden
 
 ---
