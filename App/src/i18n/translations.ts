@@ -61,13 +61,13 @@ const de = {
     'FoodCheck scannt Lebensmittel-Barcodes und bewertet Inhaltsstoffe auf ungesunde Zusatzstoffe, Verarbeitungsgrad (NOVA) und Nährwerte — direkt auf deinem Gerät, ohne Cloud.',
   'about.dataSource': 'Datenquelle',
   'about.dataSourceText':
-    'Alle Produktdaten stammen von Open Food Facts, der freien Lebensmitteldatenbank. FoodCheck ist ein unabhängiger Client.',
+    'Die Produktdaten stammen von Open Food Facts, der freien Lebensmitteldatenbank (ODbL). Nur für Produkte, die Open Food Facts nicht kennt, und nur mit deinem eigenen Schlüssel kommen sie von USDA FoodData Central (gemeinfrei, CC0). Marken und Tochterfirmen eines Konzerns kommen von Wikidata (CC0), wenn du eine Firma nachschlägst. FoodCheck ist ein unabhängiger Client.',
   'about.technology': 'Technologie',
   'about.technologyText':
     'React Native und Expo. Texterkennung auf dem Gerät mit ML Kit. Übersetzungen über DeepL oder MyMemory.',
   'about.dataPrivacy': 'Datenschutz',
   'about.dataPrivacyText':
-    'FoodCheck hat kein eigenes Backend und kein Tracking. Katalog, Favoriten, Regeln und Backups bleiben auf deinem Gerät. Nach außen geht nur: der gescannte Barcode an Open Food Facts (Produktdaten und Vorschläge), Zutatentexte an MyMemory bzw. DeepL, wenn du übersetzen lässt, und Angaben oder Fotos, die du ausdrücklich an Open Food Facts sendest.',
+    'FoodCheck hat kein eigenes Backend und kein Tracking. Katalog, Favoriten, Regeln und Backups bleiben auf deinem Gerät. Nach außen geht nur: der gescannte Barcode an Open Food Facts (Produktdaten und Vorschläge), derselbe Barcode an USDA FoodData Central, wenn du einen Schlüssel gespeichert hast und Open Food Facts das Produkt nicht kennt, ein Firmenname an Wikidata, wenn du ihn nachschlägst, Zutatentexte an MyMemory bzw. DeepL, wenn du übersetzen lässt, und Angaben oder Fotos, die du ausdrücklich an Open Food Facts sendest. Deine Schlüssel bleiben im sicheren Speicher des Geräts.',
 
   // Scanner
   'scanner.allow': 'Erlauben',
@@ -751,13 +751,13 @@ const en: Translations = {
     'FoodCheck scans food barcodes and evaluates ingredients for unhealthy additives, processing level (NOVA) and nutrition — directly on your device, no cloud.',
   'about.dataSource': 'Data Source',
   'about.dataSourceText':
-    'All product data comes from Open Food Facts, the free food database. FoodCheck is an independent client.',
+    'Product data comes from Open Food Facts, the free food database (ODbL). Only for products Open Food Facts does not know, and only with your own key, it comes from USDA FoodData Central (public domain, CC0). Brands and subsidiaries of a company come from Wikidata (CC0) when you look up a company. FoodCheck is an independent client.',
   'about.technology': 'Technology',
   'about.technologyText':
     'React Native and Expo. On-device text recognition with ML Kit. Translations via DeepL or MyMemory.',
   'about.dataPrivacy': 'Privacy',
   'about.dataPrivacyText':
-    'FoodCheck has no backend of its own and no tracking. Catalog, favorites, rules and backups stay on your device. Only this leaves it: the scanned barcode to Open Food Facts (product data and suggestions), ingredient texts to MyMemory or DeepL when you translate, and details or photos you explicitly send to Open Food Facts.',
+    'FoodCheck has no backend of its own and no tracking. Catalog, favorites, rules and backups stay on your device. Only this leaves it: the scanned barcode to Open Food Facts (product data and suggestions), the same barcode to USDA FoodData Central if you saved a key and Open Food Facts does not know the product, a company name to Wikidata when you look it up, ingredient texts to MyMemory or DeepL when you translate, and details or photos you explicitly send to Open Food Facts. Your keys stay in secure storage on the device.',
 
   'scanner.allow': 'Allow',
   'scanner.hint': 'Hold the barcode inside the frame',
