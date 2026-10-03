@@ -8,7 +8,7 @@ import { UsdaClient, UsdaError, type UsdaErrorCode } from '../infrastructure/api
 import { isOnline } from '../infrastructure/network/connectivity';
 import { ProductNormalizer, PRODUCT_DATA_VERSION } from '../domain/analysis/ProductNormalizer';
 import { rateProduct } from '../domain/analysis/rateProduct';
-import { mergeProductData } from '../domain/product/mergeProductData';
+import { fillFromUsda, mergeProductData } from '../domain/product/mergeProductData';
 import { toNovaScore } from '../domain/analysis/ProductRating';
 import { parseEditedFields } from '../domain/product/editedFields';
 
@@ -105,7 +105,8 @@ export interface ProductLookupDependencies {
  *   stores it. On timeout/server error the cached product is shown instead.
  * - Unknown to Open Food Facts and not stored: asks USDA FoodData Central, but only
  *   with the user's own key. A stored product is never asked for again, so a product
- *   that came from USDA stays as it is until Open Food Facts knows the barcode.
+ *   that came from USDA stays as it is until Open Food Facts knows the barcode; even
+ *   then the USDA data fills whatever the Open Food Facts entry lacks.
  * - Offline: shows the cached product if there is one.
  * - A scan counts as a visit; merely viewing a product does not.
  */
@@ -160,7 +161,7 @@ export class ProductLookupService {
     }
 
     const product = mergeProductData(
-      fresh,
+      fillFromUsda(fresh, cached),
       cached,
       parseEditedFields(record?.edited_fields, record?.edited_at)
     );

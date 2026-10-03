@@ -335,5 +335,68 @@ describe('ProductLookupService', () => {
       expect(result.product.name).toBe('Frische Limo');
       expect(result.product.source).toBeUndefined();
     });
+
+    it('keeps the USDA data when the Open Food Facts entry holds only a photo', async () => {
+      api.getProductByEan.mockResolvedValueOnce(null);
+      usda.findByGtin.mockResolvedValue(usdaProduct);
+      usdaKey = 'test-key';
+      await service.lookup(EAN, 'scan', SEEDED_RULES);
+      api.getProductByEan.mockResolvedValue({
+        ean: EAN,
+        name: '',
+        imageUrl: 'https://images.example/front.jpg',
+        nutriments: { sugars100g: undefined },
+      });
+
+      const result = await service.lookup(EAN, 'view', SEEDED_RULES);
+
+      if (result.status !== 'found') throw new Error('expected found');
+      expect(result.product).toMatchObject({
+        name: 'Oat Cereal Rings',
+        brand: 'Oat Rings',
+        ingredientsText: usdaProduct.ingredientsText,
+        nutriments: usdaProduct.nutriments,
+        imageUrl: 'https://images.example/front.jpg',
+        source: 'usda',
+      });
+      const stored = await repository.findByEan(EAN);
+      expect(stored?.ingredients).toBe(usdaProduct.ingredientsText);
+      expect(JSON.parse(stored!.raw_json!).product.source).toBe('usda');
+    });
+
+    it('fills only what Open Food Facts lacks and drops the USDA source once unused', async () => {
+      api.getProductByEan.mockResolvedValueOnce(null);
+      usda.findByGtin.mockResolvedValue({ ...usdaProduct, quantity: '12 oz' });
+      usdaKey = 'test-key';
+      await service.lookup(EAN, 'scan', SEEDED_RULES);
+      api.getProductByEan.mockResolvedValue({ ...freshProduct, brand: undefined });
+
+      const result = await service.lookup(EAN, 'view', SEEDED_RULES);
+
+      if (result.status !== 'found') throw new Error('expected found');
+      expect(result.product).toMatchObject({
+        name: 'Frische Limo',
+        brand: 'Oat Rings',
+        quantity: '12 oz',
+        ingredientsText: freshProduct.ingredientsText,
+        nutriments: { sugars100g: 9 },
+      });
+      expect(result.product.source).toBeUndefined();
+    });
+
+    it('keeps the USDA source when only the nutriments still come from USDA', async () => {
+      api.getProductByEan.mockResolvedValueOnce(null);
+      usda.findByGtin.mockResolvedValue(usdaProduct);
+      usdaKey = 'test-key';
+      await service.lookup(EAN, 'scan', SEEDED_RULES);
+      api.getProductByEan.mockResolvedValue({ ...freshProduct, nutriments: undefined });
+
+      const result = await service.lookup(EAN, 'view', SEEDED_RULES);
+
+      if (result.status !== 'found') throw new Error('expected found');
+      expect(result.product.ingredientsText).toBe(freshProduct.ingredientsText);
+      expect(result.product.nutriments).toEqual(usdaProduct.nutriments);
+      expect(result.product.source).toBe('usda');
+    });
   });
 });
