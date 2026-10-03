@@ -393,6 +393,7 @@ Migrations are append-only and run inside a transaction (or sequentially where t
 | Brands | `GET https://query.wikidata.org/sparql`: items whose parent organization (P749), owner (P127) or manufacturer (P176) is the company, up to 3 levels, at most 1,000 names; ended statements are ignored |
 | When | Only when the user starts the lookup in a brand/company rule; the result is stored with the rule |
 | Timeout | 15 s |
+| User-Agent | App name and version plus the public project URL, as Wikimedia's User-Agent policy asks (no e-mail address) |
 | Licence | CC0 |
 | Client | `CompanyLookupService` |
 

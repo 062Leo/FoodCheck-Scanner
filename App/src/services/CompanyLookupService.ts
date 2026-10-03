@@ -1,5 +1,5 @@
 import type { CompanyData } from '../domain/analysis/companyRules';
-import { USER_AGENT } from '../infrastructure/api/config';
+import { WIKIMEDIA_USER_AGENT } from '../infrastructure/api/config';
 import { fetchWithTimeout, NetworkError } from '../infrastructure/api/fetchWithTimeout';
 import { getErrorMessage } from '../shared/errors';
 
@@ -49,7 +49,7 @@ async function getJson(url: string, accept: string, signal?: AbortSignal): Promi
   try {
     response = await fetchWithTimeout(
       url,
-      { method: 'GET', headers: { 'User-Agent': USER_AGENT, Accept: accept }, signal },
+      { method: 'GET', headers: { 'User-Agent': WIKIMEDIA_USER_AGENT, Accept: accept }, signal },
       LOOKUP_TIMEOUT_MS
     );
   } catch (error) {

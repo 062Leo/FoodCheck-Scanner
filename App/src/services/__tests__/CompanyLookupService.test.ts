@@ -94,7 +94,9 @@ describe('CompanyLookupService', () => {
       expect(url).toContain('search=Nestl%C3%A9');
       expect(url).toContain('language=de&uselang=de');
       expect(url).toContain('origin=*');
-      expect(init.headers['User-Agent']).toBe('FoodCheck/1.0');
+      expect(init.headers['User-Agent']).toBe(
+        'FoodCheck/1.0 (https://github.com/062Leo/FoodCheck-Scanner)'
+      );
     });
 
     it('does not ask for an empty name', async () => {
@@ -164,7 +166,9 @@ describe('CompanyLookupService', () => {
       expect(query).toContain('FILTER(?share < 0.5)');
       expect(query).toContain('wikibase:DeprecatedRank');
       expect(fetchMock.mock.calls[1][0]).toMatch(/^https:\/\/query\.wikidata\.org\/sparql\?/);
-      expect(fetchMock.mock.calls[1][1].headers['User-Agent']).toBe('FoodCheck/1.0');
+      expect(fetchMock.mock.calls[1][1].headers['User-Agent']).toBe(
+        'FoodCheck/1.0 (https://github.com/062Leo/FoodCheck-Scanner)'
+      );
     });
 
     it('splits long parent lists into several queries', async () => {

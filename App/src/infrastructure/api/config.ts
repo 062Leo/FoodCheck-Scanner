@@ -45,6 +45,12 @@ export const WRITE_HOST = WRITE_BASE_URL.replace(/^https?:\/\//, '');
 /** Identifies the app to Open Food Facts; deliberately without a contact address. */
 export const USER_AGENT = `${APP_NAME}/${APP_VERSION}`;
 
+/** Public project page, the contact Wikimedia's User-Agent policy asks for. */
+export const PROJECT_URL = 'https://github.com/062Leo/FoodCheck-Scanner';
+
+/** Identifies the app to Wikidata: name, version and project page (no e-mail address). */
+export const WIKIMEDIA_USER_AGENT = `${USER_AGENT} (${PROJECT_URL})`;
+
 /** HTTP Basic Auth header value for staging (off:off base64-encoded). */
 export const STAGING_AUTH = 'Basic b2ZmOm9mZg==';
 
