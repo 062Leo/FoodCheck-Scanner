@@ -330,7 +330,8 @@ describe('RedFlagAnalyzer filter list additions', () => {
   it('finds alcohol but not alcohol-free, sugar alcohols or spirit vinegar', () => {
     expect(keys('Zucker, Alkohol, Kakao')).toEqual(['Sugar', 'Alcohol']);
     expect(keys('Vanilleextrakt (Ethanol)')).toEqual(['Ethanol']);
-    expect(keys('alkoholfreies Bier')).toEqual([]);
+    // Alcohol-free beer is not alcohol, but it is still beer (up to 0.5 % vol.).
+    expect(keys('alkoholfreies Bier')).toEqual(['Beer']);
     expect(keys('Bier, entalkoholisiert')).not.toContain('Alcohol');
     expect(keys('Süßungsmittel: Zuckeralkohole')).not.toContain('Alcohol');
     expect(keys('sweeteners (sugar alcohols)')).not.toContain('Alcohol');
@@ -338,15 +339,15 @@ describe('RedFlagAnalyzer filter list additions', () => {
     expect(keys('ohne Alkohol')).toEqual([]);
     expect(keys('Alkoholessig, Senfsaat')).toEqual([]);
     expect(keys("graines de moutarde, vinaigre d'alcool")).toEqual([]);
-    expect(keys('bevanda analcolica, alcohol-free beer, sans alcool')).toEqual([]);
+    expect(keys('bevanda analcolica, alcohol-free beer, sans alcool')).toEqual(['Beer']);
   });
 
   it('treats only 0.0 % as alcohol-free, not 10.0 % or 20.0 %', () => {
-    expect(keys('Wein, 10,0 % Alkohol')).toEqual(['Alcohol']);
-    expect(keys('liqueur, 20.0% alcohol')).toEqual(['Alcohol']);
-    expect(keys('Likör, 15.0 % vol. Alkohol')).toEqual(['Alcohol']);
+    expect(keys('Wein, 10,0 % Alkohol')).toEqual(['Wine', 'Alcohol']);
+    expect(keys('liqueur, 20.0% alcohol')).toEqual(['Liqueur', 'Alcohol']);
+    expect(keys('Likör, 15.0 % vol. Alkohol')).toEqual(['Liqueur', 'Alcohol']);
     expect(keys('0,0 % Alkohol')).toEqual([]);
-    expect(keys('Bier alkoholfrei (0,0 %)')).toEqual([]);
+    expect(keys('Bier alkoholfrei (0,0 %)')).toEqual(['Beer']);
     expect(keys('Malzgetränk (0.0% alcohol)')).toEqual([]);
   });
 
@@ -354,10 +355,71 @@ describe('RedFlagAnalyzer filter list additions', () => {
     expect(keys('Trennmittel: Talkum')).toEqual(['Talc']);
     expect(keys('Trennmittel: Talk')).toEqual(['Talc']);
     expect(substances('Trennmittel: E553b')).toEqual(['E553B']);
-    expect(keys('Talk, entalkoholisierter Wein')).toEqual(['Talc']);
-    expect(keys('Wein, entalkoholisiert')).toEqual([]);
+    expect(keys('Talk, entalkoholisierter Wein')).toEqual(['Talc', 'Wine']);
+    expect(keys('Wein, entalkoholisiert')).toEqual(['Wine']);
     expect(keys('entalkoholisierter Wein, Traubensaft')).not.toContain('Talc');
     expect(keys('Zucker, Alkohol')).toEqual(['Sugar', 'Alcohol']);
+  });
+
+  it('finds wine, beer and spirits in any language and inside compounds', () => {
+    expect(keys('Rotwein, Weißwein, Glühwein')).toEqual(['Wine']);
+    expect(keys('Sauce (Wasser, Wein, Zwiebeln)')).toEqual(['Wine']);
+    expect(keys('vin rouge, oignons')).toEqual(['Wine']);
+    expect(keys('vino bianco, vinho tinto, wijn, wino')).toEqual(['Wine']);
+    expect(keys('Portwein')).toEqual(['Port Wine']);
+    expect(keys('port wine, vinho do Porto')).toEqual(['Port Wine']);
+    expect(keys('Sherry, Marsala')).toEqual(['Sherry', 'Marsala']);
+    expect(keys('Weinbrand, Brandy, Cognac')).toEqual(['Weinbrand', 'Brandy', 'Cognac']);
+    expect(keys('Kirschwasser, Wodka, Whisky, Irish Whiskey')).toEqual([
+      'Kirschwasser',
+      'Vodka',
+      'Whisky',
+      'Whiskey',
+    ]);
+    expect(keys('Eierlikör, liquore, licor')).toEqual(['Liqueur']);
+    expect(keys('Bier (Wasser, Gerstenmalz, Hopfen)')).toEqual(['Beer']);
+    expect(keys('bière, birra, cerveza, cerveja, piwo')).toEqual(['Beer']);
+    expect(keys('Reis, Sake, Sojasauce')).toEqual(['Sake']);
+  });
+
+  it('counts rum at the start of a word, also as a flavouring', () => {
+    expect(keys('Rosinen, Rum')).toEqual(['Rum']);
+    expect(keys('Rumaroma, Rum-Rosinen, Rumtopf')).toEqual(['Rum']);
+    expect(keys('rum flavouring, rhum, ron')).toEqual(['Rum']);
+    expect(keys('Rumpsteak, Rumex, rumänisches Salz')).not.toContain('Rum');
+    expect(keys('Brotkrume, breadcrumbs, Milchserum')).not.toContain('Rum');
+    expect(keys('herbata z rumianku, rumianek')).not.toContain('Rum');
+    expect(keys('Hartweizengrieß (Triticum durum), durum wheat')).not.toContain('Rum');
+  });
+
+  it('does not read vinegar, yeast, tartaric acid, grapes or pork as alcohol', () => {
+    const noDrinks = (text: string) =>
+      keys(text).filter((key) =>
+        ['Wine', 'Beer', 'Sherry', 'Port Wine', 'Sake', 'Rum', 'Liqueur'].includes(key ?? '')
+      );
+    expect(noDrinks('Branntweinessig, Weinessig, Rotweinessig, Weißweinessig')).toEqual([]);
+    expect(noDrinks('Sherryessig, Sherry-Essig, Weißwein-Essig, Bieressig')).toEqual([]);
+    expect(noDrinks('red wine vinegar, sherry vinegar, wine-vinegar')).toEqual([]);
+    expect(noDrinks('vinaigre de vin, vinaigre de Xérès, aceto di vino')).toEqual([]);
+    expect(noDrinks('vinagre de vino, vinagre de Jerez, vinagre de vinho')).toEqual([]);
+    expect(noDrinks('wijnazijn, ocet winny')).toEqual([]);
+    expect(noDrinks('Säuerungsmittel: Weinsäure, L(+)-Weinsäure')).toEqual([]);
+    expect(noDrinks('Backtriebmittel: Weinstein, Weinsteinbackpulver')).toEqual([]);
+    expect(noDrinks('wijnsteenzuur, kwas winowy')).toEqual([]);
+    expect(noDrinks('Weintrauben, Weinbeeren, Weinblätter, Weinbergschnecken')).toEqual([]);
+    expect(noDrinks('Weinraute, Weinrebenblätter, Weingummi')).toEqual([]);
+    expect(noDrinks('winogrona, wijndruiven, vine tomatoes')).toEqual([]);
+    expect(noDrinks('liście winorośli, winorosl')).toEqual([]);
+    expect(noDrinks('Schweinefleisch, Wildschwein, swine gelatine, wild zwijn')).toEqual([]);
+    expect(noDrinks('Bierhefe, Bierhefeextrakt, beer yeast, biergist')).toEqual([]);
+    expect(noDrinks('levure de bière, lievito di birra, levadura de cerveza')).toEqual([]);
+    expect(noDrinks('levedura de cerveja, drożdże piwowarskie')).toEqual([]);
+    expect(noDrinks("brewer's yeast, Biertreber")).toEqual([]);
+    expect(noDrinks('Bierschinken (Schweinefleisch, Salz), Bierwurst')).toEqual([]);
+    expect(keys('Bierteig (Weizenmehl, Bier)')).toContain('Beer');
+    expect(noDrinks('Erdbeeren, Himbeeren, Beerenobst')).toEqual([]);
+    expect(noDrinks('Pilze (Portobello), portion, Portugal')).toEqual([]);
+    expect(noDrinks('Süßholz (licorice), sakes, Sakeena')).toEqual([]);
   });
 
   it('finds heat-treated milk but not raw or unpasteurised milk', () => {

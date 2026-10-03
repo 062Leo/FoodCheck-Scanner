@@ -85,6 +85,14 @@ const NOT_ALCOHOL_BEFORE =
   /(?:zucker|sugar\s|suiker|(?:^|[^\p{L}])(?:ent|de-?|dés|des|an|bez))$|(?:^|[^\d,.])0[,.]0\s*%\s*(?:vol\.?\s*)?$|(?:vinaigre\s+d['’]|vinagre\s+de\s+)$/u;
 /** "alkoholfrei", "alcohol-free", "alcoholvrij", "Alkoholessig". */
 const NOT_ALCOHOL_AFTER = /^(?:[\s-]*(?:frei|free|vrij)|essig)/u;
+/**
+ * Vinegar and yeast named after a drink are not the drink: "vinaigre de vin", "aceto di
+ * vino", "vinagre de Jerez", "levure de bière", "lievito di birra".
+ */
+const NOT_A_DRINK_BEFORE =
+  /(?:vinaigre|vinagre|aceto|levure|lievito|levadura|levedura)\s+(?:de|di|do|d['’])\s*$/u;
+/** "Weinessig", "Branntweinessig", "wine vinegar", "wijnazijn", "Bierhefe", "biergist". */
+const NOT_A_DRINK_AFTER = /^[\s-]*(?:essig|vinegar|azijn|hefe|yeast|gist)/u;
 
 interface Negation {
   before: RegExp[];
@@ -96,6 +104,14 @@ const NOT_HEAT_TREATED: Negation = { before: [NEGATION_WORD_BEFORE, NEGATING_PRE
 const NO_ALCOHOL: Negation = {
   before: [NEGATION_WORD_BEFORE, NOT_ALCOHOL_BEFORE],
   after: NOT_ALCOHOL_AFTER,
+};
+/**
+ * Alcohol-free beer and wine still count (up to 0.5 % vol.), so "alkoholfrei" does not
+ * negate a drink; only "ohne …" and vinegar or yeast made from it do.
+ */
+const NOT_A_DRINK: Negation = {
+  before: [NEGATION_WORD_BEFORE, NOT_A_DRINK_BEFORE],
+  after: NOT_A_DRINK_AFTER,
 };
 
 /** Rule keys (lower case) whose matches are checked for a negation. */
@@ -110,6 +126,21 @@ const NEGATABLE_KEYS: Record<string, Negation> = {
   'h-milch': NOT_HEAT_TREATED,
   alcohol: NO_ALCOHOL,
   ethanol: NO_ALCOHOL,
+  wine: NOT_A_DRINK,
+  'port wine': NOT_A_DRINK,
+  sherry: NOT_A_DRINK,
+  marsala: NOT_A_DRINK,
+  sake: NOT_A_DRINK,
+  beer: NOT_A_DRINK,
+  brandy: NOT_A_DRINK,
+  weinbrand: NOT_A_DRINK,
+  cognac: NOT_A_DRINK,
+  kirschwasser: NOT_A_DRINK,
+  rum: NOT_A_DRINK,
+  whisky: NOT_A_DRINK,
+  whiskey: NOT_A_DRINK,
+  vodka: NOT_A_DRINK,
+  liqueur: NOT_A_DRINK,
 };
 
 /** Characters around a match that are searched for a negation. */
@@ -128,6 +159,21 @@ function isNegated(lowerText: string, span: TextSpan, negation: Negation): boole
  */
 const OTHER_WORDS: Record<string, RegExp> = {
   talc: /alkohol|alcohol/gu,
+  // Pork and boar, tartaric acid, cream of tartar, grapes, raisins, vine leaves, vineyard
+  // snails and peaches, rue, wine gums; the English "vine" and the Polish "winorośl".
+  wine: /schwein|swine|zwijn|wein(?:säure|stein|traube|beere|blatt|blätter|berg|raute|rebe|gummi)|wijn(?:steen|druif|druiven|blad|ruit)|winogron|winow|winoro[śs]l|^vines?$/gu,
+  // Berries ("Erdbeeren"), the Polish brewer's yeast ("drożdże piwowarskie"), sausages
+  // named after beer ("Bierschinken", "Bierwurst") and spent grain ("Biertreber").
+  beer: /beere|piwowar|bier(?:schinken|wurst|treber)/gu,
+  // Only at the start of a word ("Rumaroma" counts): not "Krume", "crumb", "Milchserum",
+  // "Rumpsteak", "Rumex", "rumänisch" or the Polish "rumianek" (camomile).
+  rum: /\p{L}rh?um|rh?um(?:p|ex|än|ian)/gu,
+  // Licorice.
+  liqueur: /licoric/gu,
+  // Only as a word of its own.
+  sake: /\p{L}sak[eé]|sak[eé]\p{L}/gu,
+  // Portobello mushrooms.
+  'port wine': /portobell/gu,
 };
 
 const WORD_LETTER = /\p{L}/u;

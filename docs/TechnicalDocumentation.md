@@ -139,7 +139,7 @@ App/
 │   │   ├── translation/Translator.ts   # Translation interface
 │   │   └── rules/
 │   │       ├── defaultRules.ts         # Small hardcoded fallback rule list
-│   │       ├── seedRules.ts            # 753 seed ingredient rules (DB seed, migration 2)
+│   │       ├── seedRules.ts            # 768 seed ingredient rules (DB seed, migration 2)
 │   │       ├── ruleGroups.ts           # Groups rules by category for the Filter Rules screen
 │   │       └── ingredientTranslations.ts # Multi-language ingredient search terms
 │   ├── infrastructure/
@@ -160,7 +160,7 @@ App/
 │   │   │   ├── DeepLClient.ts, MyMemoryClient.ts, TranslationRouter.ts
 │   │   ├── network/connectivity.ts     # isOnline() / subscribeToConnectivity()
 │   │   └── db/
-│   │       ├── DatabaseService.ts       # SQLite init + 9 migrations
+│   │       ├── DatabaseService.ts       # SQLite init + 10 migrations
 │   │       ├── ProductRepository.ts     # CRUD, scan vs. refresh vs. edit writes
 │   │       ├── FavoritesRepository.ts   # CRUD for favorites
 │   │       ├── FilterRuleRepository.ts  # CRUD for filter rules
@@ -334,12 +334,12 @@ CREATE TABLE IF NOT EXISTS filter_rules (
 
 New product fields (categories, packaging, labels, brand owner, packager codes, alcohol content, `source: 'usda'`) are not columns; they live in `raw_json`.
 
-### Migrations (`DatabaseService`, version 9)
+### Migrations (`DatabaseService`, version 10)
 
 | Version | Migration | Description |
 |---------|-----------|-------------|
 | 1 | `createInitialSchema` | Create products, favorites, filter_rules tables |
-| 2 | `seedDefaultFilterRules` | Seed the red-flag rules from `seedRules.ts` (currently 753) |
+| 2 | `seedDefaultFilterRules` | Seed the red-flag rules from `seedRules.ts` (currently 768) |
 | 3 | `addProductStorageColumns` | Add data_version, last_api_fetch, 4 image columns |
 | 4 | `addVisitTrackingColumns` | Add visit_count, last_seen_at |
 | 5 | `addCategoryColumn` | Add category column; backfill missing seed rules and categories |
@@ -347,6 +347,7 @@ New product fields (categories, packaging, labels, brand owner, packager codes, 
 | 7 | `addFavoritesUniquenessAndEditTracking` | Deduplicate favorites + unique index; add products.edited_at, backfilled from raw_json markers left by the old edit screen |
 | 8 | `addEditedFieldsColumn` | Add products.edited_fields |
 | 9 | `updateFilterList` | Remove 11 packaging/propellant gas rules; add 86 ingredient rules and the 9 product checks (frozen copies), skipping any rule whose type and key (any case, any severity) already exists |
+| 10 | `addAlcoholRules` | Add 15 alcohol ingredient rules (wine, beer, spirits; frozen copy), skipping any key that already exists as an ingredient rule (any case, any severity) |
 
 Migrations are append-only and run inside a transaction (or sequentially where the platform has no transaction API); a database newer than the app's `DATABASE_VERSION` is left untouched with a warning instead of being downgraded.
 
@@ -444,7 +445,8 @@ Migrations are append-only and run inside a transaction (or sequentially where t
 - `ok`-severity rules whitelist an ingredient (by key, translation, or resolved E-number) or a nutrient condition, suppressing both keyword and taxonomy findings for it; an `ok` nutrient rule only whitelists while its own condition holds.
 - Nutrient rules are evaluated against `product.nutriments` (sugars_100g, fat_100g, saturated-fat_100g, salt_100g, energy-kcal_100g), not against the ingredient text.
 - Matches of the genetic-engineering, heated-milk and alcohol rules do not count when negated ("nicht pasteurisiert", "unpasteurisiert", "ohne Gentechnik", "alkoholfrei", "entalkoholisiert", "Zuckeralkohole"); `talc` does not match inside "entalkoholisiert".
-- Built-in data: 753 seed ingredient rules across 24 categories (25 category presets are offered when adding a new rule) plus 9 product checks, plus an additive taxonomy of ~160 E-numbers with risk levels (`none`/`low`/`medium`/`high`) and function classes (`AdditiveTaxonomyData.ts`). A small hardcoded `defaultRules` list is used only as a last-resort fallback if no rules are available at all.
+- The wine, beer and spirit rules are not negated by "alkoholfrei" (alcohol-free beer and wine still count), only by "ohne …" and by vinegar or yeast made from the drink ("Weinessig", "wine vinegar", "vinaigre de vin", "Bierhefe", "lievito di birra"). Words that contain a drink's name but mean something else do not count: tartaric acid, cream of tartar, grapes, vine leaves and pork for wine ("Weinsäure", "Weinstein", "Weintrauben", "Schwein"), berries, sausages and spent grain for beer ("Erdbeeren", "Bierschinken", "Bierwurst", "Biertreber"), "Portobello" for port wine and "licorice" for liqueur. Rum only counts at the start of a word ("Rumaroma" yes, "Krume", "Rumpsteak" no), sake only as a word of its own, port only as "port wine", "Portwein" or "porto" (not "portion", "Portugal").
+- Built-in data: 768 seed ingredient rules across 24 categories (25 category presets are offered when adding a new rule) plus 9 product checks, plus an additive taxonomy of ~160 E-numbers with risk levels (`none`/`low`/`medium`/`high`) and function classes (`AdditiveTaxonomyData.ts`). A small hardcoded `defaultRules` list is used only as a last-resort fallback if no rules are available at all.
 
 ### Product Checks (`productChecks.ts`)
 
@@ -488,7 +490,7 @@ The checks only see what Open Food Facts (or USDA) provides; products stored bef
 - **OK**: none of the above
 - The result also carries machine-readable `reasons` (`avoidedCompany`, `nova`, `redFlags`, `ingredientsMissing`, `insufficientData`, `noFindings`) used to build the "why" text shown in the UI.
 - `rateProduct()` (`domain/analysis/rateProduct.ts`) is the single entry point used by the scanner, the product screen and the edit screen.
-- `CatalogRatingService` re-rates every stored product (in batches of 25, yielding to the UI thread) whenever the rule set or the rating logic changes. A fingerprint (`RATING_LOGIC_VERSION` + a hash of all rules) stored in `meta.rating_fingerprint` decides whether a re-rate is needed; `RATING_LOGIC_VERSION` is bumped whenever a change in the rating code would alter results, forcing a one-time recompute for existing installs (currently 4).
+- `CatalogRatingService` re-rates every stored product (in batches of 25, yielding to the UI thread) whenever the rule set or the rating logic changes. A fingerprint (`RATING_LOGIC_VERSION` + a hash of all rules) stored in `meta.rating_fingerprint` decides whether a re-rate is needed; `RATING_LOGIC_VERSION` is bumped whenever a change in the rating code would alter results, forcing a one-time recompute for existing installs (currently 5).
 - `StoredProductRefreshService` completes products stored with an older Open Food Facts field set. `PRODUCT_DATA_VERSION` (stored in `products.data_version`) is bumped whenever the client requests new fields (2: categories_tags, packaging tags, brand_owner, emb_codes_tags, alcohol_100g). After the rules are loaded at app start, products with an older or unknown version are fetched again in the background: one request at a time, at most 10 per minute, most recently seen first. It stops when the device is offline or a request fails (e.g. HTTP 429) and continues with the remaining products on the next start. The fresh data is merged like a lookup (edited fields and USDA data are kept), re-rated and stored without counting a visit; the update is skipped if the product was edited or deleted meanwhile. A product unknown to Open Food Facts keeps its data and is only marked with the current version. Editing a product keeps its data version.
 
 ## 10. UI Design Tokens (`src/ui/theme.ts`)
@@ -582,7 +584,7 @@ Expo Router file-based routing in `App/app/`:
 | Manual barcode entry | Done |
 | Scan result card (scan in a row without leaving the camera) | Done |
 | OFF API product lookup with offline/cache fallback | Done |
-| Red flag ingredient analysis (753 rules, additive-risk taxonomy) | Done |
+| Red flag ingredient analysis (768 rules, additive-risk taxonomy) | Done |
 | Product checks (ingredient count, can, mercury fish, rice, pesticide-risk crops, heated milk, alcohol, meat substitute, farmed fish) | Done |
 | Avoided brands/companies with optional Wikidata lookup | Done |
 | Label badges, packager code, almond pollination note | Done |

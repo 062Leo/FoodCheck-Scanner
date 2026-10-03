@@ -1,10 +1,10 @@
 // Auto-generated from docs/list.txt - do not edit manually
-// Total: 753 seed rules across 24 categories
+// Total: 768 seed rules across 24 categories
 
 import type { FilterRuleSeed } from '../../types/FilterRule';
 
 export const seedRules: FilterRuleSeed[] = [
-  // Alkohol (2)
+  // Alkohol (17)
   {
     key: 'Alcohol',
     category: 'Alkohol',
@@ -12,7 +12,97 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'Beer',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Brandy',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Cognac',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'Ethanol',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Kirschwasser',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Liqueur',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Marsala',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Port Wine',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Rum',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Sake',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Sherry',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Vodka',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Weinbrand',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Whiskey',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Whisky',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Wine',
     category: 'Alkohol',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,

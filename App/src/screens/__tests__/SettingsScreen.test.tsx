@@ -30,7 +30,7 @@ describe('SettingsScreen', () => {
 
     fireEvent.press(await screen.findByText('Filter-Regeln'));
 
-    expect(screen.getByText(/762 Regeln/)).toBeTruthy();
+    expect(screen.getByText(/777 Regeln/)).toBeTruthy();
     expect(mockRouter.push).toHaveBeenCalledWith('/settings/filters');
   });
 

@@ -125,6 +125,51 @@ export const V8_SCHEMA = `
   INSERT INTO meta (key, value) VALUES ('schema_version', '8');
 `;
 
+/** Schema of the release before the alcohol rules (v9): the filter list update. */
+export const V9_SCHEMA = `
+  CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+  CREATE TABLE products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ean TEXT NOT NULL UNIQUE,
+    name TEXT,
+    brands TEXT,
+    ingredients TEXT,
+    nova_score INTEGER,
+    nutriscore TEXT,
+    raw_json TEXT,
+    scanned_at TEXT NOT NULL,
+    rating TEXT NOT NULL,
+    data_version INTEGER DEFAULT 1,
+    last_api_fetch TEXT,
+    image_url TEXT,
+    image_ingredients_url TEXT,
+    image_nutrition_url TEXT,
+    image_packaging_url TEXT,
+    visit_count INTEGER DEFAULT 1,
+    last_seen_at TEXT,
+    edited_at TEXT,
+    edited_fields TEXT
+  );
+  CREATE TABLE favorites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    added_at TEXT NOT NULL
+  );
+  CREATE UNIQUE INDEX idx_favorites_product_id ON favorites(product_id);
+  CREATE TABLE filter_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    key TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT '',
+    threshold REAL,
+    operator TEXT,
+    severity TEXT NOT NULL,
+    translations TEXT,
+    created_at TEXT NOT NULL
+  );
+  INSERT INTO meta (key, value) VALUES ('schema_version', '9');
+`;
+
 /** Seed rules of v8 that the filter list update (v9) removed: packaging and propellant gases. */
 export const SEED_RULES_REMOVED_IN_V9 = [
   { key: 'Carbon Dioxide', category: 'Phosphate & Mineralstoffe' },
@@ -228,6 +273,25 @@ export const SEED_KEYS_ADDED_IN_V9 = [
   'ultrahocherhitzt',
   'wärmebehandelt',
   'H-Milch',
+];
+
+/** Seed rule keys that the alcohol rules (v10) added. */
+export const SEED_KEYS_ADDED_IN_V10 = [
+  'Wine',
+  'Port Wine',
+  'Sherry',
+  'Marsala',
+  'Sake',
+  'Beer',
+  'Brandy',
+  'Weinbrand',
+  'Cognac',
+  'Kirschwasser',
+  'Rum',
+  'Whisky',
+  'Whiskey',
+  'Vodka',
+  'Liqueur',
 ];
 
 /** raw_json as written by the product screen after a scan (camelCase API data). */

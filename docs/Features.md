@@ -40,8 +40,9 @@
 ## Produkt-Analyse
 
 ### Red Flag System
-- **762 vordefinierte Regeln**: 753 Zutaten-Regeln in 24 belegten Kategorien plus 9 Produkt-Prüfungen (25 Kategorie-Presets stehen beim Anlegen einer neuen Zutaten-Regel zur Auswahl)
+- **777 vordefinierte Regeln**: 768 Zutaten-Regeln in 24 belegten Kategorien plus 9 Produkt-Prüfungen (25 Kategorie-Presets stehen beim Anlegen einer neuen Zutaten-Regel zur Auswahl)
 - **Neu in der Filterliste (Datenbank-Version 9)**: 86 Zutaten-Regeln – 31 E-Nummern (u. a. E120, E200, E203, E214/E215/E219, Cellulosen E460–E466, E476, Sorbitanester E492–E495, E952, modifizierte Stärken E1404–E1452, E1520), Zusatzstoff-Namen (Carmin, Cyclamat, Sorbinsäure, PHB-Ester, Propylenglycol, Citronensäure …), Gentechnik, Insekten, Samenöle (zählen auch kaltgepresst), Fleischersatz-Proteine (Erbsen-, Weizen-, Ackerbohnenprotein, Seitan, Mycoprotein), Zuchtfisch, Alkohol, erhitzte Milch (pasteurisiert, UHT, H-Milch) und versteckte Pökelung über Sellerieextrakt/Selleriesaftpulver. Entfernt wurden 11 Verpackungs- und Treibgase (u. a. Kohlendioxid, Distickstoffmonoxid, E290, E938–E949)
+- **Neu in der Filterliste (Datenbank-Version 10)**: 15 Zutaten-Regeln in der Kategorie Alkohol – Wein (auch Rot-, Weiß- und Glühwein), Portwein, Sherry, Marsala, Sake, Bier, Brandy, Weinbrand, Cognac, Kirschwasser, Rum (auch Rumaroma), Whisky, Whiskey, Wodka und Likör. Alkoholfreies Bier und alkoholfreier Wein zählen weiterhin (bis 0,5 % vol.)
 - **Eigene Filter-Regeln**: Benutzer kann Zutaten- und Nährwert-Regeln sowie gemiedene Marken/Konzerne hinzufügen/ändern/löschen; Severity `Red Flag` oder `Erlaubt` (whitelistet eine Zutat oder — solange die Bedingung zutrifft — eine Nährwert-Regel; bei einer Produkt-Prüfung schaltet `Erlaubt` die Prüfung aus)
 - **Vier Typen**:
   - **Zutaten-Regel**: Keyword-Matching in der Zutatenliste, span-basiert (ein Treffer innerhalb eines längeren Treffers einer anderen Regel zählt nicht); mehrsprachig (de/en/fr/it/es/nl/pt/pl)
@@ -49,6 +50,7 @@
   - **Produkt-Prüfung**: schaut auf das ganze Produkt (Kategorien, Verpackung, Siegel, Nährwerte), siehe unten; kann nicht neu angelegt, aber ausgeschaltet, gelöscht und (Zutatenzahl) eingestellt werden
   - **Marke / Konzern**: gemiedene Marke oder gemiedener Konzern, siehe unten
 - **Verneinungen zählen nicht**: „nicht pasteurisiert“, „unpasteurisiert“, „ohne Gentechnik“, „aus nicht gentechnisch veränderten Sojabohnen“, „alkoholfrei“, „entalkoholisiert“, „Zuckeralkohole“ oder Alkoholessig lösen die Regeln für Gentechnik, erhitzte Milch und Alkohol nicht aus
+- **Kein Getränk**: Essig und Hefe aus einem Getränk (Branntwein-, Wein-, Sherryessig, „wine vinegar“, „vinaigre de vin“, Bierhefe, „levure de bière“, „lievito di birra“) sowie Weinsäure, Weinstein, Weintrauben, Weinbeeren, Weinblätter, Weinbergschnecken, Weinraute, Schweinefleisch, Erdbeeren, Bierschinken, Bierwurst, Biertreber, Portobello, Lakritz („licorice“) oder Rumpsteak lösen die Regeln für Wein, Bier und Spirituosen nicht aus; Rum zählt nur am Wortanfang („Rumaroma“ ja, „Krume“ nein), Sake nur als eigenes Wort, Port nur als Portwein/„port wine“/„porto“ (nicht „Portion“, „Portugal“)
 - **Additiv-Taxonomie**: rund 160 E-Nummern mit Risikostufen (none/low/medium/high) und Funktionsklassen; ergänzt Treffer, die keine Zutaten-Regel bereits erfasst hat
 - **Ein Fund pro Substanz**: dieselbe E-Nummer zählt nur einmal; ein Schlüssel ohne Suffix und seine Suffix-Variante (E500/E500ii) sowie austauschbare Familienmitglieder (E150a–d) werden zusammengefasst
 - **Auto-Translation**: Neue Zutaten-Keywords werden beim Speichern parallel in 7 Sprachen übersetzt; das Bearbeiten eines Keywords löscht vorhandene Übersetzungen nur, wenn sich das Keyword ändert
@@ -162,7 +164,7 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 
 ## Filter Rules Management
 
-- **762 vordefinierte Regeln** (753 Zutaten-Regeln + 9 Produkt-Prüfungen) — automatisch bei erster DB-Erstellung, ergänzt durch spätere App-Updates; Migration 9 fügt bei bestehenden Installationen nur Regeln hinzu, die es mit gleichem Typ und Schlüssel noch nicht gibt (eigene Regeln werden weder doppelt angelegt noch überschrieben)
+- **777 vordefinierte Regeln** (768 Zutaten-Regeln + 9 Produkt-Prüfungen) — automatisch bei erster DB-Erstellung, ergänzt durch spätere App-Updates; die Migrationen 9 und 10 fügen bei bestehenden Installationen nur Regeln hinzu, die es mit gleichem Typ und Schlüssel noch nicht gibt (eigene Regeln werden weder doppelt angelegt noch überschrieben)
 - **Kategorie-Gruppierung**: nur Kategorien mit Regeln werden angezeigt, sortiert nach angezeigtem Namen; bei Suche werden alle Kategorien mit Treffer aufgeklappt
 - **Suche**: filtert nach Zutat/Kategorie (auch übersetzte Namen)
 - **Regel-Editor als Sheet**: Chips statt Rohschlüssel und gt/lt/eq, Komma-Schwellwerte, Validierungsmeldungen, Speicher-Fortschritt und Fehler-Feedback, Löschen direkt im Editor
@@ -263,8 +265,8 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 - **`products`**: id, ean (UNIQUE), name, brands, ingredients, nova_score, nutriscore, raw_json, scanned_at, rating, data_version, last_api_fetch, image_url, image_ingredients_url, image_nutrition_url, image_packaging_url, visit_count, last_seen_at, edited_at, edited_fields — Kategorien, Verpackung, Siegel, Markeninhaber, Identitätskennzeichen, Alkoholgehalt und die Quelle (USDA) stehen in `raw_json`
 - **`favorites`**: id, product_id (FK → products.id CASCADE, UNIQUE-Index), added_at
 - **`filter_rules`**: id, type (`ingredient`/`nutrient`/`check`/`company`), key, category, threshold, operator, severity, translations (JSON; bei Marken/Konzernen die Wikidata-ID und die zugehörigen Marken), created_at
-- **9 Migrationen** (Datenbank-Version 9): initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte → Favoriten-Eindeutigkeit + edited_at → edited_fields → Filterliste aktualisiert (11 Gase entfernt, 86 Zutaten-Regeln und 9 Prüfungen ergänzt)
-- **Neu-Bewertung**: `RATING_LOGIC_VERSION` 4 – gespeicherte Produkte werden nach dem Update einmal neu bewertet
+- **10 Migrationen** (Datenbank-Version 10): initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte → Favoriten-Eindeutigkeit + edited_at → edited_fields → Filterliste aktualisiert (11 Gase entfernt, 86 Zutaten-Regeln und 9 Prüfungen ergänzt) → Alkohol-Regeln ergänzt (15 Zutaten-Regeln)
+- **Neu-Bewertung**: `RATING_LOGIC_VERSION` 5 – gespeicherte Produkte werden nach dem Update einmal neu bewertet
 - **Daten nachladen**: `PRODUCT_DATA_VERSION` 2 – Produkte, die vor den neuen Open-Food-Facts-Feldern (Kategorien, Verpackung, Markeninhaber, Identitätskennzeichen, Alkoholgehalt) gespeichert wurden, werden nach dem App-Start im Hintergrund neu geladen und bewertet: höchstens 10 Anfragen pro Minute, nacheinander; offline oder bei einem Fehler geht es beim nächsten Start weiter. Eigene Änderungen und USDA-Daten bleiben erhalten.
 
 ### Backup & Wiederherstellung

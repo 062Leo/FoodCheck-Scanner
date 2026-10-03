@@ -4,7 +4,7 @@ import { seedRules } from '../../domain/rules/seedRules';
 import { getErrorMessage } from '../../shared/errors';
 
 export const DATABASE_NAME = 'foodscanner.db';
-export const DATABASE_VERSION = 9;
+export const DATABASE_VERSION = 10;
 const META_SCHEMA_VERSION_KEY = 'schema_version';
 
 type Migration = (database: SQLite.SQLiteDatabase) => Promise<void>;
@@ -32,6 +32,7 @@ const migrations: Record<number, Migration> = {
   7: addFavoritesUniquenessAndEditTracking,
   8: addEditedFieldsColumn,
   9: updateFilterList,
+  10: addAlcoholRules,
 };
 
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -625,6 +626,58 @@ async function updateFilterList(database: SQLite.SQLiteDatabase): Promise<void> 
     }
   } catch (error) {
     throw new Error(`Failed to update the filter list: ${getErrorMessage(error)}`, {
+      cause: error,
+    });
+  }
+}
+
+/**
+ * v10: wine, beer and spirits added to the category Alkohol. A frozen copy instead of
+ * `seedRules`: later changes to the seed list must not change what this migration does.
+ */
+const V10_ADDED_INGREDIENT_RULES: { key: string; category: string }[] = [
+  { key: 'Wine', category: 'Alkohol' },
+  { key: 'Port Wine', category: 'Alkohol' },
+  { key: 'Sherry', category: 'Alkohol' },
+  { key: 'Marsala', category: 'Alkohol' },
+  { key: 'Sake', category: 'Alkohol' },
+  { key: 'Beer', category: 'Alkohol' },
+  { key: 'Brandy', category: 'Alkohol' },
+  { key: 'Weinbrand', category: 'Alkohol' },
+  { key: 'Cognac', category: 'Alkohol' },
+  { key: 'Kirschwasser', category: 'Alkohol' },
+  { key: 'Rum', category: 'Alkohol' },
+  { key: 'Whisky', category: 'Alkohol' },
+  { key: 'Whiskey', category: 'Alkohol' },
+  { key: 'Vodka', category: 'Alkohol' },
+  { key: 'Liqueur', category: 'Alkohol' },
+];
+
+/**
+ * v10: adds the new alcohol rules, unless an ingredient rule with the same key (any
+ * case, any severity) already exists, so the user's own rules are neither duplicated
+ * nor overridden.
+ */
+async function addAlcoholRules(database: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    const existing = await database.getAllAsync<{ key: string }>(
+      "SELECT key FROM filter_rules WHERE type = 'ingredient'"
+    );
+    const existingKeys = new Set(existing.map((r) => r.key.toLowerCase()));
+    const now = new Date().toISOString();
+
+    for (const rule of V10_ADDED_INGREDIENT_RULES) {
+      if (existingKeys.has(rule.key.toLowerCase())) continue;
+      await database.runAsync(
+        `
+          INSERT INTO filter_rules (type, key, category, threshold, operator, severity, created_at)
+          VALUES ('ingredient', $key, $category, NULL, NULL, 'red_flag', $created_at);
+        `,
+        { $key: rule.key, $category: rule.category, $created_at: now }
+      );
+    }
+  } catch (error) {
+    throw new Error(`Failed to add the alcohol rules: ${getErrorMessage(error)}`, {
       cause: error,
     });
   }
