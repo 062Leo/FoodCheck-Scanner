@@ -614,6 +614,8 @@ const de = {
     'Kulturen mit den meisten Rückstandsüberschreitungen laut BVL-Bericht 2023.',
   'filter.check.threshold': 'Schlägt an bei mehr als … Zutaten',
   'filter.check.okHint': 'Diese Prüfung ist ausgeschaltet und zählt nie als Red Flag.',
+  'filter.check.noDelete':
+    'Prüfungen lassen sich nicht löschen. Zum Ausschalten unten „Erlaubt“ wählen.',
   'filter.check.ingredient_count.explanation':
     'Viele Zutaten deuten auf ein stark verarbeitetes Produkt hin. Zusammengesetzte Zutaten zählen mit ihren Bestandteilen, z. B. „Schokolade (Zucker, Kakaomasse)“ als zwei Zutaten.',
   'filter.check.canned.explanation':
@@ -1286,6 +1288,7 @@ const en: Translations = {
     'Crops with the most residue exceedances according to the BVL report 2023.',
   'filter.check.threshold': 'Applies to more than … ingredients',
   'filter.check.okHint': 'This check is switched off and never counts as a red flag.',
+  'filter.check.noDelete': 'Checks cannot be deleted. To switch one off, choose “Allowed” below.',
   'filter.check.ingredient_count.explanation':
     'Many ingredients point to a highly processed product. Compound ingredients count with their parts, e.g. “chocolate (sugar, cocoa mass)” as two ingredients.',
   'filter.check.canned.explanation':

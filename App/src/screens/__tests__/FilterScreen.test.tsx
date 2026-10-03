@@ -127,6 +127,9 @@ describe('FilterScreen', () => {
     expect(screen.getAllByText(/Dosenbeschichtungen können Bisphenole/).length).toBeGreaterThan(1);
     expect(screen.queryByTestId('rule-check-threshold')).toBeNull();
     expect(screen.queryByTestId('rule-keyword')).toBeNull();
+    // A check cannot be deleted, only switched off.
+    expect(screen.queryByText('Löschen')).toBeNull();
+    expect(screen.getByText(/Prüfungen lassen sich nicht löschen/)).toBeTruthy();
     fireEvent.press(screen.getByText('Erlaubt'));
     expect(
       screen.getByText('Diese Prüfung ist ausgeschaltet und zählt nie als Red Flag.')

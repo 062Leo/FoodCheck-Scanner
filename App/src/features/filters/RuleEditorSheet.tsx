@@ -315,6 +315,7 @@ export function RuleEditorSheet({
                     testID="rule-check-threshold"
                   />
                 ) : null}
+                <Text style={styles.hint}>{t('filter.check.noDelete')}</Text>
               </>
             ) : form.type === 'company' ? (
               <CompanyRuleForm
@@ -416,7 +417,8 @@ export function RuleEditorSheet({
             ) : null}
           </ScrollView>
           <View style={styles.actions}>
-            {rule && (
+            {/* A deleted check could not be restored; checks are switched off instead. */}
+            {rule && rule.type !== 'check' && (
               <Button
                 title={t('filter.delete')}
                 variant="danger"
