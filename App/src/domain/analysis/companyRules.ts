@@ -107,10 +107,28 @@ function compactName(name: string): string {
   return normalizeCompanyName(name).replace(/ /g, '');
 }
 
+/** True if the first whole words of `words`, written together, are `compact`. */
+function startsWithCompact(words: string[], compact: string): boolean {
+  let joined = '';
+  for (const word of words) {
+    joined += word;
+    if (joined === compact) return true;
+    if (joined.length >= compact.length) return false;
+  }
+  return false;
+}
+
+/** True if consecutive whole words of `words`, written together, are `compact`. */
+function containsCompact(words: string[], compact: string): boolean {
+  return words.some((_, i) => startsWithCompact(words.slice(i), compact));
+}
+
 /**
  * Finds the user's avoided brands and companies in a product. The avoided name itself
  * may appear inside a brand ("Nestlé Nesquik", "Nestlé Deutschland AG"); names of its
- * brands must match a whole brand, so short brand names do not hit unrelated ones.
+ * brands must match a whole brand or its first words ("Maggi Fix"), so short brand
+ * names do not hit unrelated ones ("Golden Lion Foods" is not "Lion"). Spaces and
+ * hyphens do not matter either way: "Kit Kat" is "KitKat", "Coca-Cola" is "CocaCola".
  */
 export function findAvoidedCompanies(product: Product, rules: FilterRule[]): RedFlagFinding[] {
   const companyRules = rules.filter(
@@ -121,13 +139,13 @@ export function findAvoidedCompanies(product: Product, rules: FilterRule[]): Red
   const candidates = companyNamesOf(product).map((name) => ({
     name,
     words: companyWords(name),
-    compact: compactName(name),
   }));
   if (candidates.length === 0) return [];
 
   const findings: RedFlagFinding[] = [];
   for (const rule of companyRules) {
     const ownWords = companyWords(rule.key);
+    const ownCompact = ownWords.join('');
     const aliases = new Set(
       (parseCompanyData(rule.translations)?.names ?? [])
         .map(compactName)
@@ -136,7 +154,8 @@ export function findAvoidedCompanies(product: Product, rules: FilterRule[]): Red
     const match = candidates.find(
       (candidate) =>
         containsWords(candidate.words, ownWords) ||
-        (candidate.compact.length > 1 && aliases.has(candidate.compact))
+        (ownCompact.length > 1 && containsCompact(candidate.words, ownCompact)) ||
+        [...aliases].some((alias) => startsWithCompact(candidate.words, alias))
     );
     if (!match) continue;
     findings.push({
