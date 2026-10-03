@@ -465,7 +465,7 @@ The checks only see what Open Food Facts (or USDA) provides; products stored bef
 
 ### Avoided Companies (`companyRules.ts`)
 
-- `company` rules are matched against the product's brands and `brand_owner`. The avoided name itself may appear inside a brand ("Nestlé Deutschland AG"); names collected from Wikidata must match a whole brand, compared without spaces ("Kit Kat" = "KitKat"). Legal forms and regional suffixes (GmbH, AG, Deutschland, …) are ignored.
+- `company` rules are matched against the product's brands and `brand_owner`. The avoided name itself may appear inside a brand ("Nestlé Deutschland AG"); names collected from Wikidata must match a whole brand or its first whole words ("Maggi" matches "Maggi Fix", "Lion" does not match "Golden Lion Foods"). Both are also compared without spaces and hyphens ("Kit Kat" = "KitKat", "Coca-Cola" = "CocaCola"). Legal forms and regional suffixes (GmbH, AG, Deutschland, …) are ignored.
 - A match makes the product **Critical** on its own and adds an `avoidedCompany` reason.
 
 ### Product Information (display only)
