@@ -1,0 +1,487 @@
+{
+  "seeded": {
+    "4000000000001 Mineralwasser": {
+      "status": "OK",
+      "nova": 1,
+      "redFlags": []
+    },
+    "4000000000002 Nuss-Nougat-Creme": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|Palmöl",
+        "critical|Proteine & Fleischersatz|Skim Milk Powder|Magermilchpulver",
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin"
+      ]
+    },
+    "4000000000003 Cola": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|E-Nummern|E150d|E150d",
+        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure"
+      ]
+    },
+    "4000000000004 Cola light": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Farbstoffe|Caramel Color|Zuckerkulör",
+        "critical|Süßungsmittel|Aspartame|Aspartam",
+        "critical|Süßungsmittel|Acesulfame K|Acesulfam K",
+        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure"
+      ]
+    },
+    "4000000000005 Amaranth-Müsli": {
+      "status": "OK",
+      "nova": 1,
+      "redFlags": []
+    },
+    "4000000000006 Bratwurst": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Zucker & Sirupe|Dextrose|Dextrose",
+        "critical|Emulgatoren & Stabilisatoren|Stabiliser|Stabilisator",
+        "critical|Antioxidationsmittel|Sodium Ascorbate|Natriumascorbat",
+        "critical|Konservierungsstoffe|Sodium Nitrite|Natriumnitrit"
+      ]
+    },
+    "4000000000007 Fruchtgummi": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Zucker & Sirupe|Glucose Syrup|Glukosesirup",
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Sonstige Zusatzstoffe|Gelatin|Gelatin",
+        "critical|Zucker & Sirupe|Dextrose|Dextrose",
+        "critical|Farbstoffe|Color|Farbstoff",
+        "critical|Trenn- & Überzugsmittel|Beeswax|Bienenwachs",
+        "critical|Trenn- & Überzugsmittel|Carnauba Wax|Carnaubawachs"
+      ]
+    },
+    "4000000000008 Toastbrot": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|E-Nummern|E471|E471",
+        "critical|Modifizierte Stärken|Flour Treatment Agent|Mehlbehandlungsmittel"
+      ]
+    },
+    "4000000000009 Naturjoghurt": {
+      "status": "OK",
+      "nova": 1,
+      "redFlags": []
+    },
+    "4000000000010 Tomatenketchup": {
+      "status": "Warning",
+      "nova": 3,
+      "redFlags": ["critical|Süßungsmittel|Sugar|Zucker"]
+    },
+    "4000000000011 Limonade": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": ["critical|Zucker & Sirupe|Glucose Fructose Syrup|Glukose-Fruktose-Sirup"]
+    },
+    "4000000000012 Chocolate bar": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Sugar",
+        "critical|Zucker & Sirupe|Glucose Syrup|glucose syrup",
+        "critical|Gehärtete Fette & raffinierte Öle|Hydrogenated Vegetable Fat|hydrogenated vegetable fat",
+        "critical|Gehärtete Fette & raffinierte Öle|Palm Kernel Oil|palm kernel oil",
+        "critical|Proteine & Fleischersatz|Whey Powder|whey powder",
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|lecithin",
+        "critical|E-Nummern|E102|E102"
+      ]
+    },
+    "4000000000013 Pudding": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Modifizierte Stärken|Modified Starch|modifizierte Stärke",
+        "critical|E-Nummern|E1400|E1400",
+        "critical|Süßungsmittel|Sugar|Zucker"
+      ]
+    },
+    "4000000000014 Eistee mit E-Nummern": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": ["critical|E-Nummern|E330|E330", "critical|E-Nummern|E211|E211"]
+    },
+    "4000000000015 Ohne Daten": {
+      "status": "Unknown",
+      "redFlags": []
+    },
+    "4000000000016 Nur NOVA 4": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": []
+    },
+    "4000000000017 Reis": {
+      "status": "OK",
+      "redFlags": []
+    },
+    "4000000000018 Zuckerreiche Cerealien": {
+      "status": "Warning",
+      "nova": 3,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Zucker & Sirupe|Malt Extract|malzextrakt"
+      ]
+    },
+    "4000000000019 Kartoffelchips": {
+      "status": "Warning",
+      "nova": 3,
+      "redFlags": []
+    },
+    "4000000000020 Instantnudeln": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|Palmöl",
+        "critical|Geschmacksverstärker & Aromen|Monosodium Glutamate|Mononatriumglutamat",
+        "critical|Geschmacksverstärker & Aromen|Yeast Extract|Hefeextrakt",
+        "critical|Modifizierte Stärken|Maltodextrin|Maltodextrin"
+      ]
+    },
+    "4000000000021 Olivenöl": {
+      "status": "OK",
+      "nova": 2,
+      "redFlags": []
+    },
+    "4000000000022 Margarine": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Emulgatoren & Stabilisatoren|Mono Diglycerides|Mono- und Diglyceride",
+        "critical|Emulgatoren & Stabilisatoren|Fatty Acids|fettsäuren",
+        "critical|Farbstoffe|Color|Farbstoff"
+      ]
+    },
+    "4000000000023 Pâte à tartiner": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Sucre",
+        "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|huile de palme",
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|lécithine"
+      ]
+    },
+    "4000000000024 Kaugummi zuckerfrei": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sorbitol|Sorbit",
+        "critical|Süßungsmittel|Maltitol|Maltit",
+        "critical|Süßungsmittel|Mannitol|Mannit",
+        "critical|Süßungsmittel|Aspartame|Aspartam",
+        "critical|Süßungsmittel|Acesulfame K|Acesulfam K",
+        "critical|Verdickungs- & Geliermittel|Acacia Gum|Gummi arabicum",
+        "critical|Füll- & Trägerstoffe|Glycerol|Glycerin",
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|lecithin",
+        "critical|E-Nummern|E171|E171",
+        "critical|E-Nummern|E321|E321"
+      ]
+    },
+    "4000000000025 Tafelwasser": {
+      "status": "OK",
+      "redFlags": []
+    },
+    "4000000000026 Butter": {
+      "status": "OK",
+      "nova": 2,
+      "redFlags": []
+    },
+    "4000000000027 Zartbitterschokolade": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin"
+      ]
+    },
+    "4000000000028 Kurkuma gemahlen": {
+      "status": "OK",
+      "nova": 1,
+      "redFlags": []
+    },
+    "4000000000029 Eistee Pfirsich": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Phosphate & Mineralstoffe|Sodium Citrate|Natriumcitrat",
+        "critical|Antioxidationsmittel|Antioxidant|Antioxidationsmittel"
+      ]
+    },
+    "4000000000030 Proteinriegel": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Proteine & Fleischersatz|Soy Protein|Sojaprotein",
+        "critical|Süßungsmittel|Maltitol|Maltit",
+        "critical|Süßungsmittel|Sucralose|Sucralose",
+        "critical|E-Nummern|E322|E322"
+      ]
+    },
+    "4000000000031 Haferdrink": {
+      "status": "Warning",
+      "nova": 3,
+      "redFlags": []
+    },
+    "4000000000032 Nur Nährwerte": {
+      "status": "Unknown",
+      "redFlags": []
+    }
+  },
+  "customised": {
+    "4000000000001 Mineralwasser": {
+      "status": "OK",
+      "nova": 1,
+      "redFlags": []
+    },
+    "4000000000002 Nuss-Nougat-Creme": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|Palmöl",
+        "critical|Proteine & Fleischersatz|Skim Milk Powder|Magermilchpulver",
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin",
+        "critical|Zucker & Sirupe|sugars_100g|sugars_100g"
+      ]
+    },
+    "4000000000003 Cola": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|E-Nummern|E150d|E150d",
+        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure"
+      ]
+    },
+    "4000000000004 Cola light": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Farbstoffe|Caramel Color|Zuckerkulör",
+        "critical|Süßungsmittel|Aspartame|Aspartam",
+        "critical|Süßungsmittel|Acesulfame K|Acesulfam K",
+        "critical|Säuren & Säureregulatoren|Phosphoric Acid|Phosphorsäure"
+      ]
+    },
+    "4000000000005 Amaranth-Müsli": {
+      "status": "OK",
+      "nova": 1,
+      "redFlags": []
+    },
+    "4000000000006 Bratwurst": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Zucker & Sirupe|Dextrose|Dextrose",
+        "critical|Emulgatoren & Stabilisatoren|Stabiliser|Stabilisator",
+        "critical|Antioxidationsmittel|Sodium Ascorbate|Natriumascorbat",
+        "critical|Konservierungsstoffe|Sodium Nitrite|Natriumnitrit"
+      ]
+    },
+    "4000000000007 Fruchtgummi": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Zucker & Sirupe|Glucose Syrup|Glukosesirup",
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Sonstige Zusatzstoffe|Gelatin|Gelatin",
+        "critical|Zucker & Sirupe|Dextrose|Dextrose",
+        "critical|Farbstoffe|Color|Farbstoff",
+        "critical|Trenn- & Überzugsmittel|Beeswax|Bienenwachs",
+        "critical|Trenn- & Überzugsmittel|Carnauba Wax|Carnaubawachs"
+      ]
+    },
+    "4000000000008 Toastbrot": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|E-Nummern|E471|E471",
+        "critical|Modifizierte Stärken|Flour Treatment Agent|Mehlbehandlungsmittel"
+      ]
+    },
+    "4000000000009 Naturjoghurt": {
+      "status": "OK",
+      "nova": 1,
+      "redFlags": []
+    },
+    "4000000000010 Tomatenketchup": {
+      "status": "Warning",
+      "nova": 3,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Zucker & Sirupe|sugars_100g|sugars_100g"
+      ]
+    },
+    "4000000000011 Limonade": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": ["critical|Zucker & Sirupe|Glucose Fructose Syrup|Glukose-Fruktose-Sirup"]
+    },
+    "4000000000012 Chocolate bar": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Sugar",
+        "critical|Zucker & Sirupe|Glucose Syrup|glucose syrup",
+        "critical|Gehärtete Fette & raffinierte Öle|Hydrogenated Vegetable Fat|hydrogenated vegetable fat",
+        "critical|Gehärtete Fette & raffinierte Öle|Palm Kernel Oil|palm kernel oil",
+        "critical|Proteine & Fleischersatz|Whey Powder|whey powder",
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|lecithin",
+        "critical|E-Nummern|E102|E102"
+      ]
+    },
+    "4000000000013 Pudding": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Modifizierte Stärken|Modified Starch|modifizierte Stärke",
+        "critical|E-Nummern|E1400|E1400",
+        "critical|Süßungsmittel|Sugar|Zucker"
+      ]
+    },
+    "4000000000014 Eistee mit E-Nummern": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": ["critical|E-Nummern|E211|E211"]
+    },
+    "4000000000015 Ohne Daten": {
+      "status": "Unknown",
+      "redFlags": []
+    },
+    "4000000000016 Nur NOVA 4": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": []
+    },
+    "4000000000017 Reis": {
+      "status": "OK",
+      "redFlags": []
+    },
+    "4000000000018 Zuckerreiche Cerealien": {
+      "status": "Critical",
+      "nova": 3,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Zucker & Sirupe|Malt Extract|malzextrakt",
+        "critical|Zucker & Sirupe|sugars_100g|sugars_100g"
+      ]
+    },
+    "4000000000019 Kartoffelchips": {
+      "status": "Warning",
+      "nova": 3,
+      "redFlags": []
+    },
+    "4000000000020 Instantnudeln": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|Palmöl",
+        "critical|Geschmacksverstärker & Aromen|Monosodium Glutamate|Mononatriumglutamat",
+        "critical|Geschmacksverstärker & Aromen|Yeast Extract|Hefeextrakt",
+        "critical|Modifizierte Stärken|Maltodextrin|Maltodextrin"
+      ]
+    },
+    "4000000000021 Olivenöl": {
+      "status": "OK",
+      "nova": 2,
+      "redFlags": []
+    },
+    "4000000000022 Margarine": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Emulgatoren & Stabilisatoren|Mono Diglycerides|Mono- und Diglyceride",
+        "critical|Emulgatoren & Stabilisatoren|Fatty Acids|fettsäuren",
+        "critical|Farbstoffe|Color|Farbstoff"
+      ]
+    },
+    "4000000000023 Pâte à tartiner": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Sucre",
+        "critical|Gehärtete Fette & raffinierte Öle|Palm Oil|huile de palme",
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|lécithine"
+      ]
+    },
+    "4000000000024 Kaugummi zuckerfrei": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sorbitol|Sorbit",
+        "critical|Süßungsmittel|Maltitol|Maltit",
+        "critical|Süßungsmittel|Mannitol|Mannit",
+        "critical|Süßungsmittel|Aspartame|Aspartam",
+        "critical|Süßungsmittel|Acesulfame K|Acesulfam K",
+        "critical|Verdickungs- & Geliermittel|Acacia Gum|Gummi arabicum",
+        "critical|Füll- & Trägerstoffe|Glycerol|Glycerin",
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|lecithin",
+        "critical|E-Nummern|E171|E171",
+        "critical|E-Nummern|E321|E321"
+      ]
+    },
+    "4000000000025 Tafelwasser": {
+      "status": "OK",
+      "redFlags": []
+    },
+    "4000000000026 Butter": {
+      "status": "OK",
+      "nova": 2,
+      "redFlags": []
+    },
+    "4000000000027 Zartbitterschokolade": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Emulgatoren & Stabilisatoren|Lecithin|Lecithin"
+      ]
+    },
+    "4000000000028 Kurkuma gemahlen": {
+      "status": "OK",
+      "nova": 1,
+      "redFlags": []
+    },
+    "4000000000029 Eistee Pfirsich": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Süßungsmittel|Sugar|Zucker",
+        "critical|Phosphate & Mineralstoffe|Sodium Citrate|Natriumcitrat",
+        "critical|Antioxidationsmittel|Antioxidant|Antioxidationsmittel"
+      ]
+    },
+    "4000000000030 Proteinriegel": {
+      "status": "Critical",
+      "nova": 4,
+      "redFlags": [
+        "critical|Proteine & Fleischersatz|Soy Protein|Sojaprotein",
+        "critical|Süßungsmittel|Maltitol|Maltit",
+        "critical|Süßungsmittel|Sucralose|Sucralose",
+        "critical|E-Nummern|E322|E322"
+      ]
+    },
+    "4000000000031 Haferdrink": {
+      "status": "Warning",
+      "nova": 3,
+      "redFlags": []
+    },
+    "4000000000032 Nur Nährwerte": {
+      "status": "Warning",
+      "redFlags": ["critical|Zucker & Sirupe|sugars_100g|sugars_100g"]
+    }
+  }
+}

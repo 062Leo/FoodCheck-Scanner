@@ -1,11 +1,12 @@
-import { db, initDatabase } from './DatabaseService';
+import { getDatabase } from './DatabaseService';
+import { getErrorMessage } from '../../shared/errors';
 import type { FilterRule, NewFilterRule } from '../../types/FilterRule';
 import type { SQLiteBindValue } from 'expo-sqlite';
 
 export class FilterRuleRepository {
   async insert(rule: NewFilterRule): Promise<void> {
     try {
-      const database = await this.getDatabase();
+      const database = await getDatabase();
 
       await database.runAsync(
         `
@@ -33,7 +34,7 @@ export class FilterRuleRepository {
 
   async findAll(): Promise<FilterRule[]> {
     try {
-      const database = await this.getDatabase();
+      const database = await getDatabase();
 
       return await database.getAllAsync<FilterRule>(
         `
@@ -58,7 +59,7 @@ export class FilterRuleRepository {
 
   async update(id: number, changes: Partial<NewFilterRule>): Promise<void> {
     try {
-      const database = await this.getDatabase();
+      const database = await getDatabase();
 
       const setClauses: string[] = [];
       const params: Record<string, SQLiteBindValue> = { $id: id };
@@ -119,7 +120,7 @@ export class FilterRuleRepository {
 
   async deleteById(id: number): Promise<void> {
     try {
-      const database = await this.getDatabase();
+      const database = await getDatabase();
 
       await database.runAsync(
         `
@@ -136,26 +137,4 @@ export class FilterRuleRepository {
       });
     }
   }
-
-  private async getDatabase() {
-    if (db) {
-      return db;
-    }
-
-    await initDatabase();
-
-    if (!db) {
-      throw new Error('SQLite database is not available after initialization.');
-    }
-
-    return db;
-  }
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
 }

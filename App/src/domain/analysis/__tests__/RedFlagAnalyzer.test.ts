@@ -128,14 +128,34 @@ describe('RedFlagAnalyzer', () => {
       },
     ];
 
-    const result = analyzer.analyze('{"nutriments":{"sugars_100g":4.2}}', nutrientRules);
+    const result = analyzer.analyze('Zucker, Kakao', nutrientRules, { sugars100g: 4.2 });
 
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
       ingredient: 'sugars_100g',
       category: 'Nährwerte',
       severity: 'critical',
+      nutrient: { key: 'sugars_100g', value: 4.2, operator: 'gt', threshold: 3 },
     });
+  });
+
+  it('evaluates nutrient rules against the nutriments, not the ingredient text', () => {
+    const nutrientRules: FilterRule[] = [
+      {
+        id: 4,
+        type: 'nutrient',
+        key: 'salt_100g',
+        category: 'Nährwerte',
+        threshold: 1.5,
+        operator: 'gt',
+        severity: 'red_flag',
+        created_at: '2026-05-09T10:00:00.000Z',
+      },
+    ];
+
+    expect(analyzer.analyze('salt_100g: 9', nutrientRules)).toHaveLength(0);
+    expect(analyzer.analyze('', nutrientRules, { salt100g: 1.2 })).toHaveLength(0);
+    expect(analyzer.analyze('', nutrientRules, { salt100g: 2 })).toHaveLength(1);
   });
 
   describe('multi-language ingredient matching', () => {

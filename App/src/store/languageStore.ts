@@ -29,7 +29,10 @@ export const useLanguageStore = create<LanguageState>((set) => ({
   },
 
   setLanguage: async (lang) => {
-    await SecureStore.setItemAsync(STORAGE_KEY, lang);
+    // Switch immediately; persisting is best effort.
     set({ language: lang });
+    await SecureStore.setItemAsync(STORAGE_KEY, lang).catch((error) => {
+      console.error('Failed to store language:', error);
+    });
   },
 }));

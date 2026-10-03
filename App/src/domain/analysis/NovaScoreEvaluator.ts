@@ -30,7 +30,7 @@ export class NovaScoreEvaluator {
         };
       default:
         return {
-          score: 1,
+          score: undefined,
           label: 'Unbekannt',
           color: '#757575',
         };

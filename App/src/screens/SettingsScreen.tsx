@@ -1,660 +1,382 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  Switch,
-  Platform,
-  ScrollView,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useCallback, useState, type ReactNode } from 'react';
+import { Alert, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { OpenFoodFactsWriteClient } from '../infrastructure/api/OpenFoodFactsWriteClient';
+import { WRITE_HOST } from '../infrastructure/api/config';
+import { BackupError, BackupService } from '../infrastructure/db/BackupService';
 import { OffAccountSetup } from '../components/OffAccountSetup';
 import { useLanguageStore } from '../store/languageStore';
-import { useTranslation } from '../i18n/useTranslation';
-import { LANGUAGES } from '../i18n/translations';
-import type { SupportedLanguage } from '../i18n/translations';
-import { BackupService } from '../infrastructure/db/BackupService';
-import { Accordion } from '../components/Accordion';
+import { useFilterStore } from '../store/filterStore';
+import { useAllergenStore } from '../store/allergenStore';
+import { allergenName } from '../i18n/allergenLabels';
+import { reloadStores } from '../store/reloadStores';
+import { useTranslation, type TranslateFn } from '../i18n/useTranslation';
+import { LANGUAGES, type SupportedLanguage } from '../i18n/translations';
+import { Button, Chip, ListRow, PageTitle, SectionTitle } from '../ui/components';
+import { colors, radius, spacing, typography } from '../ui/theme';
 
 const writeClient = new OpenFoodFactsWriteClient();
+
+function backupErrorText(error: unknown, t: TranslateFn): string {
+  if (!(error instanceof BackupError)) return t('backup.error.generic');
+  switch (error.code) {
+    case 'no-directory':
+      return t('settings.backupNoPathHint');
+    case 'not-a-backup':
+      return t('backup.error.notABackup');
+    case 'restore-failed':
+      return t('backup.error.restoreFailed');
+    case 'unsupported-platform':
+      return t('settings.backupIosHint');
+    default:
+      return t('backup.error.generic');
+  }
+}
+
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View style={styles.group}>
+      <SectionTitle>{title}</SectionTitle>
+      <View style={styles.groupBody}>{children}</View>
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { t, language } = useTranslation();
   const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const ruleCount = useFilterStore((s) => s.rules.length);
+  const allergenProfile = useAllergenStore((s) => s.profile);
+  const allergenStatus = useAllergenStore((s) => s.status);
+  const allergenWarning = useAllergenStore((s) => s.enabled);
   const [offUsername, setOffUsername] = useState<string | null>(null);
   const [showOffSetup, setShowOffSetup] = useState(false);
-  const [backupCreating, setBackupCreating] = useState(false);
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
   const [autoBackup, setAutoBackup] = useState(false);
   const [backupDirLabel, setBackupDirLabel] = useState('');
-  const [hasCustomPath, setHasCustomPath] = useState(false);
-  const [pickingDir, setPickingDir] = useState(false);
-  const [restoring, setRestoring] = useState(false);
-  const [howToUseExpanded, setHowToUseExpanded] = useState(false);
+  const [busy, setBusy] = useState<'backup' | 'restore' | 'folder' | null>(null);
 
-  useEffect(() => {
-    writeClient.loadCredentials().then((creds) => {
-      if (creds) setOffUsername(creds.username);
-    });
-
-    BackupService.getLastBackupTime().then(setLastBackupTime);
-    BackupService.isAutoBackupEnabled().then(setAutoBackup);
-    BackupService.getBackupUri().then((uri) => {
-      if (uri) {
-        const label = uri.startsWith('content://')
-          ? uri.split('%3A').pop()?.split('/')[0] || uri
-          : uri;
-        setBackupDirLabel(label);
-      }
-    });
-    BackupService.isBackupPathConfigured().then(setHasCustomPath);
+  const loadAccount = useCallback(() => {
+    writeClient
+      .loadCredentials()
+      .then((credentials) => setOffUsername(credentials?.username ?? null))
+      .catch(() => setOffUsername(null));
   }, []);
 
-  const handleOffSetupSuccess = () => {
-    setShowOffSetup(false);
-    writeClient.loadCredentials().then((creds) => {
-      if (creds) setOffUsername(creds.username);
-    });
-  };
+  const loadBackupState = useCallback(async () => {
+    try {
+      const [last, auto, uri] = await Promise.all([
+        BackupService.getLastBackupTime(),
+        BackupService.isAutoBackupEnabled(),
+        BackupService.getBackupUri(),
+      ]);
+      setLastBackupTime(last);
+      setAutoBackup(auto);
+      setBackupDirLabel(uri ? BackupService.directoryLabel(uri) : '');
+    } catch (error) {
+      console.error('Failed to load backup settings:', error);
+    }
+  }, []);
 
-  const handleLogout = () => {
+  // The tab stays mounted: reload on every visit, e.g. after logging in from the editor.
+  useFocusEffect(
+    useCallback(() => {
+      loadAccount();
+      void loadBackupState();
+    }, [loadAccount, loadBackupState])
+  );
+
+  const hasBackupFolder = backupDirLabel.length > 0;
+  const lastBackupText = lastBackupTime
+    ? t('settings.backupLast', {
+        date: new Date(lastBackupTime).toLocaleString(language === 'de' ? 'de-DE' : 'en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      })
+    : t('settings.backupNever');
+
+  const logout = () => {
     Alert.alert(t('settings.logoutConfirm'), t('settings.logoutConfirmMsg'), [
       { text: t('settings.cancel'), style: 'cancel' },
       {
         text: t('settings.logout'),
         style: 'destructive',
-        onPress: async () => {
-          await writeClient.deleteCredentials();
-          setOffUsername(null);
-        },
+        onPress: () =>
+          void writeClient
+            .deleteCredentials()
+            .then(() => setOffUsername(null))
+            .catch(() => Alert.alert(t('settings.offAccount'), t('backup.error.generic'))),
       },
     ]);
   };
 
-  const handleLanguageChange = (lang: SupportedLanguage) => {
-    setLanguage(lang);
+  const changeLanguage = (lang: SupportedLanguage) => {
+    void setLanguage(lang).catch(() => {});
   };
 
-  const handleCreateBackup = async () => {
-    if (!hasCustomPath) return;
-    setBackupCreating(true);
+  const pickFolder = async () => {
+    setBusy('folder');
     try {
-      const backupPathResult = await BackupService.createBackup();
-      const time = await BackupService.getLastBackupTime();
-      setLastBackupTime(time);
-      Alert.alert(t('settings.backup'), t('settings.backupSuccess', { path: backupPathResult }));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      Alert.alert(t('settings.backup'), message);
-    } finally {
-      setBackupCreating(false);
-    }
-  };
-
-  const handlePickDirectory = async () => {
-    setPickingDir(true);
-    try {
-      const dirName = await BackupService.pickBackupDirectory();
-      setBackupDirLabel(dirName);
-      setHasCustomPath(true);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      if (!message.includes('permission denied') && !message.includes('cancel')) {
-        Alert.alert(t('settings.backup'), message);
+      setBackupDirLabel(await BackupService.pickBackupDirectory());
+    } catch (error) {
+      if (!(error instanceof BackupError && error.code === 'permission-denied')) {
+        Alert.alert(t('settings.backup'), backupErrorText(error, t));
       }
     } finally {
-      setPickingDir(false);
+      setBusy(null);
     }
   };
 
-  const handleRestore = () => {
+  const createBackup = async () => {
+    setBusy('backup');
+    try {
+      await BackupService.createBackup();
+      await loadBackupState();
+      Alert.alert(t('settings.backup'), t('settings.backupDone'));
+    } catch (error) {
+      Alert.alert(t('settings.backup'), backupErrorText(error, t));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const restore = () => {
     Alert.alert(t('settings.restoreConfirm'), t('settings.restoreConfirmMsg'), [
       { text: t('settings.cancel'), style: 'cancel' },
       {
         text: t('settings.restoreBtn'),
         style: 'destructive',
         onPress: async () => {
-          setRestoring(true);
+          setBusy('restore');
           try {
             const file = await BackupService.pickRestoreFile();
             await BackupService.restoreFromUri(file.uri);
             Alert.alert(t('settings.restore'), t('settings.restoreSuccess'));
-          } catch (err) {
-            const message = err instanceof Error ? err.message : String(err);
-            if (!message.includes('cancel')) {
-              Alert.alert(t('settings.restore'), message);
+          } catch (error) {
+            if (!(error instanceof BackupError && error.code === 'cancelled')) {
+              Alert.alert(t('settings.restore'), backupErrorText(error, t));
             }
           } finally {
-            setRestoring(false);
+            await reloadStores().catch(() => {});
+            await loadBackupState();
+            setBusy(null);
           }
         },
       },
     ]);
   };
 
-  const handleAutoBackupToggle = async (enabled: boolean) => {
+  const toggleAutoBackup = async (enabled: boolean) => {
     setAutoBackup(enabled);
-    await BackupService.setAutoBackupEnabled(enabled);
+    try {
+      await BackupService.setAutoBackupEnabled(enabled);
+    } catch {
+      setAutoBackup(!enabled);
+    }
   };
 
-  const formatBackupDate = (iso: string | null): string => {
-    if (!iso) return t('settings.backupNever');
-    const date = new Date(iso);
-    return t('settings.backupLast', {
-      date: date.toLocaleDateString(language === 'de' ? 'de-DE' : 'en-US', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    });
+  const toggleAllergenWarning = async (enabled: boolean) => {
+    if (!(await useAllergenStore.getState().setEnabled(enabled))) {
+      Alert.alert(t('allergenWarning.setting'), t('allergenWarning.saveFailed'));
+    }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <Text style={styles.title}>{t('settings.title')}</Text>
-
-      <TouchableOpacity
-        style={styles.item}
-        onPress={() => setHowToUseExpanded(!howToUseExpanded)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.howToUseHeader}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.itemText}>{t('settings.howToUse')}</Text>
-            <Text style={styles.itemHint}>{t('settings.howToUseHint')}</Text>
-          </View>
-          <Ionicons
-            name={howToUseExpanded ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color="#757575"
+    <View style={styles.container}>
+      <PageTitle title={t('settings.title')} />
+      <ScrollView contentContainerStyle={styles.content}>
+        <Group title={t('settings.group.rating')}>
+          <ListRow
+            icon="options-outline"
+            title={t('settings.filter')}
+            description={
+              ruleCount === 1
+                ? t('settings.filterCountOne')
+                : t('settings.filterCount', { count: ruleCount })
+            }
+            onPress={() => router.push('/settings/filters')}
           />
-        </View>
-      </TouchableOpacity>
-
-      {howToUseExpanded && (
-        <View style={styles.howToUseContent}>
-          <Accordion
-            items={[
-              {
-                title: t('tab.scanner'),
-                content: <Text style={styles.howToUseText}>{t('howToUse.scanner')}</Text>,
-              },
-              {
-                title: t('catalog.title'),
-                content: <Text style={styles.howToUseText}>{t('howToUse.catalog')}</Text>,
-              },
-              {
-                title: t('tab.favorites'),
-                content: <Text style={styles.howToUseText}>{t('howToUse.favorites')}</Text>,
-              },
-              {
-                title: t('edit.title'),
-                content: <Text style={styles.howToUseText}>{t('howToUse.edit')}</Text>,
-              },
-              {
-                title: t('settings.backup'),
-                content: <Text style={styles.howToUseText}>{t('howToUse.backup')}</Text>,
-              },
-            ]}
-          />
-        </View>
-      )}
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('settings.offAccount')}</Text>
-        {offUsername ? (
-          <View style={styles.accountInfo}>
-            <View style={styles.accountRow}>
-              <View style={styles.statusDot} />
-              <Text style={styles.accountText}>
-                {t('settings.loggedInAs')} {offUsername}
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-              <Text style={styles.logoutBtnText}>{t('settings.logout')}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.accountInfo}>
-            <Text style={styles.accountHint}>{t('settings.loginPrompt')}</Text>
-            <TouchableOpacity style={styles.loginBtn} onPress={() => setShowOffSetup(true)}>
-              <Text style={styles.loginBtnText}>{t('settings.login')}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('settings.language')}</Text>
-        <View style={styles.languageRow}>
-          {LANGUAGES.map((lang) => (
-            <TouchableOpacity
-              key={lang.code}
-              style={[styles.languageChip, language === lang.code && styles.languageChipActive]}
-              onPress={() => handleLanguageChange(lang.code)}
-            >
-              <Ionicons
-                name={language === lang.code ? 'radio-button-on' : 'radio-button-off'}
-                size={18}
-                color={language === lang.code ? '#4CAF50' : '#757575'}
+          <View style={styles.divider} />
+          <ListRow
+            icon="warning-outline"
+            title={t('allergenWarning.setting')}
+            description={
+              allergenStatus === 'error'
+                ? t('allergenProfile.loadFailed')
+                : t('allergenWarning.settingHint')
+            }
+            end={
+              <Switch
+                value={allergenWarning}
+                onValueChange={(value) => void toggleAllergenWarning(value)}
+                disabled={allergenStatus !== 'ready'}
+                trackColor={{ false: colors.borderStrong, true: colors.accentSubtle }}
+                thumbColor={allergenWarning ? colors.accent : colors.textMuted}
+                accessibilityLabel={t('allergenWarning.setting')}
+                testID="allergen-warning-switch"
               />
-              <Text
-                style={[
-                  styles.languageChipText,
-                  language === lang.code && styles.languageChipTextActive,
-                ]}
-              >
-                {lang.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-
-      <TouchableOpacity style={styles.item} onPress={() => router.push('/settings/filters')}>
-        <Text style={styles.itemText}>{t('settings.filter')}</Text>
-        <Text style={styles.itemHint}>{t('settings.filterHint')}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.item} onPress={() => router.push('/settings/api-key')}>
-        <Text style={styles.itemText}>{t('settings.deepl')}</Text>
-        <Text style={styles.itemHint}>{t('settings.deeplHint')}</Text>
-      </TouchableOpacity>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          <Ionicons name="cloud-download-outline" size={16} color="#FFFFFF" />{' '}
-          {t('settings.backup')}
-        </Text>
-        <Text style={styles.accountHint}>{t('settings.backupHint')}</Text>
-
-        <View style={styles.backupPathRow}>
-          <View style={styles.backupPathInfo}>
-            <Text style={styles.backupPathLabel}>{t('settings.backupPath')}</Text>
-            <Text style={styles.backupPathValue} numberOfLines={1}>
-              {hasCustomPath ? backupDirLabel : t('settings.backupPathNone')}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.pathChangeBtn, pickingDir && styles.pathChangeBtnDisabled]}
-            onPress={handlePickDirectory}
-            disabled={pickingDir}
-          >
-            <Ionicons name="folder-open-outline" size={14} color="#4CAF50" />
-            <Text style={styles.pathChangeBtnText}>
-              {pickingDir ? t('settings.backupPicking') : t('settings.backupPathChoose')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {Platform.OS === 'ios' && (
-          <Text style={styles.backupIosHint}>{t('settings.backupIosHint')}</Text>
-        )}
-
-        {!hasCustomPath && (
-          <Text style={styles.backupNoPathHint}>{t('settings.backupNoPathHint')}</Text>
-        )}
-
-        <View style={styles.backupRow}>
-          <View style={styles.backupInfo}>
-            <Ionicons
-              name={lastBackupTime ? 'checkmark-circle' : 'time-outline'}
-              size={16}
-              color={lastBackupTime ? '#4CAF50' : '#757575'}
-            />
-            <Text style={styles.backupDateText}>{formatBackupDate(lastBackupTime)}</Text>
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.backupBtn,
-              (!hasCustomPath || backupCreating) && styles.backupBtnDisabled,
-            ]}
-            onPress={handleCreateBackup}
-            disabled={!hasCustomPath || backupCreating}
-          >
-            <Ionicons
-              name={backupCreating ? 'hourglass-outline' : 'save-outline'}
-              size={16}
-              color="#FFFFFF"
-            />
-            <Text style={styles.backupBtnText}>
-              {backupCreating ? t('settings.backupCreating') : t('settings.backupCreate')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.restoreRow}>
-          <View style={styles.backupInfo}>
-            <Ionicons name="refresh-outline" size={16} color="#FF9800" />
-            <Text style={styles.restoreText}>{t('settings.restoreHint')}</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.restoreBtn, restoring && styles.backupBtnDisabled]}
-            onPress={handleRestore}
-            disabled={restoring}
-          >
-            <Ionicons
-              name={restoring ? 'hourglass-outline' : 'folder-open-outline'}
-              size={16}
-              color="#FFFFFF"
-            />
-            <Text style={styles.restoreBtnText}>
-              {restoring ? '...' : t('settings.restoreBtn')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.autoBackupRow}>
-          <View style={styles.autoBackupInfo}>
-            <Text style={styles.autoBackupLabel}>{t('settings.backupAuto')}</Text>
-            <Text style={styles.autoBackupHint}>{t('settings.backupAutoHint')}</Text>
-          </View>
-          <Switch
-            value={autoBackup}
-            onValueChange={handleAutoBackupToggle}
-            trackColor={{ false: '#2E2E2E', true: '#2E5A2E' }}
-            thumbColor={autoBackup ? '#4CAF50' : '#757575'}
-            disabled={!hasCustomPath}
+            }
           />
-        </View>
-      </View>
+          {allergenStatus === 'error' && (
+            <>
+              <View style={styles.divider} />
+              <ListRow
+                icon="refresh"
+                title={t('common.retry')}
+                onPress={() => void useAllergenStore.getState().loadProfile()}
+                testID="allergen-retry"
+              />
+            </>
+          )}
+          {allergenWarning && (
+            <>
+              <View style={styles.divider} />
+              <ListRow
+                icon="list-outline"
+                title={t('allergenProfile.title')}
+                description={
+                  allergenProfile.length > 0
+                    ? allergenProfile.map((allergen) => allergenName(allergen, t)).join(', ')
+                    : t('allergenProfile.none')
+                }
+                onPress={() => router.push('/settings/allergens')}
+              />
+            </>
+          )}
+        </Group>
 
-      <TouchableOpacity style={styles.item} onPress={() => router.push('/settings/about')}>
-        <Text style={styles.itemText}>{t('settings.about')}</Text>
-        <Text style={styles.itemHint}>{t('settings.aboutHint')}</Text>
-      </TouchableOpacity>
+        <Group title={t('settings.language')}>
+          <View style={styles.chips}>
+            {LANGUAGES.map((lang) => (
+              <Chip
+                key={lang.code}
+                label={lang.label}
+                selected={language === lang.code}
+                onPress={() => changeLanguage(lang.code)}
+              />
+            ))}
+          </View>
+          <View style={styles.divider} />
+          <ListRow
+            icon="language-outline"
+            title={t('settings.translation')}
+            description={t('settings.translationHint')}
+            onPress={() => router.push('/settings/api-key')}
+          />
+        </Group>
+
+        <Group title={t('settings.offAccount')}>
+          <ListRow
+            icon="person-circle-outline"
+            title={
+              offUsername
+                ? t('settings.loggedInAsName', { name: offUsername })
+                : t('settings.login')
+            }
+            description={
+              offUsername ? t('off.targetHint', { host: WRITE_HOST }) : t('settings.loginPrompt')
+            }
+            onPress={offUsername ? undefined : () => setShowOffSetup(true)}
+            end={
+              offUsername ? (
+                <Button title={t('settings.logout')} variant="ghost" onPress={logout} />
+              ) : undefined
+            }
+          />
+        </Group>
+
+        <Group title={t('settings.backup')}>
+          <ListRow
+            icon="folder-outline"
+            title={t('settings.backupPath')}
+            description={
+              Platform.OS !== 'android'
+                ? t('settings.backupIosHint')
+                : hasBackupFolder
+                  ? backupDirLabel
+                  : t('settings.backupPathNone')
+            }
+            onPress={Platform.OS === 'android' ? () => void pickFolder() : undefined}
+          />
+          <View style={styles.divider} />
+          <View style={styles.backupActions}>
+            <Text style={styles.muted}>{lastBackupText}</Text>
+            <Button
+              title={t('settings.backupCreate')}
+              icon="save-outline"
+              onPress={() => void createBackup()}
+              loading={busy === 'backup'}
+              disabled={!hasBackupFolder || busy !== null}
+            />
+          </View>
+          <View style={styles.divider} />
+          <ListRow
+            icon="time-outline"
+            title={t('settings.backupAuto')}
+            description={t('settings.backupAutoHint')}
+            end={
+              <Switch
+                value={autoBackup}
+                onValueChange={(value) => void toggleAutoBackup(value)}
+                disabled={!hasBackupFolder}
+                trackColor={{ false: colors.borderStrong, true: colors.accentSubtle }}
+                thumbColor={autoBackup ? colors.accent : colors.textMuted}
+                accessibilityLabel={t('settings.backupAuto')}
+              />
+            }
+          />
+          <View style={styles.divider} />
+          <View style={styles.backupActions}>
+            <Text style={styles.muted}>{t('settings.restoreHint')}</Text>
+            <Button
+              title={t('settings.restoreBtn')}
+              icon="refresh-outline"
+              variant="danger"
+              onPress={restore}
+              loading={busy === 'restore'}
+              disabled={busy !== null}
+            />
+          </View>
+        </Group>
+
+        <Group title={t('settings.group.help')}>
+          <ListRow
+            icon="help-circle-outline"
+            title={t('settings.howToUse')}
+            description={t('settings.howToUseHint')}
+            onPress={() => router.push('/settings/about')}
+          />
+        </Group>
+      </ScrollView>
 
       <OffAccountSetup
         visible={showOffSetup}
-        onSuccess={handleOffSetupSuccess}
+        onSuccess={() => {
+          setShowOffSetup(false);
+          loadAccount();
+        }}
         onCancel={() => setShowOffSetup(false)}
       />
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0d0d0d',
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: spacing.lg, gap: spacing.xl, paddingBottom: spacing.xxl },
+  group: { gap: spacing.xs },
+  groupBody: { borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.surface },
+  chips: { flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginLeft: spacing.lg,
   },
-  scrollContent: {
-    paddingTop: 32,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 24,
-  },
-  section: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-  },
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  accountInfo: {
-    gap: 12,
-  },
-  accountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4CAF50',
-  },
-  accountText: {
-    color: '#BDBDBD',
-    fontSize: 14,
-  },
-  accountHint: {
-    color: '#9E9E9E',
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  loginBtn: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    alignSelf: 'flex-start',
-  },
-  loginBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  logoutBtn: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#F44336',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    alignSelf: 'flex-start',
-  },
-  logoutBtnText: {
-    color: '#F44336',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  languageRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  languageChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#121212',
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-  },
-  languageChipActive: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#1a2e1a',
-  },
-  languageChipText: {
-    color: '#9E9E9E',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  languageChipTextActive: {
-    color: '#4CAF50',
-  },
-  item: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-  },
-  itemText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  itemHint: {
-    color: '#9E9E9E',
-    fontSize: 13,
-  },
-  backupRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  backupPathRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  backupPathInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-  backupPathLabel: {
-    color: '#9E9E9E',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  backupPathValue: {
-    color: '#BDBDBD',
-    fontSize: 12,
-    fontFamily: 'monospace',
-  },
-  pathChangeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#4CAF50',
-  },
-  pathChangeBtnDisabled: {
-    borderColor: '#2E5A2E',
-  },
-  pathChangeBtnText: {
-    color: '#4CAF50',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  backupIosHint: {
-    color: '#9E9E9E',
-    fontSize: 11,
-    marginBottom: 14,
-    fontStyle: 'italic',
-  },
-  backupNoPathHint: {
-    color: '#F44336',
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 14,
-  },
-  restoreRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-    borderTopWidth: 1,
-    borderTopColor: '#2A2A2A',
-    paddingTop: 12,
-  },
-  restoreText: {
-    color: '#BDBDBD',
-    fontSize: 11,
-    flex: 1,
-    marginLeft: 6,
-  },
-  restoreBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FF9800',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  restoreBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  backupInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flex: 1,
-  },
-  backupDateText: {
-    color: '#BDBDBD',
-    fontSize: 13,
-  },
-  backupBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  backupBtnDisabled: {
-    backgroundColor: '#2E5A2E',
-  },
-  backupBtnText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  autoBackupRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#2A2A2A',
-    paddingTop: 14,
-  },
-  autoBackupInfo: {
-    flex: 1,
-  },
-  autoBackupLabel: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  autoBackupHint: {
-    color: '#9E9E9E',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  howToUseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  howToUseContent: {
-    backgroundColor: '#1A1A1A',
-    borderRadius: 8,
-    padding: 8,
-    marginTop: -6,
-    marginBottom: 12,
-    marginHorizontal: 4,
-  },
-  howToUseText: {
-    color: '#BDBDBD',
-    fontSize: 13,
-    lineHeight: 20,
-  },
+  backupActions: { padding: spacing.lg, gap: spacing.md },
+  muted: { ...typography.caption, color: colors.textMuted, flexShrink: 1 },
 });

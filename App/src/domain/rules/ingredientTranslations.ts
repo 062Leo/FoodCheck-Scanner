@@ -3970,7 +3970,14 @@ function parseTranslationJson(json: string): Record<string, string> {
   try {
     const parsed = JSON.parse(json) as unknown;
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, string>;
+      // Only non-empty strings are usable terms; anything else would match everywhere
+      // or crash the matcher.
+      return Object.fromEntries(
+        Object.entries(parsed as Record<string, unknown>).filter(
+          (entry): entry is [string, string] =>
+            typeof entry[1] === 'string' && entry[1].trim().length > 1
+        )
+      );
     }
   } catch {
     // ignore parse errors
@@ -3997,19 +4004,25 @@ export function resolveIngredientKey(userInput: string): string {
   const normalized = userInput.trim();
   if (!normalized) return normalized;
 
-  const lower = normalized.toLowerCase();
+  return getKeyIndex().get(normalized.toLowerCase()) ?? userInput;
+}
 
+let keyIndex: Map<string, string> | null = null;
+
+/**
+ * Lower-cased key/translation → English key, built once. Earlier dictionary entries
+ * win, exactly like a linear search in declaration order.
+ */
+function getKeyIndex(): Map<string, string> {
+  if (keyIndex) return keyIndex;
+  const index = new Map<string, string>();
   for (const [englishKey, translations] of Object.entries(T)) {
-    if (englishKey.toLowerCase() === lower) {
-      return englishKey;
-    }
-    for (const lang of SEARCH_LANGUAGES) {
-      const translation = translations[lang];
-      if (translation && translation.toLowerCase() === lower) {
-        return englishKey;
-      }
+    const candidates = [englishKey, ...SEARCH_LANGUAGES.map((lang) => translations[lang])];
+    for (const candidate of candidates) {
+      const lower = candidate?.toLowerCase();
+      if (lower && !index.has(lower)) index.set(lower, englishKey);
     }
   }
-
-  return userInput;
+  keyIndex = index;
+  return index;
 }

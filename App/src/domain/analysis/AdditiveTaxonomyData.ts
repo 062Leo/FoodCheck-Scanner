@@ -1082,24 +1082,24 @@ export const ADDITIVE_TAXONOMY: AdditiveInfo[] = [
   },
   {
     eNumber: 'E1412',
-    name: 'Dinatriumphosphatstärke',
+    name: 'Distärkephosphat',
     functionClass: 'Stabilisator',
     riskLevel: 'low',
-    aliases: ['Dinatriumphosphatstärke', 'E 1412'],
+    aliases: ['Distärkephosphat', 'Distarch Phosphate', 'E 1412'],
   },
   {
     eNumber: 'E1414',
     name: 'Acetyliertes Distärkephosphat',
     functionClass: 'Verdickungsmittel',
     riskLevel: 'low',
-    aliases: ['Distärkephosphat', 'E 1414'],
+    aliases: ['Acetyliertes Distärkephosphat', 'Acetylated Distarch Phosphate', 'E 1414'],
   },
   {
     eNumber: 'E1422',
     name: 'Acetyliertes Distärkeadipat',
     functionClass: 'Verdickungsmittel',
     riskLevel: 'low',
-    aliases: ['Distärkeadipat', 'E 1422'],
+    aliases: ['Acetyliertes Distärkeadipat', 'Acetylated Distarch Adipate', 'E 1422'],
   },
   {
     eNumber: 'E1442',

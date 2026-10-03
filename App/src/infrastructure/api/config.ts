@@ -1,6 +1,5 @@
 export const APP_NAME = 'FoodCheck';
 export const APP_VERSION = '1.0';
-export const APP_EMAIL = 'foodcheck@example.com';
 
 /**
  * Set to `true` during development/testing to use the OFF staging environment
@@ -18,7 +17,33 @@ const PRODUCTION_BASE_URL = 'https://world.openfoodfacts.org';
 
 export const BASE_URL = USE_STAGING ? STAGING_BASE_URL : PRODUCTION_BASE_URL;
 
-export const USER_AGENT = `${APP_NAME}/${APP_VERSION} (${APP_EMAIL})`;
+export type OffEnvironment = 'production' | 'staging';
+
+declare const __DEV__: boolean | undefined;
+
+/**
+ * Where contributions (product data, photos for cloud OCR) are written.
+ * Development builds write to the staging server so testing never changes real
+ * product data; release builds write to production. EXPO_PUBLIC_OFF_WRITE_ENV
+ * ('staging' | 'production') overrides this.
+ */
+export function resolveWriteEnvironment(
+  override: string | undefined = process.env.EXPO_PUBLIC_OFF_WRITE_ENV,
+  isDev: boolean = typeof __DEV__ !== 'undefined' && Boolean(__DEV__)
+): OffEnvironment {
+  if (override === 'production' || override === 'staging') return override;
+  return isDev ? 'staging' : 'production';
+}
+
+export const WRITE_ENV: OffEnvironment = resolveWriteEnvironment();
+export const WRITE_BASE_URL = WRITE_ENV === 'staging' ? STAGING_BASE_URL : PRODUCTION_BASE_URL;
+export const WRITE_IMAGES_URL =
+  WRITE_ENV === 'staging' ? 'https://images.openfoodfacts.net' : 'https://images.openfoodfacts.org';
+/** Host name shown to the user before anything is sent. */
+export const WRITE_HOST = WRITE_BASE_URL.replace(/^https?:\/\//, '');
+
+/** Identifies the app to Open Food Facts; deliberately without a contact address. */
+export const USER_AGENT = `${APP_NAME}/${APP_VERSION}`;
 
 /** HTTP Basic Auth header value for staging (off:off base64-encoded). */
 export const STAGING_AUTH = 'Basic b2ZmOm9mZg==';

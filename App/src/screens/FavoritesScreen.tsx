@@ -1,123 +1,69 @@
-import { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { useTranslation } from '../i18n/useTranslation';
 import { useCatalogStore } from '../store/catalogStore';
 import { ProductCard } from '../components/ProductCard';
-import type { ProductRecord } from '../types/Product';
-import { useTranslation } from '../i18n/useTranslation';
+import { Toast } from '../components/Toast';
+import { useProductListActions } from '../features/catalog/useProductListActions';
+import { EmptyState, PageTitle } from '../ui/components';
+import { colors, spacing } from '../ui/theme';
 
 export default function FavoritesScreen() {
-  const { t } = useTranslation();
-  const router = useRouter();
-  const catalogStore = useCatalogStore();
-  const [isLoading, setIsLoading] = useState(true);
+  const { t, language } = useTranslation();
+  const favorites = useCatalogStore((s) => s.favorites);
+  const loadAll = useCatalogStore((s) => s.loadAll);
+  const [loaded, setLoaded] = useState(favorites.length > 0);
+  const actions = useProductListActions(t);
 
-  // Load all products on mount to populate favorites
-  useEffect(() => {
-    (async () => {
-      try {
-        setIsLoading(true);
-        await catalogStore.loadAll();
-      } catch (err) {
-        console.error('Failed to load products:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, []);
-
-  const handleSelectProduct = useCallback(
-    (product: ProductRecord) => {
-      // Navigate to ProductScreen with cached raw_json
-      if (product.raw_json) {
-        try {
-          const parsedJson = JSON.parse(product.raw_json);
-          // Pass the product data and indicate it's from cache
-          router.push({
-            pathname: '/result',
-            params: {
-              ean: product.ean,
-              fromCache: 'true',
-              cachedData: JSON.stringify(parsedJson),
-            },
-          });
-        } catch (err) {
-          console.error('Failed to parse cached data:', err);
-          // Fallback to normal scan
-          router.push({
-            pathname: '/result',
-            params: { ean: product.ean },
-          });
-        }
-      } else {
-        // Fallback if no cache
-        router.push({
-          pathname: '/result',
-          params: { ean: product.ean },
-        });
-      }
-    },
-    [router]
+  useFocusEffect(
+    useCallback(() => {
+      void loadAll().finally(() => setLoaded(true));
+    }, [loadAll])
   );
-
-  const handleDeleteProduct = useCallback(async (ean: string) => {
-    try {
-      await catalogStore.deleteProduct(ean);
-    } catch (err) {
-      console.error('Failed to delete product:', err);
-    }
-  }, []);
-
-  const handleToggleFavorite = useCallback(async (productId: number) => {
-    try {
-      await catalogStore.toggleFavorite(productId);
-    } catch (err) {
-      console.error('Failed to toggle favorite:', err);
-    }
-  }, []);
-
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('favorites.title')}</Text>
-      </View>
-
-      {/* Empty State */}
-      {catalogStore.favorites.length === 0 && (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{t('favorites.empty')}</Text>
-        </View>
-      )}
-
-      {/* Favorites List */}
-      {catalogStore.favorites.length > 0 && (
-        <FlatList
-          data={catalogStore.favorites}
-          extraData={catalogStore.favorites.length}
-          keyExtractor={(item) => item.ean}
-          renderItem={({ item }) => (
-            <ProductCard
-              product={item}
-              onPress={() => handleSelectProduct(item)}
-              onDelete={handleDeleteProduct}
-              onToggleFavorite={handleToggleFavorite}
-              isFavorite={true}
+      <PageTitle title={t('favorites.title')} />
+      <FlatList
+        data={favorites}
+        keyExtractor={(item) => item.ean}
+        renderItem={({ item }) => (
+          <ProductCard
+            product={item}
+            isFavorite
+            t={t}
+            language={language}
+            onOpen={actions.open}
+            onToggleFavorite={actions.onToggleFavorite}
+            onMore={actions.more}
+          />
+        )}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListEmptyComponent={
+          loaded ? (
+            <EmptyState
+              icon="star-outline"
+              title={t('favorites.emptyTitle')}
+              message={t('favorites.empty')}
             />
-          )}
-          scrollEnabled
-          nestedScrollEnabled
-          contentContainerStyle={styles.listContent}
+          ) : (
+            <ActivityIndicator style={styles.loader} color={colors.accent} />
+          )
+        }
+        contentContainerStyle={styles.list}
+      />
+      {actions.toast && (
+        <Toast
+          key={actions.toast.id}
+          message={actions.toast.message}
+          type={actions.toast.type}
+          action={
+            actions.toast.undo
+              ? { label: t('common.undo'), onPress: actions.toast.undo }
+              : undefined
+          }
+          onDismiss={actions.clearToast}
         />
       )}
     </View>
@@ -125,37 +71,8 @@ export default function FavoritesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0d0d0d',
-  },
-  header: {
-    paddingTop: 32,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContent: {
-    paddingVertical: 8,
-  },
+  container: { flex: 1, backgroundColor: colors.bg },
+  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1 },
+  separator: { height: spacing.sm },
+  loader: { marginTop: spacing.xxl },
 });

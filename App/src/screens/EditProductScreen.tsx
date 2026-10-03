@@ -1,1049 +1,518 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
-  ScrollView,
-  Modal,
-  FlatList,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
-import { ProductRepository } from '../infrastructure/db/ProductRepository';
-import { useCatalogStore } from '../store/catalogStore';
-import { OpenFoodFactsWriteClient } from '../infrastructure/api/OpenFoodFactsWriteClient';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation, type TranslateFn } from '../i18n/useTranslation';
+import { INGREDIENT_LANGUAGES, languageLabel } from '../i18n/languageLabel';
+import type { TranslationKey } from '../i18n/translations';
+import {
+  NUTRIENT_FIELDS,
+  payloadSummary,
+  type FormErrorKey,
+  type NutrientField,
+} from '../domain/product/productForm';
+import { parseNutritionLabel } from '../domain/ocr/nutritionLabel';
+import { useProductEditForm } from '../features/edit/useProductEditForm';
+import { ALL_LANGUAGES, LanguagePicker } from '../features/edit/LanguagePicker';
+import { TranslationRouter } from '../infrastructure/translation/TranslationRouter';
+import { UploadError } from '../infrastructure/api/OpenFoodFactsWriteClient';
+import { WRITE_ENV, WRITE_HOST } from '../infrastructure/api/config';
+import { OcrCameraSheet } from '../components/OcrCameraSheet';
 import { OffAccountSetup } from '../components/OffAccountSetup';
 import { Toast } from '../components/Toast';
-import { Ionicons } from '@expo/vector-icons';
-import { OcrService } from '../infrastructure/ocr/OcrService';
-import { OcrCameraSheet } from '../components/OcrCameraSheet';
-import type { ContributeFormData } from '../types/ContributeFormData';
-import { Accordion } from '../components/Accordion';
-import type { NovaScore, ProductRecord } from '../types/Product';
-import { DeepLClient } from '../infrastructure/translation/DeepLClient';
-import { TranslationRouter } from '../infrastructure/translation/TranslationRouter';
-import { useTranslation } from '../i18n/useTranslation';
+import { Button, Card, Chip, IconButton, ScreenHeader, SectionTitle } from '../ui/components';
+import { FormField } from '../ui/FormField';
+import { colors, spacing, typography } from '../ui/theme';
 
-const repo = new ProductRepository();
-const writeClient = new OpenFoodFactsWriteClient();
-const deepLClient = new DeepLClient();
 const translationRouter = new TranslationRouter();
 
-const OFF_INGREDIENTS_LANGS = ['de', 'en', 'fr', 'it', 'es', 'nl', 'pt', 'pl'] as const;
+const NUTRIENT_LABELS: Record<NutrientField, TranslationKey> = {
+  energyKcal100g: 'edit.field.energy',
+  fat100g: 'edit.field.fat',
+  saturatedFat100g: 'edit.field.saturatedFat',
+  carbohydrates100g: 'edit.field.carbs',
+  sugars100g: 'edit.field.sugar',
+  fiber100g: 'edit.field.fiber',
+  proteins100g: 'edit.field.protein',
+  salt100g: 'edit.field.salt',
+};
 
-const ALL_LANGS_SENTINEL = '__all__';
+type OcrTarget = { mode: 'ingredients'; lang: string } | { mode: 'nutriments' };
+type Picker = { kind: 'add' } | { kind: 'translate'; from: string } | null;
+type ToastState = { message: string; type: 'success' | 'error' | 'info' } | null;
+
+function errorText(error: FormErrorKey | undefined, t: TranslateFn): string | undefined {
+  return error ? t(`edit.error.${error}`) : undefined;
+}
+
+function uploadFailureReason(error: unknown, t: TranslateFn): string {
+  if (error instanceof UploadError) {
+    if (error.code === 'network') return t('upload.reason.network');
+    if (error.code === 'invalid-credentials' || error.code === 'no-credentials') {
+      return t('upload.reason.credentials');
+    }
+  }
+  return t('upload.reason.rejected');
+}
 
 export default function EditProductScreen() {
   const router = useRouter();
-  const { ean } = useLocalSearchParams<{ ean: string }>();
-  const catalogStore = useCatalogStore();
-  const { t } = useTranslation();
-
-  const [cameraTarget, setCameraTarget] = useState<{
-    mode: 'ingredients' | 'nutriments';
-    lang?: string;
-  } | null>(null);
-
-  const [name, setName] = useState('');
-  const [brand, setBrand] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [category, setCategory] = useState('');
-  const [ingredientsText, setIngredientsText] = useState('');
-  const [ingredientsTextByLang, setIngredientsTextByLang] = useState<Record<string, string>>({});
-  const [novaScore, setNovaScore] = useState('');
-  const [allergensTags, setAllergensTags] = useState('');
-  const [traces, setTraces] = useState('');
-  const [origins, setOrigins] = useState('');
-  const [manufacturingPlaces, setManufacturingPlaces] = useState('');
-  const [stores, setStores] = useState('');
-  const [servingSize, setServingSize] = useState('');
-
-  const [energyKcal100g, setEnergy] = useState('');
-  const [fat100g, setFat] = useState('');
-  const [saturatedFat100g, setSatFat] = useState('');
-  const [carbohydrates100g, setCarbs] = useState('');
-  const [sugars100g, setSugars] = useState('');
-  const [fiber100g, setFiber] = useState('');
-  const [proteins100g, setProteins] = useState('');
-  const [salt100g, setSalt] = useState('');
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info');
-  const [showOffSetup, setShowOffSetup] = useState(false);
-  const [showLangPicker, setShowLangPicker] = useState(false);
-  const [translateSourceLang, setTranslateSourceLang] = useState<string | null>(null);
-
-  const initialSnapshotRef = useRef<string | null>(null);
-  const didInitialLoadRef = useRef(false);
-
-  const currentSnapshot = [
-    name,
-    brand,
-    quantity,
-    category,
-    ingredientsText,
-    JSON.stringify(ingredientsTextByLang),
-    novaScore,
-    allergensTags,
-    traces,
-    origins,
-    manufacturingPlaces,
-    stores,
-    servingSize,
-    energyKcal100g,
-    fat100g,
-    saturatedFat100g,
-    carbohydrates100g,
-    sugars100g,
-    fiber100g,
-    proteins100g,
-    salt100g,
-  ].join('|');
-
-  const isDirty =
-    !isLoading &&
-    initialSnapshotRef.current !== null &&
-    currentSnapshot !== initialSnapshotRef.current;
-
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const { t, language } = useTranslation();
+  const params = useLocalSearchParams<{ ean: string; then?: string }>();
+  const ean = params.ean;
+  const form = useProductEditForm(ean);
+  const { values, errors, busy } = form;
 
+  const [ocrTarget, setOcrTarget] = useState<OcrTarget | null>(null);
+  const [picker, setPicker] = useState<Picker>(null);
+  const [translating, setTranslating] = useState(false);
+  const [showAccountSetup, setShowAccountSetup] = useState(false);
+  const [toast, setToast] = useState<ToastState>(null);
+  const leavingRef = useRef(false);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // An upload that finishes after the screen was closed must not navigate anymore.
   useEffect(() => {
-    if (!isDirty) return;
+    leavingRef.current = false;
+    return () => {
+      leavingRef.current = true;
+      clearTimeout(leaveTimer.current);
+    };
+  }, []);
 
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      e.preventDefault();
-
+  // Ask before leaving with unsaved changes.
+  useEffect(() => {
+    if (!form.isDirty) return;
+    return navigation.addListener('beforeRemove', (event) => {
+      if (leavingRef.current) return;
+      event.preventDefault();
       Alert.alert(t('edit.unsavedTitle'), t('edit.unsavedMsg'), [
         { text: t('edit.cancel'), style: 'cancel' },
         {
           text: t('edit.discard'),
           style: 'destructive',
-          onPress: () => navigation.dispatch(e.data.action),
+          onPress: () => navigation.dispatch(event.data.action),
         },
       ]);
     });
+  }, [form.isDirty, navigation, t]);
 
-    return unsubscribe;
-  }, [isDirty, navigation]);
-
-  useEffect(() => {
-    if (!isLoading && !didInitialLoadRef.current && ean) {
-      didInitialLoadRef.current = true;
-      initialSnapshotRef.current = currentSnapshot;
+  // Leaves once: a save during the upload's success toast must not navigate a second time.
+  const leave = useCallback(() => {
+    if (leavingRef.current) return;
+    clearTimeout(leaveTimer.current);
+    leavingRef.current = true;
+    if (params.then === 'show' || !router.canGoBack()) {
+      router.replace({ pathname: '/result', params: { ean, source: 'recent' } });
+    } else {
+      router.back();
     }
-  }, [isLoading, ean, currentSnapshot]);
+  }, [ean, params.then, router]);
 
-  useEffect(() => {
-    didInitialLoadRef.current = false;
-    initialSnapshotRef.current = null;
-  }, [ean]);
+  const languages = useMemo(() => Object.keys(values?.ingredients ?? {}), [values?.ingredients]);
+  const missingLanguages = INGREDIENT_LANGUAGES.filter((lang) => !languages.includes(lang));
 
-  useEffect(() => {
-    if (ean) {
-      repo
-        .findByEan(ean)
-        .then(async (product) => {
-          if (product) {
-            setName(product.name || '');
-            setBrand(product.brands || '');
-            setIngredientsText(product.ingredients || '');
-            setNovaScore(product.nova_score ? String(product.nova_score) : '');
+  const onSave = async () => {
+    const result = await form.save();
+    if (result.ok) {
+      leave();
+    } else if (result.reason === 'invalid') {
+      setToast({ message: t('edit.errors.fix'), type: 'error' });
+    } else {
+      setToast({ message: t('edit.saveFailed'), type: 'error' });
+    }
+  };
 
-            if (product.raw_json) {
-              try {
-                const parsed = JSON.parse(product.raw_json);
-                const p = parsed.product || parsed;
-                setCategory(p.categories || '');
-                setQuantity(p.quantity || '');
-                setServingSize(p.servingSize || p.serving_size || '');
-                setOrigins(p.origins || '');
-                setManufacturingPlaces(p.manufacturingPlaces || p.manufacturing_places || '');
-                setStores(p.stores || '');
-                setTraces(p.traces || '');
+  const onUpload = async () => {
+    if (!values) return;
+    if (Object.keys(form.offPayload).length === 0) {
+      // Clearing a value is kept on the device; OFF only receives values.
+      const message = form.hasChanges ? t('upload.onlyCleared') : t('upload.nothingChanged');
+      setToast({ message, type: 'info' });
+      return;
+    }
+    const check = await form.prepareUpload();
+    if (!check.ok) {
+      if (check.reason === 'needs-account') setShowAccountSetup(true);
+      else if (check.reason === 'invalid')
+        setToast({ message: t('edit.errors.fix'), type: 'error' });
+      return;
+    }
 
-                const allergens = p.allergensTags ?? p.allergens_tags;
-                setAllergensTags(
-                  Array.isArray(allergens)
-                    ? allergens.join(', ')
-                    : typeof allergens === 'string'
-                      ? allergens
-                      : ''
-                );
+    const fields = payloadSummary(form.offPayload).map((part) => {
+      if (part.startsWith('ingredients:')) {
+        return `• ${t('upload.field.ingredients', { langs: part.split(':')[1] })}`;
+      }
+      return `• ${t(`upload.field.${part}` as TranslationKey)}`;
+    });
+    const body = [
+      t('upload.confirmBody', { host: WRITE_HOST, fields: fields.join('\n') }),
+      WRITE_ENV === 'staging' ? t('upload.confirmStaging') : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
 
-                const langTexts: Record<string, string> = {};
-                if (p.ingredientsTextByLang && typeof p.ingredientsTextByLang === 'object') {
-                  Object.entries(p.ingredientsTextByLang as Record<string, unknown>).forEach(
-                    ([lang, text]) => {
-                      if (typeof text === 'string' && text.length > 0) {
-                        langTexts[lang] = text;
-                      }
-                    }
-                  );
-                }
-                Object.entries(p).forEach(([key, value]) => {
-                  if (
-                    key.startsWith('ingredients_text_') &&
-                    typeof value === 'string' &&
-                    value.length > 0
-                  ) {
-                    const lang = key.replace('ingredients_text_', '');
-                    if (!langTexts[lang]) langTexts[lang] = value;
-                  }
-                });
-                if (Object.keys(langTexts).length > 0) {
-                  setIngredientsTextByLang(langTexts);
-                }
-
-                const n = p.nutriments;
-                if (n) {
-                  setEnergy(readN(n, 'energyKcal100g', 'energy-kcal_100g'));
-                  setFat(readN(n, 'fat100g', 'fat_100g'));
-                  setSatFat(readN(n, 'saturatedFat100g', 'saturated-fat_100g'));
-                  setCarbs(readN(n, 'carbohydrates100g', 'carbohydrates_100g'));
-                  setSugars(readN(n, 'sugars100g', 'sugars_100g'));
-                  setFiber(readN(n, 'fiber100g', 'fiber_100g'));
-                  setProteins(readN(n, 'proteins100g', 'proteins_100g'));
-                  setSalt(readN(n, 'salt100g', 'salt_100g'));
-                }
-              } catch {
-                // Ignore parse errors
-              }
-            }
+    Alert.alert(t('upload.confirmTitle'), body, [
+      { text: t('edit.cancel'), style: 'cancel' },
+      {
+        text: t('upload.send'),
+        onPress: async () => {
+          const result = await form.upload();
+          if (result.ok) {
+            setToast({ message: t('upload.success'), type: 'success' });
+            leaveTimer.current = setTimeout(leave, 1200);
           } else {
-            const record: ProductRecord = {
-              ean,
-              name: '',
-              brands: '',
-              ingredients: '',
-              nova_score: null,
-              nutriscore: null,
-              raw_json: JSON.stringify({ product: {} }),
-              scanned_at: new Date().toISOString(),
-              rating: 'OK',
-            };
-            await repo.insert(record);
+            const reason = result.reason === 'failed' ? uploadFailureReason(result.error, t) : '';
+            setToast({ message: t('upload.failed', { reason }), type: 'error' });
           }
-          setIsLoading(false);
-        })
-        .catch((e) => {
-          console.error(e);
-          setIsLoading(false);
-        });
-    }
-  }, [ean]);
-
-  const getIngredientsByLang = (): Record<string, string> => {
-    return ingredientsTextByLang;
-  };
-
-  const getLangLabel = (code: string): string => {
-    const labels: Record<string, string> = {
-      de: 'Deutsch',
-      en: 'English',
-      fr: 'Français',
-      it: 'Italiano',
-      es: 'Español',
-      nl: 'Nederlands',
-      pt: 'Português',
-      pl: 'Polski',
-      ru: 'Русский',
-      ja: '日本語',
-      zh: '中文',
-      ar: 'العربية',
-      tr: 'Türkçe',
-    };
-    return labels[code] || code.toUpperCase();
-  };
-
-  const handleIngredientsLangChange = (lang: string, value: string) => {
-    setIngredientsTextByLang((prev) => ({ ...prev, [lang]: value }));
-  };
-
-  const availableLangs = useMemo(() => {
-    const existing = new Set(Object.keys(getIngredientsByLang()));
-    return OFF_INGREDIENTS_LANGS.filter((lang) => !existing.has(lang));
-  }, [ingredientsTextByLang]);
-
-  const modalLangOptions = useMemo(() => {
-    if (translateSourceLang && availableLangs.length > 1) {
-      return [...availableLangs, ALL_LANGS_SENTINEL];
-    }
-    return availableLangs;
-  }, [availableLangs, translateSourceLang]);
-
-  const ingredientsAccordionContent = useMemo(() => {
-    const langMap = getIngredientsByLang();
-    const knownLangs = Object.entries(langMap);
-
-    if (knownLangs.length === 0 && availableLangs.length === 0) return null;
-
-    const innerAccordion =
-      knownLangs.length > 0 ? (
-        <Accordion
-          items={knownLangs.map(([lang, text]) => ({
-            title: getLangLabel(lang),
-            content: (
-              <View>
-                <View style={styles.langActions}>
-                  <TouchableOpacity
-                    style={styles.langActionBtn}
-                    onPress={() => setCameraTarget({ mode: 'ingredients', lang })}
-                  >
-                    <Ionicons name="camera" size={16} color="#FF9800" />
-                    <Text style={styles.scanBtnText}>{t('edit.scan')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.langActionBtn}
-                    onPress={() => {
-                      setTranslateSourceLang(lang);
-                      setShowLangPicker(true);
-                    }}
-                  >
-                    <Ionicons name="language-outline" size={16} color="#4CAF50" />
-                    <Text style={styles.translateBtnText}>{t('edit.translate')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.langActionBtn}
-                    onPress={() => handleRemoveLanguage(lang)}
-                  >
-                    <Ionicons name="trash-outline" size={16} color="#F44336" />
-                    <Text style={styles.removeLangBtnText}>{t('edit.remove')}</Text>
-                  </TouchableOpacity>
-                </View>
-                <TextInput
-                  style={[styles.input, styles.multiline, { marginBottom: 0 }]}
-                  value={text}
-                  onChangeText={(v) => handleIngredientsLangChange(lang, v)}
-                  multiline
-                  placeholder={t('edit.ingredients.placeholder', { lang: getLangLabel(lang) })}
-                  placeholderTextColor="#555"
-                />
-              </View>
-            ),
-          }))}
-        />
-      ) : null;
-
-    return (
-      <>
-        {innerAccordion}
-        {availableLangs.length > 0 && (
-          <TouchableOpacity
-            style={styles.addLangBtn}
-            onPress={() => {
-              setTranslateSourceLang(null);
-              setShowLangPicker(true);
-            }}
-          >
-            <Ionicons name="add-circle-outline" size={18} color="#4CAF50" />
-            <Text style={styles.addLangBtnText}>{t('edit.addLanguage')}</Text>
-          </TouchableOpacity>
-        )}
-      </>
-    );
-  }, [ingredientsTextByLang, availableLangs]);
-
-  const handleAddLanguage = (lang: string) => {
-    if (lang === ALL_LANGS_SENTINEL) {
-      handleTranslateAllLanguages(translateSourceLang!);
-      return;
-    }
-    if (translateSourceLang) {
-      handleTranslateTo(translateSourceLang, lang);
-    } else {
-      setIngredientsTextByLang((prev) => ({ ...prev, [lang]: '' }));
-      setShowLangPicker(false);
-    }
-  };
-
-  const handleTranslateTo = async (sourceLang: string, targetLang: string) => {
-    const sourceText = ingredientsTextByLang[sourceLang];
-    if (!sourceText?.trim()) {
-      Alert.alert(t('edit.translate.noText'), t('edit.translate.noTextMsg'));
-      return;
-    }
-
-    const provider = await translationRouter.getProvider();
-    if (provider === 'deepl') {
-      const apiKey = await deepLClient.getApiKey();
-      if (!apiKey) {
-        Alert.alert(t('edit.translate.noKey'), t('edit.translate.noKeyMsg'), [{ text: 'OK' }]);
-        return;
-      }
-    }
-
-    setShowLangPicker(false);
-    setTranslateSourceLang(null);
-    setIsLoading(true);
-
-    try {
-      const translated = await translationRouter.translate(sourceText, targetLang);
-      setIngredientsTextByLang((prev) => ({ ...prev, [targetLang]: translated }));
-    } catch {
-      Alert.alert(t('edit.translate.failed'), t('edit.translate.failedMsg'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleTranslateAllLanguages = async (sourceLang: string) => {
-    const sourceText = ingredientsTextByLang[sourceLang];
-    if (!sourceText?.trim()) {
-      Alert.alert(t('edit.translate.noText'), t('edit.translate.noTextMsg'));
-      return;
-    }
-
-    const provider = await translationRouter.getProvider();
-    if (provider === 'deepl') {
-      const apiKey = await deepLClient.getApiKey();
-      if (!apiKey) {
-        Alert.alert(t('edit.translate.noKey'), t('edit.translate.noKeyMsg'), [{ text: 'OK' }]);
-        return;
-      }
-    }
-
-    const targets = [...availableLangs];
-    if (targets.length === 0) {
-      Alert.alert(t('edit.translate.complete'), t('edit.translate.completeMsg'));
-      return;
-    }
-
-    setShowLangPicker(false);
-    setTranslateSourceLang(null);
-    setIsLoading(true);
-
-    let failedCount = 0;
-
-    for (const targetLang of targets) {
-      try {
-        const translated = await translationRouter.translate(sourceText, targetLang);
-        setIngredientsTextByLang((prev) => ({ ...prev, [targetLang]: translated }));
-      } catch {
-        failedCount++;
-      }
-    }
-
-    setIsLoading(false);
-
-    if (failedCount > 0) {
-      Alert.alert(
-        t('edit.translate.partial'),
-        t('edit.translate.partialMsg', { n: failedCount, m: targets.length })
-      );
-    }
-  };
-
-  const handleRemoveLanguage = (lang: string) => {
-    setIngredientsTextByLang((prev) => {
-      const next = { ...prev };
-      delete next[lang];
-      return next;
-    });
-  };
-
-  const handleOcrConfirm = (text: string) => {
-    const target = cameraTarget;
-    if (!target) return;
-
-    if (target.mode === 'nutriments') {
-      const parsed = OcrService.parseNutriments(text);
-      if (parsed.energyKcal100g !== undefined) setEnergy(parsed.energyKcal100g.toString());
-      if (parsed.fat100g !== undefined) setFat(parsed.fat100g.toString());
-      if (parsed.saturatedFat100g !== undefined) setSatFat(parsed.saturatedFat100g.toString());
-      if (parsed.carbohydrates100g !== undefined) setCarbs(parsed.carbohydrates100g.toString());
-      if (parsed.sugars100g !== undefined) setSugars(parsed.sugars100g.toString());
-      if (parsed.fiber100g !== undefined) setFiber(parsed.fiber100g.toString());
-      if (parsed.proteins100g !== undefined) setProteins(parsed.proteins100g.toString());
-      if (parsed.salt100g !== undefined) setSalt(parsed.salt100g.toString());
-    } else if (target.lang) {
-      setIngredientsTextByLang((prev) => ({ ...prev, [target.lang!]: text }));
-    } else {
-      setIngredientsText(text);
-    }
-    setCameraTarget(null);
-  };
-
-  const handleSave = async () => {
-    if (!ean) return;
-    setIsLoading(true);
-    await repo.updateProduct({
-      ean,
-      name,
-      brands: brand,
-      category,
-      ingredients: ingredientsText,
-      ingredientsTextDe: ingredientsTextByLang.de || undefined,
-      ingredientsTextEn: ingredientsTextByLang.en || undefined,
-      ingredientsByLang: (() => {
-        const others: Record<string, string> = {};
-        Object.entries(ingredientsTextByLang).forEach(([lang, text]) => {
-          if (lang !== 'de' && lang !== 'en' && text) others[lang] = text;
-        });
-        return Object.keys(others).length > 0 ? others : undefined;
-      })(),
-      quantity,
-      allergensTags,
-      traces,
-      origins,
-      manufacturingPlaces,
-      stores,
-      servingSize,
-      novaScore: novaScore
-        ? (Math.min(4, Math.max(1, Number(novaScore) || 1)) as NovaScore)
-        : undefined,
-      nutriments: {
-        energyKcal100g: energyKcal100g ? Number(energyKcal100g) : undefined,
-        fat100g: fat100g ? Number(fat100g) : undefined,
-        saturatedFat100g: saturatedFat100g ? Number(saturatedFat100g) : undefined,
-        carbohydrates100g: carbohydrates100g ? Number(carbohydrates100g) : undefined,
-        sugars100g: sugars100g ? Number(sugars100g) : undefined,
-        fiber100g: fiber100g ? Number(fiber100g) : undefined,
-        proteins100g: proteins100g ? Number(proteins100g) : undefined,
-        salt100g: salt100g ? Number(salt100g) : undefined,
+        },
       },
-    });
-    initialSnapshotRef.current = currentSnapshot;
-    await catalogStore.loadAll();
-    const updated = await repo.findByEan(ean);
-    router.replace({
-      pathname: '/result',
-      params: { ean, fromCache: 'true', cachedData: updated?.raw_json || '' },
-    });
+    ]);
   };
 
-  const handleUploadOFF = async () => {
-    if (!ean) return;
-
-    try {
-      const credentials = await writeClient.loadCredentials();
-      if (!credentials) {
-        setShowOffSetup(true);
-        return;
+  const translate = async (from: string, targets: string[]) => {
+    const source = values?.ingredients[from]?.trim();
+    setPicker(null);
+    if (!source) {
+      Alert.alert(t('edit.translate.noText'), t('edit.translate.noTextMsg'));
+      return;
+    }
+    setTranslating(true);
+    let failed = 0;
+    for (const target of targets) {
+      try {
+        const translated = await translationRouter.translate(source, target);
+        if (translated && translated !== source) form.setIngredients(target, translated);
+        else failed++;
+      } catch {
+        failed++;
       }
-
-      setIsUploading(true);
-
-      await repo.updateProduct({
-        ean,
-        name,
-        brands: brand,
-        category,
-        ingredients: ingredientsText,
-        ingredientsTextDe: ingredientsTextByLang.de || undefined,
-        ingredientsTextEn: ingredientsTextByLang.en || undefined,
-        ingredientsByLang: (() => {
-          const others: Record<string, string> = {};
-          Object.entries(ingredientsTextByLang).forEach(([lang, text]) => {
-            if (lang !== 'de' && lang !== 'en' && text) others[lang] = text;
-          });
-          return Object.keys(others).length > 0 ? others : undefined;
-        })(),
-        quantity,
-        allergensTags,
-        traces,
-        origins,
-        manufacturingPlaces,
-        stores,
-        servingSize,
-        novaScore: novaScore
-          ? (Math.min(4, Math.max(1, Number(novaScore) || 1)) as NovaScore)
-          : undefined,
-        nutriments: {
-          energyKcal100g: energyKcal100g ? Number(energyKcal100g) : undefined,
-          fat100g: fat100g ? Number(fat100g) : undefined,
-          saturatedFat100g: saturatedFat100g ? Number(saturatedFat100g) : undefined,
-          carbohydrates100g: carbohydrates100g ? Number(carbohydrates100g) : undefined,
-          sugars100g: sugars100g ? Number(sugars100g) : undefined,
-          fiber100g: fiber100g ? Number(fiber100g) : undefined,
-          proteins100g: proteins100g ? Number(proteins100g) : undefined,
-          salt100g: salt100g ? Number(salt100g) : undefined,
-        },
+    }
+    setTranslating(false);
+    if (failed > 0) {
+      setToast({
+        message: t('edit.translate.partialMsg', { n: failed, m: targets.length }),
+        type: 'error',
       });
-
-      initialSnapshotRef.current = currentSnapshot;
-
-      const byLang: Record<string, string> = {};
-      Object.entries(ingredientsTextByLang).forEach(([lang, text]) => {
-        if (text.trim()) byLang[lang] = text.trim();
-      });
-
-      const formData: ContributeFormData = {
-        ean,
-        productName: name,
-        brands: brand,
-        categories: category,
-        ingredientsText: ingredientsText,
-        ingredientsByLang: Object.keys(byLang).length > 0 ? byLang : undefined,
-        nutriments: {
-          energyKcal100g: energyKcal100g ? Number(energyKcal100g) : undefined,
-          fat100g: fat100g ? Number(fat100g) : undefined,
-          saturatedFat100g: saturatedFat100g ? Number(saturatedFat100g) : undefined,
-          carbohydrates100g: carbohydrates100g ? Number(carbohydrates100g) : undefined,
-          sugars100g: sugars100g ? Number(sugars100g) : undefined,
-          fiber100g: fiber100g ? Number(fiber100g) : undefined,
-          proteins100g: proteins100g ? Number(proteins100g) : undefined,
-          salt100g: salt100g ? Number(salt100g) : undefined,
-        },
-      };
-
-      await writeClient.uploadProduct(formData);
-      await catalogStore.loadAll();
-      const updated = await repo.findByEan(ean);
-      router.replace({
-        pathname: '/result',
-        params: { ean, fromCache: 'true', cachedData: updated?.raw_json || '' },
-      });
-    } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : String(e);
-      setToastMessage(t('edit.uploadFailed', { error: errorMessage }));
-      setToastType('error');
-    } finally {
-      setIsUploading(false);
     }
   };
 
-  if (isLoading) {
+  const onOcrText = (text: string) => {
+    const target = ocrTarget;
+    setOcrTarget(null);
+    if (!target) return;
+    if (target.mode === 'ingredients') {
+      form.setIngredients(target.lang, text);
+      return;
+    }
+    const count = form.applyNutrition(parseNutritionLabel(text));
+    setToast(
+      count > 0
+        ? {
+            message: count === 1 ? t('edit.ocrFilledOne') : t('edit.ocrFilled', { count }),
+            type: 'info',
+          }
+        : { message: t('edit.ocrNothing'), type: 'error' }
+    );
+  };
+
+  if (form.loadError || !ean) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={styles.container}>
+        <ScreenHeader onBack={() => router.back()} backLabel={t('common.back')} />
+        <Text style={styles.centerText}>{t('product.error.genericBody')}</Text>
       </View>
     );
   }
 
-  const isUploadEnabled = name.trim().length > 0 && brand.trim().length > 0;
+  if (!values) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color={colors.accent} />
+      </View>
+    );
+  }
 
-  const nutritionContent = (
-    <View>
-      <FieldRow
-        label={t('edit.field.energy')}
-        value={energyKcal100g}
-        onChange={setEnergy}
-        numeric
-      />
-      <FieldRow label={t('edit.field.fat')} value={fat100g} onChange={setFat} numeric />
-      <FieldRow
-        label={t('edit.field.saturatedFat')}
-        value={saturatedFat100g}
-        onChange={setSatFat}
-        numeric
-      />
-      <FieldRow
-        label={t('edit.field.carbs')}
-        value={carbohydrates100g}
-        onChange={setCarbs}
-        numeric
-      />
-      <FieldRow label={t('edit.field.sugar')} value={sugars100g} onChange={setSugars} numeric />
-      <FieldRow label={t('edit.field.fiber')} value={fiber100g} onChange={setFiber} numeric />
-      <FieldRow
-        label={t('edit.field.protein')}
-        value={proteins100g}
-        onChange={setProteins}
-        numeric
-      />
-      <FieldRow label={t('edit.field.salt')} value={salt100g} onChange={setSalt} numeric />
-    </View>
-  );
+  const isNew = !form.session?.record;
 
   return (
     <View style={styles.container}>
+      <ScreenHeader
+        title={isNew ? t('edit.newProduct') : t('edit.title')}
+        onBack={() => router.back()}
+        backLabel={t('common.back')}
+      />
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Text style={styles.ean}>{t('product.ean', { ean })}</Text>
+
+          <View style={styles.section}>
+            <SectionTitle>{t('edit.section.product')}</SectionTitle>
+            <FormField
+              label={t('edit.field.name')}
+              value={values.name}
+              onChangeText={(v) => form.setField('name', v)}
+              error={errorText(errors.name, t)}
+              required
+              testID="edit-name"
+            />
+            <FormField
+              label={t('edit.field.brand')}
+              value={values.brand}
+              onChangeText={(v) => form.setField('brand', v)}
+            />
+            <FormField
+              label={t('edit.field.quantity')}
+              value={values.quantity}
+              onChangeText={(v) => form.setField('quantity', v)}
+              placeholder="500 g"
+            />
+          </View>
+
+          <View style={styles.section}>
+            <SectionTitle>{t('edit.section.ingredientsList')}</SectionTitle>
+            {languages.length === 0 && (
+              <Text style={styles.hint}>{t('edit.noIngredientsYet')}</Text>
+            )}
+            {languages.map((lang) => (
+              <Card key={lang} style={styles.languageCard}>
+                <View style={styles.languageHeader}>
+                  <Text style={styles.languageTitle}>{languageLabel(lang, t)}</Text>
+                  <IconButton
+                    icon="camera-outline"
+                    label={t('edit.a11y.scanLanguage', { lang: languageLabel(lang, t) })}
+                    onPress={() => setOcrTarget({ mode: 'ingredients', lang })}
+                  />
+                  <IconButton
+                    icon="language-outline"
+                    label={t('edit.a11y.translateLanguage', { lang: languageLabel(lang, t) })}
+                    onPress={() => setPicker({ kind: 'translate', from: lang })}
+                    disabled={missingLanguages.length === 0}
+                  />
+                  <IconButton
+                    icon="trash-outline"
+                    color={colors.danger}
+                    label={t('edit.a11y.removeLanguage', { lang: languageLabel(lang, t) })}
+                    onPress={() => form.setIngredients(lang, null)}
+                  />
+                </View>
+                <FormField
+                  label={t('edit.ingredients.placeholder', { lang: languageLabel(lang, t) })}
+                  value={values.ingredients[lang]}
+                  onChangeText={(v) => form.setIngredients(lang, v)}
+                  multiline
+                />
+              </Card>
+            ))}
+            {translating && <ActivityIndicator color={colors.accent} />}
+            <View style={styles.row}>
+              {!languages.includes(language) && (
+                <Button
+                  title={t('edit.scanIngredients')}
+                  icon="camera-outline"
+                  variant="secondary"
+                  onPress={() => setOcrTarget({ mode: 'ingredients', lang: language })}
+                  style={styles.flex}
+                />
+              )}
+              {missingLanguages.length > 0 && (
+                <Button
+                  title={t('edit.addLanguage')}
+                  icon="add"
+                  variant="ghost"
+                  onPress={() => setPicker({ kind: 'add' })}
+                  style={styles.flex}
+                />
+              )}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <SectionTitle>{t('edit.section.nutrition')}</SectionTitle>
+            <Button
+              title={t('edit.scanNutrition')}
+              icon="camera-outline"
+              variant="secondary"
+              onPress={() => setOcrTarget({ mode: 'nutriments' })}
+            />
+            <Text style={styles.hint}>{t('edit.nutritionHint')}</Text>
+            <View style={styles.grid}>
+              {NUTRIENT_FIELDS.map((field) => (
+                <View key={field.key} style={styles.gridCell}>
+                  <FormField
+                    label={t(NUTRIENT_LABELS[field.key])}
+                    value={values.nutriments[field.key]}
+                    onChangeText={(v) => form.setNutrient(field.key, v)}
+                    keyboardType="decimal-pad"
+                    error={errorText(errors[field.key], t)}
+                    testID={`edit-${field.key}`}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <SectionTitle>{t('edit.section.allergens')}</SectionTitle>
+            <FormField
+              label={t('edit.field.contains')}
+              value={values.allergens}
+              onChangeText={(v) => form.setField('allergens', v)}
+            />
+            <FormField
+              label={t('edit.field.traces')}
+              value={values.traces}
+              onChangeText={(v) => form.setField('traces', v)}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <SectionTitle>{t('edit.section.more')}</SectionTitle>
+            <Text style={styles.label}>{t('edit.field.nova')}</Text>
+            <View style={styles.row}>
+              {['', '1', '2', '3', '4'].map((nova) => (
+                <Chip
+                  key={nova || 'none'}
+                  label={nova || t('edit.nova.none')}
+                  selected={values.nova === nova}
+                  onPress={() => form.setField('nova', nova)}
+                />
+              ))}
+            </View>
+            <Text style={styles.hint}>{t('edit.nova.hint')}</Text>
+            <FormField
+              label={t('edit.field.category')}
+              value={values.categories}
+              onChangeText={(v) => form.setField('categories', v)}
+            />
+            <FormField
+              label={t('edit.field.servingSize')}
+              value={values.servingSize}
+              onChangeText={(v) => form.setField('servingSize', v)}
+            />
+            <FormField
+              label={t('edit.field.origin')}
+              value={values.origins}
+              onChangeText={(v) => form.setField('origins', v)}
+            />
+            <FormField
+              label={t('edit.field.manufacturingPlace')}
+              value={values.manufacturingPlaces}
+              onChangeText={(v) => form.setField('manufacturingPlaces', v)}
+            />
+            <FormField
+              label={t('edit.field.stores')}
+              value={values.stores}
+              onChangeText={(v) => form.setField('stores', v)}
+            />
+          </View>
+        </ScrollView>
+
+        <View style={[styles.actions, { paddingBottom: insets.bottom + spacing.md }]}>
+          <Button
+            title={t('edit.uploadOff')}
+            icon="cloud-upload-outline"
+            variant="secondary"
+            onPress={() => void onUpload()}
+            loading={busy === 'upload'}
+            disabled={busy !== null}
+            style={styles.flex}
+          />
+          <Button
+            title={t('edit.saveLocal')}
+            icon="checkmark"
+            onPress={() => void onSave()}
+            loading={busy === 'save'}
+            disabled={busy !== null}
+            style={styles.flex}
+            testID="edit-save"
+          />
+        </View>
+      </KeyboardAvoidingView>
+
       <OcrCameraSheet
-        visible={cameraTarget !== null}
-        mode={cameraTarget?.mode ?? 'ingredients'}
-        barcode={ean ?? ''}
-        lang={cameraTarget?.lang}
-        onConfirm={handleOcrConfirm}
-        onCancel={() => setCameraTarget(null)}
+        visible={ocrTarget !== null}
+        mode={ocrTarget?.mode ?? 'ingredients'}
+        barcode={ean}
+        lang={ocrTarget?.mode === 'ingredients' ? ocrTarget.lang : undefined}
+        onConfirm={onOcrText}
+        onCancel={() => setOcrTarget(null)}
       />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backText}>{t('edit.back')}</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('edit.title')}</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <ScrollView
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Product identity */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('edit.section.product')}</Text>
-          <FieldRow label={t('edit.field.name')} value={name} onChange={setName} />
-          <FieldRow label={t('edit.field.brand')} value={brand} onChange={setBrand} />
-          <FieldRow label={t('edit.field.quantity')} value={quantity} onChange={setQuantity} />
-        </View>
-
-        {/* Category & NOVA */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('edit.section.rating')}</Text>
-          <FieldRow label={t('edit.field.category')} value={category} onChange={setCategory} />
-          <FieldRow
-            label={t('edit.field.nova')}
-            value={novaScore}
-            onChange={setNovaScore}
-            numeric
-          />
-        </View>
-
-        {/* Ingredients */}
-        <View style={styles.section}>
-          <View style={styles.labelRow}>
-            <Text style={styles.sectionTitle}>{t('edit.section.ingredients')}</Text>
-          </View>
-          {ingredientsAccordionContent && (
-            <View style={{ paddingBottom: 16 }}>
-              <Accordion
-                items={[
-                  {
-                    title: t('edit.section.ingredientsList'),
-                    content: ingredientsAccordionContent,
-                  },
-                ]}
-              />
-            </View>
-          )}
-
-          <Modal
-            visible={showLangPicker}
-            transparent
-            animationType="fade"
-            onRequestClose={() => {
-              setShowLangPicker(false);
-              setTranslateSourceLang(null);
-            }}
-          >
-            <TouchableOpacity
-              style={styles.modalOverlay}
-              activeOpacity={1}
-              onPress={() => {
-                setShowLangPicker(false);
-                setTranslateSourceLang(null);
-              }}
-            >
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>
-                  {translateSourceLang
-                    ? t('edit.langPicker.translateFrom', {
-                        lang: getLangLabel(translateSourceLang),
-                      })
-                    : t('edit.langPicker.choose')}
-                </Text>
-                <FlatList
-                  data={modalLangOptions}
-                  keyExtractor={(lang) => lang}
-                  renderItem={({ item: lang }) => (
-                    <TouchableOpacity
-                      style={[
-                        styles.langOption,
-                        lang === ALL_LANGS_SENTINEL && styles.langOptionAll,
-                      ]}
-                      onPress={() => handleAddLanguage(lang)}
-                    >
-                      <Text
-                        style={[
-                          styles.langOptionText,
-                          lang === ALL_LANGS_SENTINEL && styles.langOptionTextAll,
-                        ]}
-                      >
-                        {lang === ALL_LANGS_SENTINEL
-                          ? t('edit.langPicker.all')
-                          : (() => {
-                              const labels: Record<string, string> = {
-                                de: 'Deutsch',
-                                en: 'English',
-                                fr: 'Français',
-                                it: 'Italiano',
-                                es: 'Español',
-                                nl: 'Nederlands',
-                                pt: 'Português',
-                                pl: 'Polski',
-                              };
-                              return `${labels[lang] || lang.toUpperCase()} (${lang})`;
-                            })()}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  style={styles.langList}
-                />
-              </View>
-            </TouchableOpacity>
-          </Modal>
-        </View>
-
-        {/* Nutrition */}
-        <View style={styles.section}>
-          <View style={styles.labelRow}>
-            <Text style={styles.sectionTitle}>{t('edit.section.nutrition')}</Text>
-            <TouchableOpacity onPress={() => setCameraTarget({ mode: 'nutriments' })}>
-              <Ionicons name="camera" size={22} color="#4CAF50" />
-            </TouchableOpacity>
-          </View>
-          <Accordion
-            items={[{ title: t('edit.section.nutritionEdit'), content: nutritionContent }]}
-          />
-        </View>
-
-        {/* Allergens */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('edit.section.allergens')}</Text>
-          <FieldRow
-            label={t('edit.field.contains')}
-            value={allergensTags}
-            onChange={setAllergensTags}
-          />
-          <FieldRow label={t('edit.field.traces')} value={traces} onChange={setTraces} />
-        </View>
-
-        {/* Additional info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('edit.section.more')}</Text>
-          <FieldRow label={t('edit.field.origin')} value={origins} onChange={setOrigins} />
-          <FieldRow
-            label={t('edit.field.manufacturingPlace')}
-            value={manufacturingPlaces}
-            onChange={setManufacturingPlaces}
-          />
-          <FieldRow label={t('edit.field.stores')} value={stores} onChange={setStores} />
-          <FieldRow
-            label={t('edit.field.servingSize')}
-            value={servingSize}
-            onChange={setServingSize}
-          />
-        </View>
-
-        {/* Buttons */}
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-          <Text style={styles.saveBtnText}>{t('edit.save')}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.uploadBtn, !isUploadEnabled && styles.uploadBtnDisabled]}
-          onPress={handleUploadOFF}
-          disabled={!isUploadEnabled || isUploading}
-        >
-          {isUploading ? (
-            <ActivityIndicator color="#000" />
-          ) : (
-            <Text style={styles.uploadBtnText}>{t('edit.uploadOff')}</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
-          <Text style={styles.cancelBtnText}>{t('edit.cancel')}</Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      <OffAccountSetup
-        visible={showOffSetup}
-        onCancel={() => setShowOffSetup(false)}
-        onSuccess={() => {
-          setShowOffSetup(false);
-          void handleUploadOFF();
+      <LanguagePicker
+        visible={picker !== null}
+        title={
+          picker?.kind === 'translate'
+            ? t('edit.langPicker.translateFrom', { lang: languageLabel(picker.from, t) })
+            : t('edit.langPicker.choose')
+        }
+        languages={missingLanguages}
+        includeAll={picker?.kind === 'translate'}
+        t={t}
+        onClose={() => setPicker(null)}
+        onSelect={(lang) => {
+          if (picker?.kind === 'translate') {
+            void translate(picker.from, lang === ALL_LANGUAGES ? [...missingLanguages] : [lang]);
+          } else {
+            form.setIngredients(lang, '');
+            setPicker(null);
+          }
         }}
       />
 
-      {toastMessage && (
-        <Toast message={toastMessage} type={toastType} onDismiss={() => setToastMessage(null)} />
+      <OffAccountSetup
+        visible={showAccountSetup}
+        onSuccess={() => {
+          setShowAccountSetup(false);
+          void onUpload();
+        }}
+        onCancel={() => setShowAccountSetup(false)}
+      />
+
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
       )}
     </View>
   );
 }
 
-function readN(obj: Record<string, unknown>, camelKey: string, snakeKey: string): string {
-  const value = obj[camelKey] ?? obj[snakeKey];
-  return value !== undefined && value !== null ? String(value) : '';
-}
-
-function FieldRow({
-  label,
-  value,
-  onChange,
-  numeric,
-  multiline,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  numeric?: boolean;
-  multiline?: boolean;
-}) {
-  return (
-    <View style={fieldStyles.row}>
-      <Text style={fieldStyles.label}>{label}</Text>
-      <TextInput
-        style={[fieldStyles.input, multiline && fieldStyles.inputMultiline]}
-        value={value}
-        onChangeText={onChange}
-        keyboardType={numeric ? 'numeric' : 'default'}
-        placeholderTextColor="#555"
-        multiline={multiline}
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
-  centered: { justifyContent: 'center', alignItems: 'center' },
-
-  header: {
-    paddingTop: 48,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomColor: '#1E1E1E',
-    borderBottomWidth: 1,
+  container: { flex: 1, backgroundColor: colors.bg },
+  center: { justifyContent: 'center', alignItems: 'center' },
+  flex: { flex: 1 },
+  centerText: { ...typography.body, color: colors.textSecondary, padding: spacing.xl },
+  content: { padding: spacing.lg, gap: spacing.xl, paddingBottom: spacing.xxl },
+  ean: { ...typography.caption, color: colors.textMuted },
+  section: { gap: spacing.md },
+  hint: { ...typography.caption, color: colors.textMuted },
+  label: { ...typography.label, color: colors.textSecondary },
+  languageCard: { gap: spacing.sm, paddingTop: spacing.sm },
+  languageHeader: { flexDirection: 'row', alignItems: 'center' },
+  languageTitle: { ...typography.bodyStrong, color: colors.text, flex: 1 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -spacing.xs },
+  gridCell: { width: '50%', paddingHorizontal: spacing.xs, marginBottom: spacing.md },
+  actions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#121212',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.bg,
   },
-  backText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  headerTitle: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
-  headerSpacer: { width: 60 },
-
-  scrollContainer: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 40 },
-
-  section: { paddingTop: 20 },
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-
-  input: {
-    backgroundColor: '#1E1E1E',
-    color: '#fff',
-    padding: 14,
-    borderRadius: 8,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  multiline: { minHeight: 80, textAlignVertical: 'top' },
-
-  addLangBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    marginBottom: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-    borderStyle: 'dashed',
-  },
-  addLangBtnText: { color: '#4CAF50', fontSize: 14, marginLeft: 6 },
-
-  langActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 8,
-    gap: 12,
-  },
-  langActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  translateBtnText: { color: '#4CAF50', fontSize: 13, marginLeft: 4 },
-  scanBtnText: { color: '#FF9800', fontSize: 13, marginLeft: 4 },
-  removeLangBtnText: { color: '#F44336', fontSize: 13, marginLeft: 4 },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  modalContent: {
-    backgroundColor: '#1E1E1E',
-    borderRadius: 12,
-    padding: 24,
-    width: '100%',
-    maxHeight: 400,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
-  },
-  modalTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  langList: { maxHeight: 300 },
-  langOption: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
-  },
-  langOptionText: { color: '#CFCFCF', fontSize: 16 },
-  langOptionAll: {
-    backgroundColor: '#1A3A1A',
-    borderTopWidth: 1,
-    borderTopColor: '#4CAF50',
-  },
-  langOptionTextAll: { color: '#4CAF50', fontSize: 16, fontWeight: '700' },
-
-  saveBtn: {
-    backgroundColor: '#4CAF50',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  uploadBtn: {
-    backgroundColor: '#00BFA5',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  uploadBtnDisabled: { backgroundColor: '#114D45' },
-  uploadBtnText: { color: '#000', fontWeight: 'bold', fontSize: 16 },
-  cancelBtn: {
-    backgroundColor: '#333',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  cancelBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-});
-
-const fieldStyles = StyleSheet.create({
-  row: { marginBottom: 14 },
-  label: { color: '#9E9E9E', fontSize: 13, fontWeight: '600', marginBottom: 6 },
-  input: {
-    backgroundColor: '#1E1E1E',
-    color: '#FFFFFF',
-    padding: 12,
-    borderRadius: 8,
-    fontSize: 15,
-  },
-  inputMultiline: { minHeight: 60, textAlignVertical: 'top' },
 });

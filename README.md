@@ -14,22 +14,26 @@ A React Native (Expo) mobile app that scans food barcodes and instantly evaluate
 ## Features
 
 **Scanning & Analysis**
-- Instant barcode scanning (EAN-8/EAN-13) via camera
-- Traffic-light rating: Green / Yellow / Red at a glance
-- Red-flag detection for unhealthy ingredients (palm oil, glucose syrup, additives, etc.)
+- Barcode scanning (EAN-8/EAN-13/UPC-A) via camera, with check-digit validation and manual entry as a fallback
+- Scan results appear as a card over the camera so you can keep scanning the next product right away
+- Traffic-light rating: OK / Warning / Critical, plus Unknown when there isn't enough data to judge a product
+- Red-flag detection for unhealthy ingredients (palm oil, glucose syrup, additives, etc.) and a built-in additive-risk database
 - Nova Score classification (1 = unprocessed, 4 = ultra-processed)
+- Optional allergen warning (off by default): pick from the 14 EU allergens, and the scan card and product page warn when a product contains or may contain one of them
 
 **Product Management**
 - Full product catalog stored locally with SQLite — works offline
-- Favorites: mark trusted products for quick access
+- Search, filter and sort the catalog; favorites for quick access
+- Deleting a product or removing a favorite can be undone
 - Custom filter rules: define your own ingredient and nutrient thresholds
 
 **OCR Contribution**
-- Photograph ingredient and nutrition labels
+- Photograph ingredient and nutrition labels — recognized on the device by default (ML Kit), so the photo never leaves the phone
+- Open Food Facts cloud OCR is available as an explicit opt-in when on-device recognition isn't enough
 - Edit recognized text and upload missing data to Open Food Facts
 
 **Privacy by Design**
-- No backend server, no cloud sync, no tracking — 100% local
+- No backend server of its own and no tracking; product data stays on the device except for what a feature explicitly needs to send (the scanned barcode to Open Food Facts, ingredient text to the chosen translation service, or details/photos you choose to publish to Open Food Facts)
 - Dark mode for comfortable supermarket use
 
 ## Quick Start

@@ -1,8 +1,15 @@
 import type { FilterRule } from '../../types/FilterRule';
 import type { NovaScore, Product } from '../../types/Product';
-import type { ScanResult, ScanStatus, RedFlagFinding } from '../../types/ScanResult';
+import type { RatingReason, RedFlagFinding, ScanResult, ScanStatus } from '../../types/ScanResult';
 import { RedFlagAnalyzer } from './RedFlagAnalyzer';
 import { NovaScoreEvaluator } from './NovaScoreEvaluator';
+
+/** Number of red flags from which a product is rated critical. */
+export const CRITICAL_RED_FLAG_COUNT = 3;
+
+export function toNovaScore(value: unknown): NovaScore | undefined {
+  return value === 1 || value === 2 || value === 3 || value === 4 ? value : undefined;
+}
 
 export class ProductRating {
   constructor(
@@ -11,23 +18,23 @@ export class ProductRating {
   ) {}
 
   rate(product: Product, rules?: FilterRule[]): ScanResult {
-    const keywordFlags = product.ingredientsText
-      ? this.redFlagAnalyzer.analyze(
-          product.ingredientsText,
-          rules && rules.length > 0 ? rules : undefined
-        )
-      : [];
+    const ingredientsText = product.ingredientsText?.trim() ? product.ingredientsText : '';
+    const activeRules = rules && rules.length > 0 ? rules : undefined;
 
-    const taxonomyFlags = product.ingredientsText
-      ? this.redFlagAnalyzer.analyzeTaxonomy(product.ingredientsText)
+    const keywordFlags = this.redFlagAnalyzer.analyze(
+      ingredientsText,
+      activeRules,
+      product.nutriments
+    );
+    const taxonomyFlags = ingredientsText
+      ? this.redFlagAnalyzer.analyzeTaxonomy(ingredientsText, activeRules)
       : [];
-
     const redFlags = this.mergeFindings(keywordFlags, taxonomyFlags);
 
-    const novaScore = product.novaScore || 1;
+    const novaScore = toNovaScore(product.novaScore);
     const novaDetails = this.novaEvaluator.evaluate(novaScore);
-
-    const status = this.determineStatus(redFlags.length, novaScore);
+    const hasIngredients = ingredientsText.length > 0;
+    const status = this.determineStatus(redFlags.length, novaScore, hasIngredients);
 
     return {
       status,
@@ -37,6 +44,7 @@ export class ProductRating {
         label: novaDetails.label,
         color: novaDetails.color,
       },
+      reasons: this.buildReasons(status, redFlags.length, novaScore, hasIngredients),
     };
   }
 
@@ -45,14 +53,19 @@ export class ProductRating {
     taxonomyFlags: RedFlagFinding[]
   ): RedFlagFinding[] {
     const merged: RedFlagFinding[] = [...keywordFlags];
-    const keywordNorm = new Set(keywordFlags.map((f) => this.normalizeForDedup(f.ingredient)));
+    const seenNames = new Set(keywordFlags.map((f) => this.normalizeForDedup(f.ingredient)));
+    const seenENumbers = new Set(
+      keywordFlags.map((f) => f.eNumber).filter((e): e is string => Boolean(e))
+    );
 
     for (const flag of taxonomyFlags) {
-      const norm = this.normalizeForDedup(flag.ingredient);
-      if (!keywordNorm.has(norm)) {
-        merged.push(flag);
-        keywordNorm.add(norm);
+      const name = this.normalizeForDedup(flag.ingredient);
+      if (seenNames.has(name) || (flag.eNumber && seenENumbers.has(flag.eNumber))) {
+        continue;
       }
+      merged.push(flag);
+      seenNames.add(name);
+      if (flag.eNumber) seenENumbers.add(flag.eNumber);
     }
 
     return merged;
@@ -66,15 +79,46 @@ export class ProductRating {
       .trim();
   }
 
-  private determineStatus(redFlagCount: number, novaScore: NovaScore): ScanStatus {
-    if (novaScore === 4 || redFlagCount >= 3) {
+  private determineStatus(
+    redFlagCount: number,
+    novaScore: NovaScore | undefined,
+    hasIngredients: boolean
+  ): ScanStatus {
+    if (novaScore === 4 || redFlagCount >= CRITICAL_RED_FLAG_COUNT) {
       return 'Critical';
     }
-
-    if ((redFlagCount >= 1 && redFlagCount <= 2) || novaScore === 3) {
+    if (redFlagCount >= 1 || novaScore === 3) {
       return 'Warning';
     }
-
+    if (!hasIngredients && novaScore === undefined) {
+      return 'Unknown';
+    }
     return 'OK';
+  }
+
+  private buildReasons(
+    status: ScanStatus,
+    redFlagCount: number,
+    novaScore: NovaScore | undefined,
+    hasIngredients: boolean
+  ): RatingReason[] {
+    if (status === 'Unknown') {
+      return [{ code: 'insufficientData' }];
+    }
+
+    const reasons: RatingReason[] = [];
+    if (novaScore === 3 || novaScore === 4) {
+      reasons.push({ code: 'nova', nova: novaScore });
+    }
+    if (redFlagCount > 0) {
+      reasons.push({ code: 'redFlags', count: redFlagCount });
+    }
+    if (reasons.length === 0) {
+      reasons.push({ code: 'noFindings' });
+    }
+    if (!hasIngredients) {
+      reasons.push({ code: 'ingredientsMissing' });
+    }
+    return reasons;
   }
 }

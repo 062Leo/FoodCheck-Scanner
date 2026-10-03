@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import type { Translator } from '../../domain/translation/Translator';
+import { fetchWithTimeout } from '../api/fetchWithTimeout';
 
 const SECURE_KEY = 'deepl_api_key';
 const DEEPL_URL = 'https://api-free.deepl.com/v2/translate';
@@ -12,17 +13,21 @@ export class DeepLClient implements Translator {
     if (!apiKey) return text;
 
     try {
-      const response = await fetch(DEEPL_URL, {
-        method: 'POST',
-        headers: {
-          Authorization: `DeepL-Auth-Key ${apiKey}`,
-          'Content-Type': 'application/json',
+      const response = await fetchWithTimeout(
+        DEEPL_URL,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `DeepL-Auth-Key ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: [text],
+            target_lang: targetLang.toUpperCase(),
+          }),
         },
-        body: JSON.stringify({
-          text: [text],
-          target_lang: targetLang.toUpperCase(),
-        }),
-      });
+        10000
+      );
 
       if (!response.ok) return text;
 

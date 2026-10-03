@@ -155,8 +155,42 @@ describe('ProductRating', () => {
     const result = rater.rate(product);
 
     expect(result.status).toBe('OK');
-    expect(result.nova.score).toBe(1);
-    expect(result.nova.label).toBe('Minimal verarbeitet');
+    expect(result.nova.score).toBeUndefined();
+    expect(result.nova.label).toBe('Unbekannt');
+    expect(result.reasons).toEqual([{ code: 'noFindings' }]);
+  });
+
+  it('rates a product without ingredients and without NOVA as Unknown', () => {
+    const result = rater.rate({ ean: '123456', name: 'Leer' });
+
+    expect(result.status).toBe('Unknown');
+    expect(result.reasons).toEqual([{ code: 'insufficientData' }]);
+  });
+
+  it('rates by NOVA alone and says the ingredient list is missing', () => {
+    const result = rater.rate({ ean: '123456', name: 'Nur NOVA', novaScore: 4 });
+
+    expect(result.status).toBe('Critical');
+    expect(result.reasons).toEqual([{ code: 'nova', nova: 4 }, { code: 'ingredientsMissing' }]);
+  });
+
+  it('explains a critical rating by NOVA and red flag count', () => {
+    const result = rater.rate({
+      ean: '123456',
+      name: 'Riegel',
+      ingredientsText: 'Palmöl, Glukosesirup',
+      novaScore: 4,
+    });
+
+    expect(result.reasons).toEqual([
+      { code: 'nova', nova: 4 },
+      { code: 'redFlags', count: 2 },
+    ]);
+  });
+
+  it('ignores an invalid NOVA value', () => {
+    const product = { ean: '1', name: 'x', ingredientsText: 'Wasser', novaScore: 7 } as never;
+    expect(rater.rate(product).nova.score).toBeUndefined();
   });
 
   it('should include Nova label in result', () => {

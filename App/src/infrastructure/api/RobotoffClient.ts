@@ -1,5 +1,6 @@
 import { ApiError } from './ApiError';
 import { retryWithBackoff } from './retry';
+import { fetchWithTimeout } from './fetchWithTimeout';
 import { USER_AGENT } from './config';
 import type { RobotoffInsight, RobotoffInsightsResponse } from '../../types/Robotoff';
 
@@ -21,7 +22,8 @@ export class RobotoffClient {
     }
 
     try {
-      return await retryWithBackoff(() => this.fetchInsights(ean));
+      // Hints are optional: one retry at most, so a busy server cannot keep them loading.
+      return await retryWithBackoff(() => this.fetchInsights(ean), { retries: 1 });
     } catch {
       return [];
     }
@@ -30,7 +32,7 @@ export class RobotoffClient {
   private async fetchInsights(ean: string): Promise<RobotoffInsight[]> {
     const url = `${ROBOTOFF_BASE_URL}/insights?barcode=${encodeURIComponent(ean)}`;
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'GET',
       headers: {
         'User-Agent': USER_AGENT,
@@ -62,9 +64,5 @@ export class RobotoffClient {
     });
 
     return insights;
-  }
-
-  clearCache(): void {
-    this.inMemoryCache.clear();
   }
 }

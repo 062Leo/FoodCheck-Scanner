@@ -2,8 +2,8 @@ import { generateAppUUID, USER_AGENT, STAGING_AUTH, APP_NAME, APP_VERSION } from
 
 describe('config', () => {
   describe('USER_AGENT', () => {
-    it('should follow AppName/Version (email) format', () => {
-      expect(USER_AGENT).toMatch(/^[\w.]+\/[\d.]+ \(.+@.+\)$/);
+    it('names app and version without a contact address', () => {
+      expect(USER_AGENT).toMatch(/^[\w.]+\/[\d.]+$/);
       expect(USER_AGENT).toContain(APP_NAME);
       expect(USER_AGENT).toContain(APP_VERSION);
     });

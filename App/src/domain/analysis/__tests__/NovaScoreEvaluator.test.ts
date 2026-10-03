@@ -46,7 +46,7 @@ describe('NovaScoreEvaluator', () => {
   it('should return default label and color for undefined score', () => {
     const result = evaluator.evaluate(undefined);
     expect(result).toEqual({
-      score: 1,
+      score: undefined,
       label: 'Unbekannt',
       color: '#757575',
     });

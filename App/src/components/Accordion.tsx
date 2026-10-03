@@ -1,97 +1,70 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, radius, spacing, typography, TOUCH_TARGET } from '../ui/theme';
 
 interface AccordionItem {
   title: string;
-  content: React.ReactNode;
+  content: ReactNode;
 }
 
 interface AccordionProps {
   items: AccordionItem[];
+  /** Index of the item that starts expanded. */
+  initiallyExpanded?: number;
 }
 
-export function Accordion({ items }: AccordionProps) {
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-
-  const toggleExpand = (index: number) => {
-    setExpandedIndex(expandedIndex === index ? null : index);
-  };
+export function Accordion({ items, initiallyExpanded }: AccordionProps) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(initiallyExpanded ?? null);
 
   return (
     <View style={styles.container}>
-      {items.map((item, index) => (
-        <AccordionItemComponent
-          key={index}
-          title={item.title}
-          content={item.content}
-          isExpanded={expandedIndex === index}
-          onToggle={() => toggleExpand(index)}
-        />
-      ))}
-    </View>
-  );
-}
-
-interface AccordionItemComponentProps {
-  title: string;
-  content: React.ReactNode;
-  isExpanded: boolean;
-  onToggle: () => void;
-}
-
-function AccordionItemComponent({
-  title,
-  content,
-  isExpanded,
-  onToggle,
-}: AccordionItemComponentProps) {
-  return (
-    <View style={styles.item}>
-      <TouchableOpacity style={styles.header} onPress={onToggle} activeOpacity={0.7}>
-        <Text style={styles.headerText}>{title}</Text>
-        <Text style={[styles.arrow, isExpanded && styles.arrowExpanded]}>▼</Text>
-      </TouchableOpacity>
-
-      {isExpanded && <View style={styles.content}>{content}</View>}
+      {items.map((item, index) => {
+        const expanded = expandedIndex === index;
+        return (
+          <View key={item.title} style={styles.item}>
+            <Pressable
+              style={({ pressed }) => [styles.header, pressed && styles.pressed]}
+              onPress={() => setExpandedIndex(expanded ? null : index)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded }}
+              accessibilityLabel={item.title}
+            >
+              <Text style={styles.headerText}>{item.title}</Text>
+              <Ionicons
+                name={expanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={colors.textSecondary}
+              />
+            </Pressable>
+            {expanded && <View style={styles.content}>{item.content}</View>}
+          </View>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginVertical: 12,
-  },
+  container: { gap: spacing.sm },
   item: {
-    borderRadius: 8,
+    borderRadius: radius.md,
     overflow: 'hidden',
-    marginBottom: 8,
-    backgroundColor: '#1E1E1E',
+    backgroundColor: colors.surface,
   },
   header: {
+    minHeight: TOUCH_TARGET,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 14,
-    backgroundColor: '#1E1E1E',
-    borderBottomWidth: 1,
-    borderBottomColor: '#2E2E2E',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  headerText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  arrow: {
-    color: '#BDBDBD',
-    fontSize: 12,
-  },
-  arrowExpanded: {
-    transform: [{ rotate: '180deg' }],
-  },
+  pressed: { backgroundColor: colors.surfaceRaised },
+  headerText: { ...typography.bodyStrong, color: colors.text, flexShrink: 1 },
   content: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#0A0A0A',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.xs,
   },
 });

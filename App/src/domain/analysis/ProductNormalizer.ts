@@ -1,4 +1,5 @@
 import type { Product, ProductNutriments } from '../../types/Product';
+import { hasProductName } from '../product/productName';
 
 export const PRODUCT_DATA_VERSION = 1;
 
@@ -78,7 +79,7 @@ export class ProductNormalizer {
   ): Product {
     const product: Product = {
       ean: fallbackFields.ean,
-      name: fallbackFields.name || 'Unbekanntes Produkt',
+      name: hasProductName(fallbackFields.name) ? (fallbackFields.name as string) : '',
       brand: fallbackFields.brand || undefined,
       ingredientsText: fallbackFields.ingredientsText || undefined,
       novaScore: (fallbackFields.novaScore as Product['novaScore']) ?? undefined,
@@ -139,9 +140,8 @@ export class ProductNormalizer {
 
       if (typeof p.brand === 'string') product.brand = p.brand;
       if (typeof p.brands === 'string' && !product.brand) product.brand = p.brands;
-      if (typeof p.name === 'string' && product.name === 'Unbekanntes Produkt')
-        product.name = p.name;
-      if (typeof p.product_name === 'string' && product.name === 'Unbekanntes Produkt')
+      if (typeof p.name === 'string' && !hasProductName(product.name)) product.name = p.name;
+      if (typeof p.product_name === 'string' && !hasProductName(product.name))
         product.name = p.product_name;
       if (typeof p.novaScore === 'number') product.novaScore = p.novaScore as Product['novaScore'];
       if (typeof p.nova_group === 'number' && product.novaScore === undefined)
@@ -149,6 +149,8 @@ export class ProductNormalizer {
 
       const allergens = p.allergensTags ?? p.allergens_tags;
       if (Array.isArray(allergens)) product.allergensTags = allergens as string[];
+      const traceTags = p.tracesTags ?? p.traces_tags;
+      if (Array.isArray(traceTags)) product.tracesTags = traceTags as string[];
 
       const addTags = p.additivesTags ?? p.additives_tags;
       if (Array.isArray(addTags)) product.additivesTags = addTags as string[];

@@ -21,7 +21,31 @@ export interface ProductRecord {
   image_packaging_url?: string | null;
   visit_count?: number | null;
   last_seen_at?: string | null;
+  /** Set when the user edited the product on this device. */
+  edited_at?: string | null;
+  /** JSON array of the fields the user edited (see domain/product/editedFields). */
+  edited_fields?: string | null;
 }
+
+/** Lightweight row for lists (no raw_json). */
+export type ProductSummary = Pick<
+  ProductRecord,
+  | 'id'
+  | 'ean'
+  | 'name'
+  | 'brands'
+  | 'nova_score'
+  | 'nutriscore'
+  | 'scanned_at'
+  | 'rating'
+  | 'visit_count'
+  | 'last_seen_at'
+  | 'image_url'
+  | 'edited_at'
+> & {
+  /** 1 if an ingredient list is stored. */
+  has_ingredients: number;
+};
 
 export interface ProductNutriments {
   energyKcal100g?: number;
@@ -50,6 +74,8 @@ export interface Product {
   ecoscoreGrade?: string;
   allergensTags?: string[];
   traces?: string;
+  /** Normalised traces from Open Food Facts, e.g. "en:nuts" (not editable in the app). */
+  tracesTags?: string[];
   additivesTags?: string[];
   categories?: string;
   miscTags?: string[];
@@ -61,11 +87,4 @@ export interface Product {
   origins?: string;
   manufacturingPlaces?: string;
   stores?: string;
-}
-
-export function getMissingScoreTags(product: Product): string[] {
-  if (!product.miscTags) return [];
-  return product.miscTags.filter(
-    (tag) => tag.startsWith('en:nutriscore-missing-') || tag.startsWith('en:ecoscore-')
-  );
 }
