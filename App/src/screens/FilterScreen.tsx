@@ -14,6 +14,7 @@ import {
   RuleEditorSheet,
   type RuleChange,
 } from '../features/filters/RuleEditorSheet';
+import { checkRuleDetail, checkRuleTitle, companyRuleDetail } from '../features/filters/ruleTexts';
 import { Toast } from '../components/Toast';
 import { Button, EmptyState, IconButton, ScreenHeader } from '../ui/components';
 import { colors, radius, spacing, typography, TOUCH_TARGET } from '../ui/theme';
@@ -34,10 +35,13 @@ export default function FilterScreen() {
   }, []);
 
   const ruleLabel = useCallback(
-    (rule: FilterRule) =>
-      rule.type === 'nutrient'
-        ? t(`nutrient.${rule.key}` as 'nutrient.sugars_100g')
-        : getIngredientTranslation(rule.key, language, rule.translations),
+    (rule: FilterRule) => {
+      if (rule.type === 'nutrient') return t(`nutrient.${rule.key}` as 'nutrient.sugars_100g');
+      if (rule.type === 'check') return checkRuleTitle(rule, t, language);
+      // A company rule's translations column holds its brands, not translations.
+      if (rule.type === 'company') return rule.key;
+      return getIngredientTranslation(rule.key, language, rule.translations);
+    },
     [language, t]
   );
 
@@ -74,6 +78,8 @@ export default function FilterScreen() {
       const unit = rule.key === 'energy-kcal_100g' ? 'kcal' : 'g';
       return `${OPERATOR_SYMBOLS[rule.operator]} ${formatNumber(rule.threshold, language)} ${unit} ${t('product.nutritionPer100g')}`;
     }
+    if (rule.type === 'check') return checkRuleDetail(rule, t);
+    if (rule.type === 'company') return companyRuleDetail(rule, t);
     return rule.key !== ruleLabel(rule) ? rule.key : undefined;
   };
 
@@ -82,11 +88,17 @@ export default function FilterScreen() {
     const store = useFilterStore.getState();
     try {
       let ok: boolean;
+      // Only ingredient keywords are translated; other rules keep what the editor built
+      // (a company rule stores its brands in `translations`, a check keeps none).
+      const type = change.kind === 'add' ? change.rule.type : change.changes.type;
+      const translate = change.translate && type === 'ingredient';
       if (change.kind === 'add') {
-        const translations = change.translate ? await translateRuleKeyword(change.rule.key) : null;
+        const translations = translate
+          ? await translateRuleKeyword(change.rule.key)
+          : (change.rule.translations ?? null);
         ok = await store.addRule({ ...change.rule, translations });
       } else {
-        const changes = change.translate
+        const changes = translate
           ? {
               ...change.changes,
               translations: await translateRuleKeyword(change.changes.key ?? ''),
@@ -228,7 +240,9 @@ export default function FilterScreen() {
       <RuleEditorSheet
         visible={editor !== null}
         rule={editor?.rule ?? null}
+        rules={rules}
         t={t}
+        language={language}
         saving={saving}
         onSave={(change) => void save(change)}
         onDelete={remove}

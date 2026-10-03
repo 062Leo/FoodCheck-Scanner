@@ -552,6 +552,59 @@ const de = {
   'allergenWarning.setting': 'Allergen-Warnung',
   'allergenWarning.settingHint': 'Warnt beim Scannen vor Allergenen aus deiner Liste',
   'allergenWarning.saveFailed': 'Die Einstellung konnte nicht gespeichert werden.',
+  'filter.tab.company': 'Marke / Konzern',
+  'filter.field.companyName': 'Marke oder Konzern',
+  'filter.field.companyPlaceholder': 'z. B. Nestlé',
+  'filter.validation.count': 'Bitte eine ganze Zahl ab 1 eingeben.',
+  'filter.validation.company': 'Bitte einen Namen eingeben.',
+  'filter.validation.duplicateCompany': 'Diese Marke bzw. dieser Konzern ist schon in der Liste.',
+  'filter.company.hint':
+    'Produkte dieser Marke bzw. dieses Konzerns und seiner Marken werden sofort als kritisch bewertet.',
+  'filter.company.lookup': 'Konzern bei Wikidata suchen',
+  'filter.company.refresh': 'Erneut abfragen',
+  'filter.company.pick': 'Welcher Eintrag ist gemeint?',
+  'filter.company.noCandidates': 'Kein passender Eintrag bei Wikidata gefunden.',
+  'filter.company.collecting': 'Zugehörige Marken werden gesammelt …',
+  'filter.company.found': '{{n}} zugehörige Marken gefunden',
+  'filter.company.foundOne': '1 zugehörige Marke gefunden',
+  'filter.company.showNames': 'Namen anzeigen',
+  'filter.company.hideNames': 'Namen ausblenden',
+  'filter.company.more': '… und {{n}} weitere',
+  'filter.company.nameOnlyHint':
+    'Ohne Abfrage wird nur der Name selbst erkannt, nicht die Marken des Konzerns.',
+  'filter.company.lookupFailed':
+    'Wikidata ist gerade nicht erreichbar. Du kannst die Regel trotzdem speichern – dann wird nur der Name erkannt.',
+  'filter.company.lookupError':
+    'Die Abfrage bei Wikidata ist fehlgeschlagen. Du kannst die Regel trotzdem speichern – dann wird nur der Name erkannt.',
+  'filter.company.source': 'Daten: Wikidata (CC0)',
+  'filter.company.describe': 'Marke/Konzern · {{n}} zugehörige Marken',
+  'filter.company.describeOne': 'Marke/Konzern · 1 zugehörige Marke',
+  'filter.company.describeNameOnly': 'Marke/Konzern · nur Name, keine Konzerndaten',
+  'filter.check.ingredient_count.title': 'Mehr als {{threshold}} Zutaten',
+  'filter.check.ingredient_count.titleRule': 'Zutatenzahl {{operator}} {{threshold}}',
+  'filter.check.pesticide_risk.title': 'Pestizid-Risiko-Kulturen ohne Bio',
+  'filter.check.pesticide_risk.detail':
+    'Kulturen mit den meisten Rückstandsüberschreitungen laut BVL-Bericht 2023.',
+  'filter.check.threshold': 'Schlägt an bei mehr als … Zutaten',
+  'filter.check.okHint': 'Diese Prüfung ist ausgeschaltet und zählt nie als Red Flag.',
+  'filter.check.ingredient_count.explanation':
+    'Viele Zutaten deuten auf ein stark verarbeitetes Produkt hin. Zusammengesetzte Zutaten zählen mit ihren Bestandteilen, z. B. „Schokolade (Zucker, Kakaomasse)“ als zwei Zutaten.',
+  'filter.check.canned.explanation':
+    'Schlägt an bei Konserven und Dosen laut Verpackungsangaben. Dosenbeschichtungen können Bisphenole an das Lebensmittel abgeben; das EU-Verbot (VO (EU) 2024/3190) gilt erst nach Übergangsfristen.',
+  'filter.check.mercury_fish.explanation':
+    'Schlägt an bei Thunfisch, Schwertfisch, Hai und Marlin. Große Raubfische stehen am Ende der Nahrungskette und reichern Quecksilber an.',
+  'filter.check.rice_arsenic.explanation':
+    'Schlägt an bei Reis und Produkten, deren erste Zutat Reis ist. Reis nimmt mehr anorganisches Arsen aus dem Boden auf als andere Getreide.',
+  'filter.check.pesticide_risk.explanation':
+    'Schlägt an bei Mango, Pfeffer, Reis, Tee, Erdnüssen, grünen Bohnen und Kirschen ohne Bio-Siegel. Diese Kulturen gehören laut BVL-Bericht 2023 zu denen mit den meisten Rückstandsüberschreitungen.',
+  'filter.check.not_raw_milk.explanation':
+    'Schlägt an bei Milchprodukten ohne Angabe, dass sie aus Rohmilch sind. Sie sind vermutlich aus erhitzter (pasteurisierter oder ultrahocherhitzter) Milch.',
+  'filter.check.alcoholic.explanation':
+    'Schlägt an bei alkoholischen Getränken und bei Produkten mit angegebenem Alkoholgehalt.',
+  'filter.check.meat_substitute.explanation':
+    'Schlägt an bei Fleischersatzprodukten. Sie sind meist hochverarbeitet und aus isolierten Proteinen, Ölen und Zusatzstoffen zusammengesetzt.',
+  'filter.check.farmed_fish.explanation':
+    'Schlägt an bei Fisch aus Aquakultur, erkannt an Kategorie oder Aquakultur-Siegel.',
 };
 
 type Translations = typeof de;
@@ -1086,6 +1139,59 @@ const en: Translations = {
   'allergenWarning.setting': 'Allergen warning',
   'allergenWarning.settingHint': 'Warns about allergens from your list when scanning',
   'allergenWarning.saveFailed': 'The setting could not be saved.',
+  'filter.tab.company': 'Brand / company',
+  'filter.field.companyName': 'Brand or company',
+  'filter.field.companyPlaceholder': 'e.g. Nestlé',
+  'filter.validation.count': 'Please enter a whole number of 1 or more.',
+  'filter.validation.company': 'Please enter a name.',
+  'filter.validation.duplicateCompany': 'This brand or company is already on the list.',
+  'filter.company.hint':
+    'Products of this brand or company and of its brands are rated critical right away.',
+  'filter.company.lookup': 'Look up company on Wikidata',
+  'filter.company.refresh': 'Look up again',
+  'filter.company.pick': 'Which entry do you mean?',
+  'filter.company.noCandidates': 'No matching entry found on Wikidata.',
+  'filter.company.collecting': 'Collecting related brands …',
+  'filter.company.found': '{{n}} related brands found',
+  'filter.company.foundOne': '1 related brand found',
+  'filter.company.showNames': 'Show names',
+  'filter.company.hideNames': 'Hide names',
+  'filter.company.more': '… and {{n}} more',
+  'filter.company.nameOnlyHint':
+    'Without a lookup only the name itself is recognised, not the brands of the company.',
+  'filter.company.lookupFailed':
+    'Wikidata cannot be reached right now. You can still save the rule – then only the name is recognised.',
+  'filter.company.lookupError':
+    'The Wikidata lookup failed. You can still save the rule – then only the name is recognised.',
+  'filter.company.source': 'Data: Wikidata (CC0)',
+  'filter.company.describe': 'Brand/company · {{n}} related brands',
+  'filter.company.describeOne': 'Brand/company · 1 related brand',
+  'filter.company.describeNameOnly': 'Brand/company · name only, no company data',
+  'filter.check.ingredient_count.title': 'More than {{threshold}} ingredients',
+  'filter.check.ingredient_count.titleRule': 'Number of ingredients {{operator}} {{threshold}}',
+  'filter.check.pesticide_risk.title': 'Pesticide-risk crops without organic label',
+  'filter.check.pesticide_risk.detail':
+    'Crops with the most residue exceedances according to the BVL report 2023.',
+  'filter.check.threshold': 'Applies to more than … ingredients',
+  'filter.check.okHint': 'This check is switched off and never counts as a red flag.',
+  'filter.check.ingredient_count.explanation':
+    'Many ingredients point to a highly processed product. Compound ingredients count with their parts, e.g. “chocolate (sugar, cocoa mass)” as two ingredients.',
+  'filter.check.canned.explanation':
+    'Applies to canned food according to the packaging data. Can coatings can release bisphenols into the food; the EU ban (Regulation (EU) 2024/3190) only applies after transition periods.',
+  'filter.check.mercury_fish.explanation':
+    'Applies to tuna, swordfish, shark and marlin. Large predatory fish are at the top of the food chain and accumulate mercury.',
+  'filter.check.rice_arsenic.explanation':
+    'Applies to rice and to products whose first ingredient is rice. Rice absorbs more inorganic arsenic from the soil than other cereals.',
+  'filter.check.pesticide_risk.explanation':
+    'Applies to mango, pepper, rice, tea, peanuts, green beans and cherries without an organic label. According to the BVL report 2023 these crops are among those with the most residue exceedances.',
+  'filter.check.not_raw_milk.explanation':
+    'Applies to dairy products that do not state they are made from raw milk. They are probably made from heated (pasteurised or UHT) milk.',
+  'filter.check.alcoholic.explanation':
+    'Applies to alcoholic drinks and to products with a stated alcohol content.',
+  'filter.check.meat_substitute.explanation':
+    'Applies to meat substitutes. They are mostly highly processed and made from isolated proteins, oils and additives.',
+  'filter.check.farmed_fish.explanation':
+    'Applies to fish from aquaculture, recognised by category or an aquaculture label.',
 };
 
 export type TranslationKey = keyof typeof de;

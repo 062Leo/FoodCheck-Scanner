@@ -80,7 +80,7 @@ export function companyWords(name: string): string[] {
     .filter((word) => word && !COMPANY_SUFFIXES.has(word));
 }
 
-function normalizeCompanyName(name: string): string {
+export function normalizeCompanyName(name: string): string {
   return companyWords(name).join(' ');
 }
 
@@ -102,6 +102,11 @@ function companyNamesOf(product: Product): string[] {
   return product.brandOwner ? [...brands, product.brandOwner] : brands;
 }
 
+/** A normalized name without spaces, so "Kit Kat" and "KitKat" are the same brand. */
+function compactName(name: string): string {
+  return normalizeCompanyName(name).replace(/ /g, '');
+}
+
 /**
  * Finds the user's avoided brands and companies in a product. The avoided name itself
  * may appear inside a brand ("Nestlé Nesquik", "Nestlé Deutschland AG"); names of its
@@ -116,7 +121,7 @@ export function findAvoidedCompanies(product: Product, rules: FilterRule[]): Red
   const candidates = companyNamesOf(product).map((name) => ({
     name,
     words: companyWords(name),
-    normalized: normalizeCompanyName(name),
+    compact: compactName(name),
   }));
   if (candidates.length === 0) return [];
 
@@ -125,13 +130,13 @@ export function findAvoidedCompanies(product: Product, rules: FilterRule[]): Red
     const ownWords = companyWords(rule.key);
     const aliases = new Set(
       (parseCompanyData(rule.translations)?.names ?? [])
-        .map(normalizeCompanyName)
+        .map(compactName)
         .filter((alias) => alias.length > 1)
     );
     const match = candidates.find(
       (candidate) =>
         containsWords(candidate.words, ownWords) ||
-        (candidate.normalized.length > 1 && aliases.has(candidate.normalized))
+        (candidate.compact.length > 1 && aliases.has(candidate.compact))
     );
     if (!match) continue;
     findings.push({

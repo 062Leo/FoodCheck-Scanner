@@ -44,6 +44,14 @@ describe('findAvoidedCompanies', () => {
     expect(findAvoidedCompanies(product({ brand: 'Maggi Kochstudio' }), rules)).toEqual([]);
   });
 
+  it('matches a brand written with or without spaces', () => {
+    const rules = [companyRule('Nestlé', ['Kit Kat', 'Coffee-Mate'])];
+
+    expect(findAvoidedCompanies(product({ brand: 'KitKat' }), rules)).toHaveLength(1);
+    expect(findAvoidedCompanies(product({ brand: 'Coffee mate' }), rules)).toHaveLength(1);
+    expect(findAvoidedCompanies(product({ brand: 'Kit' }), rules)).toEqual([]);
+  });
+
   it('matches the brand owner', () => {
     const findings = findAvoidedCompanies(
       product({ brand: 'Thomy', brandOwner: 'Nestlé Deutschland AG' }),
