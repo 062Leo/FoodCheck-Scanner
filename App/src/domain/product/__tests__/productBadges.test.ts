@@ -1,5 +1,6 @@
 import type { Product } from '../../../types/Product';
-import { mentionsRawMilk, productBadges } from '../productBadges';
+import { productBadges } from '../productBadges';
+import { mentionsRawMilk } from '../rawMilk';
 
 function product(overrides: Partial<Product> = {}): Product {
   return { ean: '4000000000001', name: 'Test', ...overrides };

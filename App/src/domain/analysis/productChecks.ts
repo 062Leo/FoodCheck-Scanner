@@ -1,6 +1,7 @@
 import type { FilterRule, FilterRuleOperator } from '../../types/FilterRule';
 import type { Product } from '../../types/Product';
 import type { RedFlagFinding } from '../../types/ScanResult';
+import { mentionsRawMilk } from '../product/rawMilk';
 import { IngredientParser } from './IngredientParser';
 
 /**
@@ -209,13 +210,11 @@ function pesticideCrop(product: Product): PesticideCrop | undefined {
     ?.crop;
 }
 
-const RAW_MILK_TEXT =
-  /rohmilch|vorzugsmilch|raw milk|raw-milk|lait cru|latte crudo|leche cruda|rauwe melk|leite cru|surowe(go)? mleko/;
-
 function isDairyWithoutRawMilk(product: Product, lowerText: string): boolean {
   if (!hasTag(product.categoriesTags, (tag) => tag === 'en:dairies')) return false;
+  // A negated mention ("nicht aus Rohmilch", "pas au lait cru") means heated milk.
   const raw =
-    RAW_MILK_TEXT.test(lowerText) ||
+    mentionsRawMilk(lowerText, { inCompounds: true }) ||
     hasTag(product.categoriesTags, (tag) => /raw-milk|lait-cru/.test(tag)) ||
     hasTag(product.labelsTags, (tag) => /raw-milk|lait-cru|rohmilch/.test(tag));
   return !raw;

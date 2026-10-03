@@ -1,4 +1,5 @@
 import type { Product } from '../../types/Product';
+import { mentionsRawMilk } from './rawMilk';
 
 /**
  * Badges for labels on the product page (organic, GMO, animal welfare, fishing, raw
@@ -88,49 +89,6 @@ const RAW_MILK_CATEGORIES = new Set([
   'en:unpasteurised-cheeses',
   'en:raw-milks',
 ]);
-
-const RAW_MILK_WORDS = [
-  'rohmilch',
-  'vorzugsmilch',
-  'raw milk',
-  'raw-milk',
-  'lait cru',
-  'latte crudo',
-  'leche cruda',
-  'rauwe melk',
-  'leite cru',
-  'surowe mleko',
-  'surowego mleka',
-];
-
-/** A negation shortly before the match: "nicht aus Rohmilch", "not made with raw milk". */
-const NEGATION_BEFORE =
-  /(^|[^\p{L}])(nicht|ohne|kein|keine|keiner|keinem|keinen|not|no|non|without|sans|pas|senza|sin|geen|niet|zonder|nie|não|nao)([^\p{L}]+\p{L}+){0,3}[^\p{L}]*$/u;
-
-const LETTER = /\p{L}/u;
-
-/** True if the text mentions raw milk at the start of a word and not negated. */
-export function mentionsRawMilk(text: string | undefined): boolean {
-  const lower = (text ?? '').toLowerCase();
-  if (!lower) return false;
-  for (const word of RAW_MILK_WORDS) {
-    let index = lower.indexOf(word);
-    while (index !== -1) {
-      const startsWord = index === 0 || !LETTER.test(lower[index - 1]);
-      if (startsWord) {
-        // Only look back within the same clause.
-        const clause =
-          lower
-            .slice(0, index)
-            .split(/[,;.:()[\]]/)
-            .pop() ?? '';
-        if (!NEGATION_BEFORE.test(clause)) return true;
-      }
-      index = lower.indexOf(word, index + 1);
-    }
-  }
-  return false;
-}
 
 function husbandryTone(level: HusbandryLevel): BadgeTone {
   if (level <= 2) return 'warning';

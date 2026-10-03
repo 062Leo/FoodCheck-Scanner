@@ -146,6 +146,45 @@ describe('product checks', () => {
     ).not.toContain('not_raw_milk');
   });
 
+  it.each([
+    'Rohmilch',
+    'Käse aus Rohmilch hergestellt',
+    'Ziegenrohmilch, Salz',
+    'Made with raw milk',
+    'lait cru de vache',
+    'latte crudo',
+    'Pasteurisierte Milch, Rohmilch',
+  ])('does not flag dairy made from raw milk: "%s"', (ingredientsText) => {
+    expect(keysOf(product({ categoriesTags: ['en:dairies'], ingredientsText }))).not.toContain(
+      'not_raw_milk'
+    );
+  });
+
+  it('does not flag dairy with a raw-milk category or label', () => {
+    expect(keysOf(product({ categoriesTags: ['en:dairies', 'en:raw-milks'] }))).not.toContain(
+      'not_raw_milk'
+    );
+    expect(
+      keysOf(product({ categoriesTags: ['en:dairies', 'fr:fromages-au-lait-cru'] }))
+    ).not.toContain('not_raw_milk');
+    expect(
+      keysOf(product({ categoriesTags: ['en:dairies'], labelsTags: ['de:rohmilch'] }))
+    ).not.toContain('not_raw_milk');
+  });
+
+  it.each([
+    'Milch (nicht aus Rohmilch hergestellt)',
+    'Käse, ohne Rohmilch',
+    'Not made with raw milk',
+    'Fromage pas au lait cru',
+    'Formaggio non a latte crudo',
+    'kein Vorzugsmilch',
+  ])('flags dairy with a negated raw-milk mention: "%s"', (ingredientsText) => {
+    expect(keysOf(product({ categoriesTags: ['en:dairies'], ingredientsText }))).toContain(
+      'not_raw_milk'
+    );
+  });
+
   it('flags alcohol by category or alcohol content', () => {
     expect(keysOf(product({ categoriesTags: ['en:alcoholic-beverages'] }))).toContain('alcoholic');
     expect(keysOf(product({ nutriments: { alcohol100g: 0.5 } }))).toContain('alcoholic');
