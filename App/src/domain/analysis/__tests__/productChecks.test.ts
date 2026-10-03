@@ -58,6 +58,33 @@ describe('countIngredients', () => {
       )
     ).toBe(2);
   });
+
+  it('counts ingredients joined by a conjunction', () => {
+    expect(countIngredients('Wasser, Zucker und Salz, Mehl, Hefe, Öl')).toBe(6);
+    expect(countIngredients('water, sugar and salt, flour, yeast, oil')).toBe(6);
+    expect(countIngredients('SUGAR, WHEAT FLOUR AND SALT')).toBe(3);
+    expect(countIngredients('farine, sucre et sel')).toBe(3);
+    expect(countIngredients('pomodoro, olio e sale')).toBe(3);
+    expect(countIngredients('agua, azúcar y sal')).toBe(3);
+    expect(countIngredients('mąka, cukier oraz sól')).toBe(3);
+    expect(countIngredients('Salz und Pfeffer')).toBe(2);
+  });
+
+  it('counts line-separated and dash-separated lists', () => {
+    expect(countIngredients('Wasser\nZucker\nSalz\nMehl\nHefe\nÖl')).toBe(6);
+    expect(countIngredients('Wasser - Zucker - Salz - Mehl – Hefe - Öl')).toBe(6);
+    expect(countIngredients('Glukose-Fruktose-Sirup, Wasser')).toBe(2);
+  });
+
+  it('does not split inside brackets, numbers, additives or notes', () => {
+    expect(countIngredients('Schokolade (Zucker und Kakaomasse), Milch')).toBe(2);
+    expect(countIngredients('Schokolade (Zucker, Kakaomasse) und Milch')).toBe(3);
+    expect(countIngredients('Tomaten 2,5 % und Salz 1.5 %')).toBe(2);
+    expect(countIngredients('Säuerungsmittel e 330, Wasser')).toBe(2);
+    expect(countIngredients('lait écrémé en poudre, sucre')).toBe(2);
+    expect(countIngredients('Hafer, Wasser. Kann Spuren von Nüssen und Soja enthalten.')).toBe(2);
+    expect(countIngredients('sugar and/or dextrose, salt')).toBe(2);
+  });
 });
 
 describe('isOrganic', () => {

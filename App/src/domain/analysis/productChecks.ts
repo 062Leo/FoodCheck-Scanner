@@ -78,13 +78,54 @@ const parser = new IngredientParser();
 const NOT_AN_INGREDIENT =
   /^(\*|kann |kann$|enthält|may contain|contains|hergestellt|produziert|aus kontrolliert|aus ökolog|aus biolog|von kontrolliert|zutaten aus|spuren|traces|peut contenir|issu de l'agriculture|from organic|organic farming)/;
 
+/** Separators besides , ; . : line breaks and a dash between spaces ("Wasser - Salz"). */
+const LIST_SEPARATOR = /[,;.]|\r?\n|\s+[-–—]\s+/gu;
+/**
+ * "und", "and", "et", "e", "y", "en", "i", "oraz" between two ingredients. The next
+ * word must start with a letter ("E 330" is an additive), and the French and Spanish
+ * "en" only counts when it does not describe a form ("lait en poudre").
+ */
+const CONJUNCTION =
+  /\s+(?:und|and|et|e|y|i|oraz|en(?!\s+(?:poudre|polvo|morceaux|trozos|dés|conserve|flocons|copos|grains?|granos?|tranches|rodajas|lamelles|pépites|purée|pâte|pasta)(?![\p{L}])))\s+(?=\p{L})/giu;
+
+/** Splits `text` at `separator`, but never inside brackets ("Schokolade (Zucker und Kakao)"). */
+function splitTopLevel(text: string, separator: RegExp): string[] {
+  let depth = 0;
+  let mask = '';
+  for (const char of text) {
+    if (char === '(' || char === '[') depth++;
+    const inside = depth > 0;
+    if (char === ')' || char === ']') depth = Math.max(0, depth - 1);
+    // Same length as the text, so match positions carry over to it.
+    mask += inside ? '_'.repeat(char.length) : char;
+  }
+  const parts: string[] = [];
+  let start = 0;
+  for (const match of mask.matchAll(separator)) {
+    parts.push(text.slice(start, match.index));
+    start = match.index + match[0].length;
+  }
+  parts.push(text.slice(start));
+  return parts.map((part) => part.trim()).filter(Boolean);
+}
+
 /**
  * Number of ingredients in a list. Compound ingredients count with their parts, not
- * as an extra one: "Schokolade (Zucker, Kakaomasse)" are two ingredients.
+ * as an extra one: "Schokolade (Zucker, Kakaomasse)" are two ingredients. Besides
+ * commas, line breaks, a dash between spaces and a conjunction between two ingredients
+ * ("Salz und Pfeffer") separate them; notes such as "Kann Spuren von Nüssen und Soja
+ * enthalten" are not split.
  */
 export function countIngredients(ingredientsText: string): number {
   // "1,5 %" or "2.5%" must not split the list.
-  const text = ingredientsText.replace(/(\d)[,.](\d)/g, '$1$2');
+  const collapsed = ingredientsText.replace(/(\d)[,.](\d)/g, '$1$2');
+  const text = splitTopLevel(collapsed, LIST_SEPARATOR)
+    .flatMap((segment) =>
+      NOT_AN_INGREDIENT.test(parser.normalizeIngredient(segment))
+        ? [segment]
+        : splitTopLevel(segment, CONJUNCTION)
+    )
+    .join(', ');
   const tokens = parser
     .parse(text)
     .filter((token) => token.normalized.length > 1 && !NOT_AN_INGREDIENT.test(token.normalized))
