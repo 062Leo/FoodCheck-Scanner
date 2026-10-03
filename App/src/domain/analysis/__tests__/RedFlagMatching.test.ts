@@ -341,6 +341,15 @@ describe('RedFlagAnalyzer filter list additions', () => {
     expect(keys('bevanda analcolica, alcohol-free beer, sans alcool')).toEqual([]);
   });
 
+  it('treats only 0.0 % as alcohol-free, not 10.0 % or 20.0 %', () => {
+    expect(keys('Wein, 10,0 % Alkohol')).toEqual(['Alcohol']);
+    expect(keys('liqueur, 20.0% alcohol')).toEqual(['Alcohol']);
+    expect(keys('Likör, 15.0 % vol. Alkohol')).toEqual(['Alcohol']);
+    expect(keys('0,0 % Alkohol')).toEqual([]);
+    expect(keys('Bier alkoholfrei (0,0 %)')).toEqual([]);
+    expect(keys('Malzgetränk (0.0% alcohol)')).toEqual([]);
+  });
+
   it('finds talc but not "talk" inside de-alcoholised', () => {
     expect(keys('Trennmittel: Talkum')).toEqual(['Talc']);
     expect(keys('Trennmittel: Talk')).toEqual(['Talc']);

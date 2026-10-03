@@ -78,10 +78,11 @@ const NEGATION_WORD_BEFORE =
 const NEGATING_PREFIX = /(?:^|[^\p{L}])(?:un|on|nie)-?$/u;
 /**
  * Not a drink's alcohol: "Zuckeralkohole", "sugar alcohols", "entalkoholisiert",
- * "analcolico", "bezalkoholowy", "0,0 % Alkohol" and spirit vinegar ("vinaigre d'alcool").
+ * "analcolico", "bezalkoholowy", "0,0 % Alkohol" (but not "10,0 % Alkohol") and spirit
+ * vinegar ("vinaigre d'alcool").
  */
 const NOT_ALCOHOL_BEFORE =
-  /(?:zucker|sugar\s|suiker|(?:^|[^\p{L}])(?:ent|de-?|dés|des|an|bez))$|0[,.]0\s*%\s*(?:vol\.?\s*)?$|(?:vinaigre\s+d['’]|vinagre\s+de\s+)$/u;
+  /(?:zucker|sugar\s|suiker|(?:^|[^\p{L}])(?:ent|de-?|dés|des|an|bez))$|(?:^|[^\d,.])0[,.]0\s*%\s*(?:vol\.?\s*)?$|(?:vinaigre\s+d['’]|vinagre\s+de\s+)$/u;
 /** "alkoholfrei", "alcohol-free", "alcoholvrij", "Alkoholessig". */
 const NOT_ALCOHOL_AFTER = /^(?:[\s-]*(?:frei|free|vrij)|essig)/u;
 
