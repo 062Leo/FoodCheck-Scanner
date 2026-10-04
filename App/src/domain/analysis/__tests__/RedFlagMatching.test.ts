@@ -418,6 +418,12 @@ describe('RedFlagAnalyzer filter list additions', () => {
     expect(noDrinks('Bierschinken (Schweinefleisch, Salz), Bierwurst')).toEqual([]);
     expect(keys('Bierteig (Weizenmehl, Bier)')).toContain('Beer');
     expect(noDrinks('Erdbeeren, Himbeeren, Beerenobst')).toEqual([]);
+    // Usually alcohol-free soft drinks; their sugar and colours are still found by other rules.
+    expect(noDrinks('Ginger Beer (Wasser, Zucker, Ingwer), ginger-beer, gingerbeer')).toEqual([]);
+    expect(noDrinks('Root Beer, root-beer, Birch Beer, Ingwerbier, Ingwer-Bier')).toEqual([]);
+    expect(noDrinks('Ginger Ale')).toEqual([]);
+    expect(keys('Ginger Beer, Bier')).toContain('Beer');
+    expect(keys('beer, ginger')).toContain('Beer');
     expect(noDrinks('Pilze (Portobello), portion, Portugal')).toEqual([]);
     expect(noDrinks('Süßholz (licorice), sakes, Sakeena')).toEqual([]);
   });

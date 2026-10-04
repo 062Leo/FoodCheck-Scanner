@@ -94,6 +94,12 @@ const NOT_A_DRINK_BEFORE =
 /** "Weinessig", "Branntweinessig", "wine vinegar", "wijnazijn", "Bierhefe", "biergist". */
 const NOT_A_DRINK_AFTER = /^[\s-]*(?:essig|vinegar|azijn|hefe|yeast|gist)/u;
 
+/**
+ * Usually alcohol-free soft drinks named after beer: "Ginger Beer", "Ingwerbier", "Root
+ * Beer", "Birch Beer". Their sugar, sweeteners and colours are found by other rules.
+ */
+const SOFT_DRINK_BEER_BEFORE = /(?:^|[^\p{L}])(?:ginger|ingwer|root|birch)[\s-]*$/u;
+
 interface Negation {
   before: RegExp[];
   after?: RegExp;
@@ -111,6 +117,11 @@ const NO_ALCOHOL: Negation = {
  */
 const NOT_A_DRINK: Negation = {
   before: [NEGATION_WORD_BEFORE, NOT_A_DRINK_BEFORE],
+  after: NOT_A_DRINK_AFTER,
+};
+/** Beer, but not the soft drinks ginger beer, root beer and birch beer. */
+const NOT_BEER: Negation = {
+  before: [...NOT_A_DRINK.before, SOFT_DRINK_BEER_BEFORE],
   after: NOT_A_DRINK_AFTER,
 };
 
@@ -131,7 +142,7 @@ const NEGATABLE_KEYS: Record<string, Negation> = {
   sherry: NOT_A_DRINK,
   marsala: NOT_A_DRINK,
   sake: NOT_A_DRINK,
-  beer: NOT_A_DRINK,
+  beer: NOT_BEER,
   brandy: NOT_A_DRINK,
   weinbrand: NOT_A_DRINK,
   cognac: NOT_A_DRINK,
