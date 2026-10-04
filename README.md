@@ -18,12 +18,12 @@ A React Native (Expo) mobile app that scans food barcodes and instantly evaluate
 - Barcode scanning (EAN-8/EAN-13/UPC-A) via camera, with check-digit validation and manual entry as a fallback
 - Scan results appear as a card over the camera so you can keep scanning the next product right away
 - Traffic-light rating: OK / Warning / Critical, plus Unknown when there isn't enough data to judge a product
-- Red-flag detection for unhealthy ingredients (palm oil, glucose syrup, additives, seed oils, genetic engineering, insects, hidden curing via celery extract, alcohol incl. wine, beer and spirits, etc.) with 777 built-in rules (768 ingredient rules in 8 languages plus 9 product checks) and a built-in additive-risk database; negations and look-alikes such as "alkoholfrei", wine vinegar, tartaric acid or brewer's yeast are not counted
+- Red-flag detection for unhealthy ingredients (palm oil, glucose syrup, additives, seed oils, genetic engineering, insects, hidden curing via celery extract, alcohol incl. wine, beer and spirits, etc.) with 780 built-in rules (768 ingredient rules in 8 languages plus 12 product checks, three of them for bottled water) and a built-in additive-risk database; negations and look-alikes such as "alkoholfrei", wine vinegar, tartaric acid or brewer's yeast are not counted
 - Product checks that look at the whole product and count as red flags: more than 5 ingredients (limit editable), can/tin, large predatory fish (mercury), rice (arsenic), pesticide-prone crops without an organic label (mango, pepper, rice, tea, peanuts, green beans, cherries — based on the German BVL residue report 2023), dairy without raw milk, alcohol, meat substitutes, farmed fish
 - Avoided brands and companies: a product from a brand or company on your list is rated Critical right away; an optional Wikidata lookup also collects the company's brands and subsidiaries, which match a product brand that is or starts with them ("Maggi" → "Maggi Fix"), regardless of spaces and hyphens ("Kit Kat" = "KitKat")
 - Nova Score classification (1 = unprocessed, 4 = ultra-processed)
 - Optional allergen warning (off by default): pick from the 14 EU allergens, and the scan card and product page warn when a product contains or may contain one of them
-- Label badges on the product page (organic incl. Demeter/Bioland/Naturland, GMO-free, contains GMO, husbandry level 1–5, free range, MSC, ASC, raw milk), the packager code ("processed/packed in …") and a background note on almond pollination (display only)
+- Label badges on the product page (organic incl. Demeter/Bioland/Naturland, GMO-free, contains GMO, husbandry level 1–5, free range, MSC, ASC, raw milk), the packager code ("processed/packed in …") and background notes on almond pollination and bottled water (display only)
 - Egg code reader: type in the code printed on an egg to see the housing system and origin
 - Fallback to USDA FoodData Central for barcodes Open Food Facts does not know — only with your own free api.data.gov key; if Open Food Facts later has only a sparse entry, the stored USDA data fills its gaps
 - Food recalls and warnings from lebensmittelwarnung.de: a list under Settings → Recalls, and a card on the product page when a current warning names its barcode (or, marked "possibly affected", fits its brand and name); does not change the rating, and disappears quietly when the source is unavailable
@@ -84,5 +84,5 @@ The app only knows what the product data says. In particular:
 
 - [How To Use](docs/HowToUse.md) — User guide & troubleshooting
 - [Features](docs/Features.md) — Feature overview in detail (German)
-- [Technical Documentation](docs/TechnicalDocumentation.md) — Architecture, APIs, database schema (version 10, 10 migrations), domain logic
+- [Technical Documentation](docs/TechnicalDocumentation.md) — Architecture, APIs, database schema (version 11, 11 migrations), domain logic
 - [Open Tasks](docs/OpenTasks.md) — Remaining work, phone tests, open questions and known limits

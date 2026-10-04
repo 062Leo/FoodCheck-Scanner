@@ -78,7 +78,7 @@ App/
 │   ├── features/                # Screen-specific hooks and subcomponents
 │   │   ├── scanner/                   # useScanSession, ScanGate, ScanResultCard, ManualEntrySheet
 │   │   ├── product/                   # useProductDetails, useRobotoffInsights, FindingsList, IngredientsSection,
-│   │   │                              # ProductBadges, AlmondPollinationNote
+│   │   │                              # ProductBadges, AlmondPollinationNote, WaterInfoNote
 │   │   ├── edit/                      # useProductEditForm, LanguagePicker
 │   │   ├── filters/                   # RuleEditorSheet, CompanyRuleForm (Wikidata lookup), ruleTexts
 │   │   ├── allergens/                 # AllergenWarning
@@ -128,6 +128,7 @@ App/
 │   │   │   ├── productBadges.ts        # Label badges (organic, GMO, husbandry level, MSC/ASC, raw milk)
 │   │   │   ├── packagerCode.ts         # Parses packager codes (identification marks)
 │   │   │   ├── almondInfo.ts           # Almond pollination note (display only)
+│   │   │   ├── waterInfo.ts            # Water detection, limits, water note (display only)
 │   │   │   ├── rawMilk.ts              # Raw-milk mentions, including negated ones
 │   │   │   └── productName.ts
 │   │   ├── allergens/allergenProfile.ts
@@ -335,7 +336,7 @@ CREATE TABLE IF NOT EXISTS filter_rules (
 
 New product fields (categories, packaging, labels, brand owner, packager codes, alcohol content, `source: 'usda'`) are not columns; they live in `raw_json`.
 
-### Migrations (`DatabaseService`, version 10)
+### Migrations (`DatabaseService`, version 11)
 
 | Version | Migration | Description |
 |---------|-----------|-------------|
@@ -349,6 +350,7 @@ New product fields (categories, packaging, labels, brand owner, packager codes, 
 | 8 | `addEditedFieldsColumn` | Add products.edited_fields |
 | 9 | `updateFilterList` | Remove 11 packaging/propellant gas rules; add 86 ingredient rules and the 9 product checks (frozen copies), skipping any rule whose type and key (any case, any severity) already exists |
 | 10 | `addAlcoholRules` | Add 15 alcohol ingredient rules (wine, beer, spirits; frozen copy), skipping any key that already exists as an ingredient rule (any case, any severity) |
+| 11 | `addWaterChecks` | Add the 3 water checks `water_not_mineral`, `water_plastic_bottle`, `water_contaminants` (category Wasser; frozen copy), skipping any key that already exists as a check rule (any case, any severity) |
 
 Migrations are append-only and run inside a transaction (or sequentially where the platform has no transaction API); a database newer than the app's `DATABASE_VERSION` is left untouched with a warning instead of being downgraded.
 
@@ -459,7 +461,7 @@ Migrations are append-only and run inside a transaction (or sequentially where t
 - Nutrient rules are evaluated against `product.nutriments` (sugars_100g, fat_100g, saturated-fat_100g, salt_100g, energy-kcal_100g), not against the ingredient text.
 - Matches of the genetic-engineering, heated-milk and alcohol rules do not count when negated ("nicht pasteurisiert", "unpasteurisiert", "ohne Gentechnik", "alkoholfrei", "entalkoholisiert", "Zuckeralkohole"); `talc` does not match inside "entalkoholisiert".
 - The wine, beer and spirit rules are not negated by "alkoholfrei" (alcohol-free beer and wine still count), only by "ohne …" and by vinegar or yeast made from the drink ("Weinessig", "wine vinegar", "vinaigre de vin", "Bierhefe", "lievito di birra"). Words that contain a drink's name but mean something else do not count: tartaric acid, cream of tartar, grapes, vine leaves and pork for wine ("Weinsäure", "Weinstein", "Weintrauben", "Schwein"), berries, sausages and spent grain for beer ("Erdbeeren", "Bierschinken", "Bierwurst", "Biertreber"), "Portobello" for port wine and "licorice" for liqueur. Rum only counts at the start of a word ("Rumaroma" yes, "Krume", "Rumpsteak" no), sake only as a word of its own, port only as "port wine", "Portwein" or "porto" (not "portion", "Portugal"). The beer rule is also not triggered by the usually alcohol-free soft drinks "ginger beer", "Ingwerbier", "root beer" and "birch beer" (`SOFT_DRINK_BEER_BEFORE`); their sugar, sweeteners and colours are still found by the other rules.
-- Built-in data: 768 seed ingredient rules across 24 categories (25 category presets are offered when adding a new rule) plus 9 product checks, plus an additive taxonomy of ~160 E-numbers with risk levels (`none`/`low`/`medium`/`high`) and function classes (`AdditiveTaxonomyData.ts`). A small hardcoded `defaultRules` list is used only as a last-resort fallback if no rules are available at all.
+- Built-in data: 768 seed ingredient rules across 24 categories (25 category presets are offered when adding a new rule) plus 12 product checks, plus an additive taxonomy of ~160 E-numbers with risk levels (`none`/`low`/`medium`/`high`) and function classes (`AdditiveTaxonomyData.ts`). A small hardcoded `defaultRules` list is used only as a last-resort fallback if no rules are available at all.
 
 ### Product Checks (`productChecks.ts`)
 
@@ -476,6 +478,9 @@ Whole-product checks stored as `check` rules; each finding counts like an ingred
 | `alcoholic` | category alcoholic beverages, or `alcohol_100g` > 0 | Alkohol |
 | `meat_substitute` | category meat analogues/alternatives | Proteine & Fleischersatz |
 | `farmed_fish` | responsible-aquaculture label or a `farmed-` category | Zuchtfisch |
+| `water_not_mineral` | a water (`en:waters` or one of its child categories) that has `en:table-waters` (even when also tagged natural mineral water) or lacks `en:natural-mineral-waters` / `en:carbonated-natural-mineral-waters` / `en:non-carbonated-natural-mineral-waters`; the detail names the kind (`table`, `spring` for `en:spring-waters`, `other`) | Wasser |
+| `water_plastic_bottle` | a water whose packaging tags (prefix stripped) contain plastic/PET as a hyphen-separated word: plastic(s), pet, rpet, kunststoff, plastique, plastica, plastico, plástico, plastik(flasche), pet-flasche, polyethylene terephthalate (also the German spellings) | Wasser |
+| `water_contaminants` | a water with given values above the infant-food limits of Min/TafelWV annex 6 (mg/l): nitrate 10, nitrite 0.02, sodium 20, sulphate 240, fluoride 0.7, manganese 0.05; the detail lists each exceeded value with its limit. Missing values never flag | Wasser |
 
 The checks only see what Open Food Facts (or USDA) provides; products stored before this data was kept get it from the background refresh (`StoredProductRefreshService`, see [Product Rating](#product-rating-productratingrate)) or their next online lookup.
 
@@ -489,6 +494,7 @@ The checks only see what Open Food Facts (or USDA) provides; products stored bef
 - `productBadges.ts`: organic (with Demeter/Bioland/Naturland), GMO-free, contains GMO, husbandry level 1–5, free range, MSC, ASC, raw milk — from `labels_tags` and categories.
 - `packagerCode.ts`: parses `emb_codes_tags`; shown as "Verarbeitet/verpackt in" with country (and German state). The code names the last processing or packing establishment, not the origin of the raw materials.
 - `almondInfo.ts`: a pollination note for products with almonds from the USA or of unknown origin; never affects the rating.
+- `waterInfo.ts`: water detection and the water checks' helpers, plus the `WaterInfoNote` on the product page (natural mineral water, infant-food label, glass bottle without plastic, very low in minerals when at least three ion values sum below 50 mg/l, calcium > 150 or magnesium > 50 mg/l, and always the list of things product data cannot show); never affects the rating. Open Food Facts stores minerals in g per 100 g; `toMgPerLitre` multiplies by 10,000 (1 l of water ≈ 1 kg) and rounds to 4 decimals.
 - `eggCode.ts`: parses egg producer codes (`0-DE-0312345`): housing system 0–3, country, and for German codes state, farm and stall number.
 
 ### Nova Score Evaluation
@@ -503,8 +509,8 @@ The checks only see what Open Food Facts (or USDA) provides; products stored bef
 - **OK**: none of the above
 - The result also carries machine-readable `reasons` (`avoidedCompany`, `nova`, `redFlags`, `ingredientsMissing`, `insufficientData`, `noFindings`) used to build the "why" text shown in the UI.
 - `rateProduct()` (`domain/analysis/rateProduct.ts`) is the single entry point used by the scanner, the product screen and the edit screen.
-- `CatalogRatingService` re-rates every stored product (in batches of 25, yielding to the UI thread) whenever the rule set or the rating logic changes. A fingerprint (`RATING_LOGIC_VERSION` + a hash of all rules) stored in `meta.rating_fingerprint` decides whether a re-rate is needed; `RATING_LOGIC_VERSION` is bumped whenever a change in the rating code would alter results, forcing a one-time recompute for existing installs (currently 6).
-- `StoredProductRefreshService` completes products stored with an older Open Food Facts field set. `PRODUCT_DATA_VERSION` (stored in `products.data_version`) is bumped whenever the client requests new fields (2: categories_tags, packaging tags, brand_owner, emb_codes_tags, alcohol_100g). After the rules are loaded at app start, products with an older or unknown version are fetched again in the background: one request at a time, at most 10 per minute, most recently seen first. It stops when the device is offline or a request fails (e.g. HTTP 429) and continues with the remaining products on the next start. The fresh data is merged like a lookup (edited fields and USDA data are kept), re-rated and stored without counting a visit; the update is skipped if the product was edited or deleted meanwhile. A product unknown to Open Food Facts keeps its data and is only marked with the current version. Editing a product keeps its data version.
+- `CatalogRatingService` re-rates every stored product (in batches of 25, yielding to the UI thread) whenever the rule set or the rating logic changes. A fingerprint (`RATING_LOGIC_VERSION` + a hash of all rules) stored in `meta.rating_fingerprint` decides whether a re-rate is needed; `RATING_LOGIC_VERSION` is bumped whenever a change in the rating code would alter results, forcing a one-time recompute for existing installs (currently 7).
+- `StoredProductRefreshService` completes products stored with an older Open Food Facts field set. `PRODUCT_DATA_VERSION` (stored in `products.data_version`) is bumped whenever the client requests new fields (2: categories_tags, packaging tags, brand_owner, emb_codes_tags, alcohol_100g; 3: the minerals `sodium_100g`, `calcium_100g`, `magnesium_100g`, `potassium_100g`, `bicarbonate_100g`, `chloride_100g`, `sulphate_100g`, `nitrate_100g`, `nitrite_100g`, `fluoride_100g`, `manganese_100g`). After the rules are loaded at app start, products with an older or unknown version are fetched again in the background: one request at a time, at most 10 per minute, most recently seen first. It stops when the device is offline or a request fails (e.g. HTTP 429) and continues with the remaining products on the next start. The fresh data is merged like a lookup (edited fields and USDA data are kept), re-rated and stored without counting a visit; the update is skipped if the product was edited or deleted meanwhile. A product unknown to Open Food Facts keeps its data and is only marked with the current version. Editing a product keeps its data version.
 
 ## 10. UI Design Tokens (`src/ui/theme.ts`)
 
@@ -551,7 +557,7 @@ Expo Router file-based routing in `App/app/`:
 ## 12. Testing
 
 - **Framework:** Jest with the `jest-expo` preset
-- **Count:** 70 suites, 785 tests (all passing; measured with `npx jest`)
+- **Count:** 71 suites, 828 tests (all passing; measured with `npx jest`)
 - **Location:** `__tests__/` directories alongside source files
 - **No snapshot tests** — all assertion-based `expect()` calls
 - **Real SQLite in tests:** database and repository tests run against `node:sqlite` through a test double (`src/testing/nodeSqlite.ts`, `useTestDatabase()`), not string-matching mocks; migration tests start from literal legacy schemas with seeded data (up to the v9 schema with user rules, products and favorites for migration 10) and check data survival, idempotency, fresh install = upgrade and rollback of a failing migration
@@ -567,7 +573,7 @@ Expo Router file-based routing in `App/app/`:
 | API Clients | OpenFoodFactsClient, OpenFoodFactsWriteClient, OffOcrClient, UsdaClient, RecallClient, RobotoffClient, fetchWithTimeout, retry, debounce, config, ApiError, staging integration | HTTP, auth, timeouts, error handling |
 | DB / Repositories | ProductRepository, FilterRuleRepository, FavoritesRepository, migrations, BackupService | CRUD, migrations, backup/restore against real SQLite |
 | Domain Analysis | RedFlagAnalyzer, RedFlagMatching, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductNormalizer, ProductRating, productChecks, companyRules, golden ratings | Rating rules, checks, company matching, matching correctness (incl. the alcohol shields) |
-| Domain Product/Catalog/OCR/Barcode/Eggs/Allergens | productForm, productBadges, packagerCode, almondInfo, catalogQuery, nutritionLabel, ocrGeometry, barcode, eggCode, allergenProfile, recallMatch | Validation, parsing, pure logic |
+| Domain Product/Catalog/OCR/Barcode/Eggs/Allergens | productForm, productBadges, packagerCode, almondInfo, waterInfo, catalogQuery, nutritionLabel, ocrGeometry, barcode, eggCode, allergenProfile, recallMatch | Validation, parsing, pure logic |
 | Domain Rules | ingredientTranslations, ruleGroups | Multi-language lookup, grouping/sorting |
 | Services | ProductLookupService, ProductEditService, CatalogRatingService, StoredProductRefreshService, CompanyLookupService, RecallService | Cache-first lookup incl. USDA fallback, edit tracking, re-rating, background refresh, Wikidata lookup, recall cache with backoff and hiding |
 | Stores / i18n | allergenStore, aboutTexts, allergenLabels | Allergen switch and profile, About texts naming every data source, allergen names |
@@ -603,7 +609,7 @@ Expo Router file-based routing in `App/app/`:
 | Product checks (ingredient count, can, mercury fish, rice, pesticide-risk crops, heated milk, alcohol, meat substitute, farmed fish) | Done |
 | Avoided brands/companies with optional Wikidata lookup (brand-start and spelling-variant matching) | Done |
 | Deselecting single brand names of a company rule | Planned (see [OpenTasks.md](OpenTasks.md)) |
-| Label badges, packager code, almond pollination note | Done |
+| Label badges, packager code, almond pollination note, water note | Done |
 | Egg code reader | Done |
 | USDA FoodData Central fallback (user's own key; fills gaps of a later sparse Open Food Facts entry) | Done |
 | Food recalls from lebensmittelwarnung.de (list, product card by barcode or conservative name match, silent backoff and hiding) | Done |
@@ -628,7 +634,7 @@ Expo Router file-based routing in `App/app/`:
 
 - `npm run typecheck` — clean (0 errors)
 - `npm run lint` — clean (0 errors, ESLint 10 flat config)
-- `npm test` — 70 suites, 785 tests, all passing
+- `npm test` — 71 suites, 828 tests, all passing
 - `npm run test:integration` requires network access to the OFF staging server and is not part of `npm run check`
 - Open work, open questions and known limits are tracked in [OpenTasks.md](OpenTasks.md)
 

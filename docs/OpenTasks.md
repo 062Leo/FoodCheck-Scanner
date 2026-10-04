@@ -1,7 +1,7 @@
 # Open Tasks — FoodCheck
 
-State of branch `feature/natural-food-checks` (database version 10, `RATING_LOGIC_VERSION` 6,
-777 built-in rules, 70 test suites / 785 tests). Items 01 and 02 are done; everything else below
+State of branch `feature/natural-food-checks` (database version 11, `RATING_LOGIC_VERSION` 7,
+780 built-in rules, 71 test suites / 828 tests). Items 01 and 02 are done; everything else below
 is still open.
 
 Markers: 👤 decided by the owner · 💡 proposal · ❓ open · ⚠️ risk · 🔴 high · 🟠 medium · ⚪ low
@@ -85,6 +85,17 @@ The branch is local only. Push it and open a pull request only after the owner's
 - **Alcohol rules, remaining edge cases** ⚪: "Rum" only counts at the start of a word, so a
   compound like "Inländerrum" is missed (needed to avoid "durum", "Krume", "Serum"); "Porto" also
   matches the Italian word for harbour.
+- **Water checks, open points** ❓:
+  - No infant-food label exists in the Open Food Facts label taxonomy; the note matches label
+    tags containing säugling/sauglings/infant/nourrisson/baby (not "not recommended"). Not seen
+    on a real product yet.
+  - Many waters carry both `en:natural-mineral-waters` and `en:table-waters` (e.g. a regional
+    brand); as specified, table water always flags. ❓ Keep or let natural mineral water win.
+  - Nitrite, manganese, arsenic and uranium are hardly ever entered; arsenic and uranium have no
+    Open Food Facts field, so they are not checked.
+  - The golden products contain no water with categories, so the golden baseline did not
+    change. 💡 Add a few waters to the golden set.
+  - The category preset "Wasser" is also offered for new ingredient rules. ❓ Keep?
 
 <a id="t06"></a>
 ## 06 Known limits
@@ -92,6 +103,8 @@ The branch is local only. Push it and open a pull request only after the owner's
 Not fixable from the product data:
 
 - No pesticide values per product; the pesticide check only flags crops from the BVL report 2023.
+- Water: uranium, arsenic, pesticide metabolites (e.g. TFA), microplastics and cleaning residues
+  from bottle washing are not in the product data; the water note says so.
 - Vertical farming cannot be detected.
 - PFAS / Teflon in packaging or cookware cannot be detected.
 - The packager code names the last processing or packing establishment, not the origin of the raw
