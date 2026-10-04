@@ -64,7 +64,21 @@ const HUSBANDRY_TAGS: Record<string, HusbandryLevel> = {
   'de:haltungsform-3-frischluftklima': 3,
   'de:haltungsform-4-auslauf-weide': 4,
   'de:haltungsform-5-bio': 5,
+  // Older four-level scheme (until 2024): Stallhaltung, StallhaltungPlus, Außenklima, Premium/Bio.
+  'de:haltungsform-1-stallhaltung': 1,
+  'de:haltungsform-2-stallhaltungplus': 2,
+  'de:haltungsform-2-stallhaltung-plus': 2,
+  'de:haltungsform-3-aussenklima': 3,
+  'de:haltungsform-3-ausenklima': 3,
+  'de:haltungsform-3-außenklima': 3,
+  'de:haltungsform-4-premium': 4,
+  'de:haltungsform-4-bio': 4,
 };
+
+/** Level for a tag, ignoring case ("de:Haltungsform-4-premium"). */
+function husbandryLevel(tag: string): HusbandryLevel | undefined {
+  return HUSBANDRY_TAGS[tag.toLowerCase()];
+}
 
 const FREE_RANGE_TAGS = new Set([
   'en:free-range',
@@ -115,7 +129,7 @@ export function productBadges(product: Product): ProductBadge[] {
   const levels = [
     ...new Set(
       [...labels]
-        .map((tag) => HUSBANDRY_TAGS[tag])
+        .map(husbandryLevel)
         .filter((level): level is HusbandryLevel => level !== undefined)
     ),
   ].sort((a, b) => a - b);

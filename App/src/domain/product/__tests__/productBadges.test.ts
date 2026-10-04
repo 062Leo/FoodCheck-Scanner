@@ -62,6 +62,15 @@ describe('productBadges', () => {
     expect(productBadges(product({ labelsTags: ['de:haltungsform'] }))).toEqual([]);
   });
 
+  it('recognises older Haltungsform labels in any case', () => {
+    const tone = (tag: string) => productBadges(product({ labelsTags: [tag] }))[0];
+    expect(tone('de:Haltungsform-4-premium')).toMatchObject({ tone: 'positive', level: 4 });
+    expect(tone('de:haltungsform-1-stallhaltung')).toMatchObject({ tone: 'warning', level: 1 });
+    expect(tone('de:haltungsform-2-stallhaltungplus')).toMatchObject({ level: 2 });
+    expect(tone('de:Haltungsform-3-aussenklima')).toMatchObject({ tone: 'neutral', level: 3 });
+    expect(tone('de:HALTUNGSFORM-5-BIO')).toMatchObject({ level: 5 });
+  });
+
   it('recognises free range, MSC and ASC', () => {
     expect(kinds(product({ labelsTags: ['en:free-range', 'en:free-range-eggs'] }))).toEqual([
       'freeRange',
