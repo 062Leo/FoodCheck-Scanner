@@ -1,7 +1,7 @@
 # Open Tasks — FoodCheck
 
 State of branch `feature/natural-food-checks` (database version 10, `RATING_LOGIC_VERSION` 6,
-777 built-in rules, 66 test suites / 755 tests). Items 01 and 02 are done; everything else below
+777 built-in rules, 70 test suites / 785 tests). Items 01 and 02 are done; everything else below
 is still open.
 
 Markers: 👤 decided by the owner · 💡 proposal · ❓ open · ⚠️ risk · 🔴 high · 🟠 medium · ⚪ low
@@ -53,6 +53,10 @@ Check:
   (scrolling, filter, "show more").
 - **Egg code reader** (`/egg-code`) from the scanner and from Settings → Hilfe & Info.
 - **USDA key:** save, delete, lookup of a US barcode, error messages (invalid key, limit).
+- **Recalls:** Settings → Rückrufe appears after the first start online; list, links to the
+  official notices, recall card on a product named in a current warning; flight mode keeps the
+  cached list; nothing shows up while the source fails. The feature reads only the official
+  RSS feed.
 - **Layout** of the buttons "Barcode eingeben" and "Eiercode prüfen" on narrow screens
   (wrapping, truncation, touch targets).
 
@@ -64,8 +68,6 @@ The branch is local only. Push it and open a pull request only after the owner's
 <a id="t05"></a>
 ## 05 Open questions and ideas ❓
 
-- **Recalls from lebensmittelwarnung.de:** only an unofficial API exists. ❓ Decide whether to use
-  it at all.
 - **USDA lookup when Open Food Facts has an entry without ingredients:** today USDA is only asked
   for barcodes Open Food Facts does not know. 💡 Also ask when the entry lacks ingredients.
 - **Egg codes of other countries** accept any farm number (e.g. "0-AT-1"); only German codes are

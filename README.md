@@ -26,6 +26,7 @@ A React Native (Expo) mobile app that scans food barcodes and instantly evaluate
 - Label badges on the product page (organic incl. Demeter/Bioland/Naturland, GMO-free, contains GMO, husbandry level 1–5, free range, MSC, ASC, raw milk), the packager code ("processed/packed in …") and a background note on almond pollination (display only)
 - Egg code reader: type in the code printed on an egg to see the housing system and origin
 - Fallback to USDA FoodData Central for barcodes Open Food Facts does not know — only with your own free api.data.gov key; if Open Food Facts later has only a sparse entry, the stored USDA data fills its gaps
+- Food recalls and warnings from lebensmittelwarnung.de: a list under Settings → Recalls, and a card on the product page when a current warning names its barcode (or, marked "possibly affected", fits its brand and name); does not change the rating, and disappears quietly when the source is unavailable
 
 **Product Management**
 - Full product catalog stored locally with SQLite — works offline
@@ -40,7 +41,7 @@ A React Native (Expo) mobile app that scans food barcodes and instantly evaluate
 - Edit recognized text and upload missing data to Open Food Facts
 
 **Privacy by Design**
-- No backend server of its own and no tracking; product data stays on the device except for what a feature explicitly needs to send (the scanned barcode to Open Food Facts — and to USDA FoodData Central if you saved a key and Open Food Facts does not know the product —, a company name you look up at Wikidata, ingredient text to the chosen translation service, or details/photos you choose to publish to Open Food Facts)
+- No backend server of its own and no tracking; product data stays on the device except for what a feature explicitly needs to send (the scanned barcode to Open Food Facts — and to USDA FoodData Central if you saved a key and Open Food Facts does not know the product —, a company name you look up at Wikidata, a request for the current warning list to lebensmittelwarnung.de (no product data is sent), ingredient text to the chosen translation service, or details/photos you choose to publish to Open Food Facts)
 - Dark mode for comfortable supermarket use
 
 ## Quick Start
@@ -66,6 +67,7 @@ TypeScript · Expo · React Native · Zustand · expo-sqlite · Expo Router · M
 - **Product data** from [Open Food Facts](https://world.openfoodfacts.org) (Open Database License, ODbL).
 - **Brands and subsidiaries of avoided companies** from [Wikidata](https://www.wikidata.org) (CC0), only when you start the lookup in a brand/company rule.
 - **Products Open Food Facts does not know** from [USDA FoodData Central](https://fdc.nal.usda.gov) (CC0, mostly US products). Every user needs their own free key from api.data.gov (Settings → USDA FoodData Central); the app ships no key, and without one USDA is never asked. Products from USDA cannot be sent to Open Food Facts.
+- **Food recalls and warnings** from [lebensmittelwarnung.de](https://www.lebensmittelwarnung.de) (German federal states and BVL). Read from the official RSS feed; if it fails for a week or answers in an unknown form, the feature is hidden.
 - **Pesticide-prone crops** from the German BVL report on pesticide residues in food 2023 (Nationale Berichterstattung Pflanzenschutzmittelrückstände).
 
 ## Limits

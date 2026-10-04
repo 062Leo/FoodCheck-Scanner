@@ -61,13 +61,13 @@ const de = {
     'FoodCheck scannt Lebensmittel-Barcodes und bewertet Inhaltsstoffe auf ungesunde Zusatzstoffe, Verarbeitungsgrad (NOVA) und Nährwerte — direkt auf deinem Gerät, ohne Cloud.',
   'about.dataSource': 'Datenquelle',
   'about.dataSourceText':
-    'Die Produktdaten stammen von Open Food Facts, der freien Lebensmitteldatenbank (ODbL). Nur für Produkte, die Open Food Facts nicht kennt, und nur mit deinem eigenen Schlüssel kommen sie von USDA FoodData Central (gemeinfrei, CC0). Marken und Tochterfirmen eines Konzerns kommen von Wikidata (CC0), wenn du eine Firma nachschlägst. FoodCheck ist ein unabhängiger Client.',
+    'Die Produktdaten stammen von Open Food Facts, der freien Lebensmitteldatenbank (ODbL). Nur für Produkte, die Open Food Facts nicht kennt, und nur mit deinem eigenen Schlüssel kommen sie von USDA FoodData Central (gemeinfrei, CC0). Marken und Tochterfirmen eines Konzerns kommen von Wikidata (CC0), wenn du eine Firma nachschlägst. Rückrufe und Warnungen kommen aus dem offiziellen RSS-Feed von lebensmittelwarnung.de; sie werden nur angezeigt und beeinflussen die Bewertung nicht. FoodCheck ist ein unabhängiger Client.',
   'about.technology': 'Technologie',
   'about.technologyText':
     'React Native und Expo. Texterkennung auf dem Gerät mit ML Kit. Übersetzungen über DeepL oder MyMemory.',
   'about.dataPrivacy': 'Datenschutz',
   'about.dataPrivacyText':
-    'FoodCheck hat kein eigenes Backend und kein Tracking. Katalog, Favoriten, Regeln und Backups bleiben auf deinem Gerät. Nach außen geht nur: der gescannte Barcode an Open Food Facts (Produktdaten und Vorschläge), derselbe Barcode an USDA FoodData Central, wenn du einen Schlüssel gespeichert hast und Open Food Facts das Produkt nicht kennt, ein Firmenname an Wikidata, wenn du ihn nachschlägst, Zutatentexte an MyMemory bzw. DeepL, wenn du übersetzen lässt, und Angaben oder Fotos, die du ausdrücklich an Open Food Facts sendest. Deine Schlüssel bleiben im sicheren Speicher des Geräts.',
+    'FoodCheck hat kein eigenes Backend und kein Tracking. Katalog, Favoriten, Regeln und Backups bleiben auf deinem Gerät. Nach außen geht nur: der gescannte Barcode an Open Food Facts (Produktdaten und Vorschläge), derselbe Barcode an USDA FoodData Central, wenn du einen Schlüssel gespeichert hast und Open Food Facts das Produkt nicht kennt, ein Firmenname an Wikidata, wenn du ihn nachschlägst, Zutatentexte an MyMemory bzw. DeepL, wenn du übersetzen lässt, eine Abfrage des Rückruf-Feeds von lebensmittelwarnung.de (ohne Barcode oder persönliche Daten), und Angaben oder Fotos, die du ausdrücklich an Open Food Facts sendest. Deine Schlüssel bleiben im sicheren Speicher des Geräts.',
 
   // Scanner
   'scanner.allow': 'Erlauben',
@@ -698,6 +698,21 @@ const de = {
   'product.source.usda': 'Datenquelle: USDA FoodData Central (gemeinfrei, CC0)',
   'edit.usdaNoUpload':
     'Diese Angaben stammen aus USDA FoodData Central und werden nicht an Open Food Facts gesendet. Deine Änderungen bleiben auf dem Gerät.',
+  'settings.recalls': 'Rückrufe',
+  'settings.recallsHint': 'Aktuelle Warnungen von lebensmittelwarnung.de',
+  'recalls.title': 'Rückrufe',
+  'recalls.source': 'Quelle: lebensmittelwarnung.de (offizieller RSS-Feed)',
+  'recalls.empty': 'Derzeit keine Warnungen verfügbar.',
+  'recalls.published': 'Veröffentlicht am {{date}}',
+  'recalls.reason': 'Grund: {{reason}}',
+  'recalls.states': 'Bundesländer: {{states}}',
+  'recalls.open': 'Meldung öffnen',
+  'recalls.openA11y': 'Meldung „{{title}}“ auf lebensmittelwarnung.de öffnen',
+  'recallWarning.eanTitle': 'Rückruf für dieses Produkt',
+  'recallWarning.nameTitle': 'Möglicherweise betroffen',
+  'recallWarning.nameHint':
+    'Marke und Name passen zu einer Warnung. Bitte Meldung und Verpackung (Charge, Datum) vergleichen.',
+  'recallWarning.source': 'Quelle: lebensmittelwarnung.de – ändert die Bewertung nicht.',
 };
 
 type Translations = typeof de;
@@ -756,13 +771,13 @@ const en: Translations = {
     'FoodCheck scans food barcodes and evaluates ingredients for unhealthy additives, processing level (NOVA) and nutrition — directly on your device, no cloud.',
   'about.dataSource': 'Data Source',
   'about.dataSourceText':
-    'Product data comes from Open Food Facts, the free food database (ODbL). Only for products Open Food Facts does not know, and only with your own key, it comes from USDA FoodData Central (public domain, CC0). Brands and subsidiaries of a company come from Wikidata (CC0) when you look up a company. FoodCheck is an independent client.',
+    'Product data comes from Open Food Facts, the free food database (ODbL). Only for products Open Food Facts does not know, and only with your own key, it comes from USDA FoodData Central (public domain, CC0). Brands and subsidiaries of a company come from Wikidata (CC0) when you look up a company. Recalls and warnings come from the official RSS feed of lebensmittelwarnung.de; they are only shown and do not affect the rating. FoodCheck is an independent client.',
   'about.technology': 'Technology',
   'about.technologyText':
     'React Native and Expo. On-device text recognition with ML Kit. Translations via DeepL or MyMemory.',
   'about.dataPrivacy': 'Privacy',
   'about.dataPrivacyText':
-    'FoodCheck has no backend of its own and no tracking. Catalog, favorites, rules and backups stay on your device. Only this leaves it: the scanned barcode to Open Food Facts (product data and suggestions), the same barcode to USDA FoodData Central if you saved a key and Open Food Facts does not know the product, a company name to Wikidata when you look it up, ingredient texts to MyMemory or DeepL when you translate, and details or photos you explicitly send to Open Food Facts. Your keys stay in secure storage on the device.',
+    'FoodCheck has no backend of its own and no tracking. Catalog, favorites, rules and backups stay on your device. Only this leaves it: the scanned barcode to Open Food Facts (product data and suggestions), the same barcode to USDA FoodData Central if you saved a key and Open Food Facts does not know the product, a company name to Wikidata when you look it up, ingredient texts to MyMemory or DeepL when you translate, a request for the recall feed of lebensmittelwarnung.de (without barcode or personal data), and details or photos you explicitly send to Open Food Facts. Your keys stay in secure storage on the device.',
 
   'scanner.allow': 'Allow',
   'scanner.hint': 'Hold the barcode inside the frame',
@@ -1376,6 +1391,21 @@ const en: Translations = {
   'product.source.usda': 'Data source: USDA FoodData Central (public domain, CC0)',
   'edit.usdaNoUpload':
     'This data comes from USDA FoodData Central and is not sent to Open Food Facts. Your changes stay on the device.',
+  'settings.recalls': 'Recalls',
+  'settings.recallsHint': 'Current warnings from lebensmittelwarnung.de',
+  'recalls.title': 'Recalls',
+  'recalls.source': 'Source: lebensmittelwarnung.de (official RSS feed)',
+  'recalls.empty': 'No warnings available at the moment.',
+  'recalls.published': 'Published on {{date}}',
+  'recalls.reason': 'Reason: {{reason}}',
+  'recalls.states': 'Federal states: {{states}}',
+  'recalls.open': 'Open notice',
+  'recalls.openA11y': 'Open the notice "{{title}}" on lebensmittelwarnung.de',
+  'recallWarning.eanTitle': 'Recall for this product',
+  'recallWarning.nameTitle': 'Possibly affected',
+  'recallWarning.nameHint':
+    'Brand and name fit a warning. Please compare the notice with the package (batch, date).',
+  'recallWarning.source': 'Source: lebensmittelwarnung.de – does not change the rating.',
 };
 
 export type TranslationKey = keyof typeof de;

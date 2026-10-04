@@ -7,8 +7,9 @@
 | `(tabs)/` | **Scanner** | Live-Kamera mit Barcode-Erkennung (EAN-8/13, UPC-A), Ergebniskarte über der Kamera, manuelle Eingabe, Eiercode prüfen, Offline-Badge |
 | `(tabs)/catalog` | **Catalog** | Alle gescannten Produkte durchsuchen, filtern (OK/Warning/Critical/Unknown/Ohne Zutaten), sortieren |
 | `(tabs)/favorites` | **Favorites** | Favorisierte Produkte anzeigen, entfavorisieren, bearbeiten, löschen |
-| `(tabs)/settings` | **Settings** | Filter-Regeln, Allergene, Übersetzung, USDA-Schlüssel, Sprache, Open-Food-Facts-Konto, Backup, Eiercode, Anleitung |
+| `(tabs)/settings` | **Settings** | Filter-Regeln, Allergene, Übersetzung, USDA-Schlüssel, Rückrufe, Sprache, Open-Food-Facts-Konto, Backup, Eiercode, Anleitung |
 | `/result` | **Product** | Vollständige Produktanalyse: Ampel mit Begründung, Red Flags und Produkt-Prüfungen, gemiedene Marken/Konzerne, Kennzeichnungen (Bio, Gentechnik, Haltungsform, MSC/ASC, Rohmilch), Verarbeitungs-/Verpackungsbetrieb, NOVA, Nährwerte, Allergene, Zutaten (mehrsprachig), KI-Erkenntnisse, Bildergalerie |
+| `/recalls` | **Rückrufe** | Aktuelle Lebensmittelwarnungen von lebensmittelwarnung.de mit Grund, Bundesländern, Datum und Link zur offiziellen Meldung; nur sichtbar, solange die Quelle verfügbar ist |
 | `/egg-code` | **Eiercode prüfen** | Haltungsform und Herkunft aus dem Erzeugercode auf dem Ei (offline) |
 | `/settings/filters` | **Filter Rules** | Vordefinierte + eigene Zutaten-/Nährwert-Regeln, Produkt-Prüfungen und gemiedene Marken/Konzerne verwalten |
 | `/settings/allergens` | **Meine Allergene** | Auswahl aus den 14 EU-Allergenen (nur bei eingeschalteter Allergen-Warnung) |
@@ -103,6 +104,7 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 - **Verarbeitet/verpackt in**: Land (bei deutschen Codes mit Bundesland) und Identitätskennzeichen; nennt den Betrieb, der das Produkt zuletzt verarbeitet oder verpackt hat – nicht die Herkunft der Rohstoffe
 - **Hintergrund Mandeln**: Bei Produkten mit Mandeln aus den USA oder unbekannter Herkunft ein Hinweis zur Bestäubung in Kalifornien; nur zur Information, fließt nicht in die Bewertung ein
 - **Datenquelle USDA**: Bei Produkten aus USDA FoodData Central ein Hinweis unter der EAN
+- **Rückruf-Karte**: Betrifft eine aktuelle Warnung von lebensmittelwarnung.de das Produkt, erscheint unter dem Banner eine Karte mit Titel, Grund, Datum und Link zur Meldung. Nennt die Warnung den Barcode: „Rückruf für dieses Produkt“; passen nur Marke und Name: „Möglicherweise betroffen“ (Marke als ganzes Wort und mindestens zwei markante Namenswörter bzw. das einzige, nur Warnungen des letzten Jahres; listet die Warnung andere Barcodes, gibt es keinen Namens-Treffer). Ändert die Bewertung nicht
 - **KI-Erkenntnisse**: Robotoff-Vorhersagen mit Konfidenz
 - **Nährwerte**: vollständige Nährwerttabelle; Werte werden in der UI-Sprache formatiert, nur tatsächlich vorhandene Zeilen werden gestreift dargestellt
 - **Zutatenliste**: mehrsprachig (Sprach-Chips für alle vorhandenen Texte) mit Übersetzen-Button pro Sprache (DeepL/MyMemory)
@@ -191,7 +193,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 | Gruppe | Beschreibung |
 |-------------|-------------|
 | **Bewertung** | Filter-Regeln mit Anzahl der aktiven Regeln; Schalter **Allergen-Warnung** (standardmäßig aus), darunter **Meine Allergene**, solange sie an ist |
-| **Datenquellen & Schlüssel** | Übersetzung (Anbieter und API-Key) und **USDA FoodData Central** (eigener Schlüssel) |
+| **Datenquellen & Schlüssel** | Übersetzung (Anbieter und API-Key), **USDA FoodData Central** (eigener Schlüssel) und **Rückrufe** (nur solange lebensmittelwarnung.de verfügbar ist) |
 | **Sprache** | DE ↔ EN (App-UI umschaltbar) |
 | **Open Food Facts Konto** | Login/Logout für Produktbeiträge, zeigt den Zielserver |
 | **Datenbank-Backup** | Speicherort wählen (Android), Backup erstellen, automatisches Backup, Wiederherstellen |
@@ -258,13 +260,13 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 
 | Speicher | Was | Technologie |
 |----------|-----|-------------|
-| **SQLite** | Produkte, Favoriten, Filter-Regeln, Meta (Migrationsstand, Backup-Einstellungen) | expo-sqlite |
+| **SQLite** | Produkte, Favoriten, Filter-Regeln, Meta (Migrationsstand, Backup-Einstellungen, Rückruf-Cache) | expo-sqlite |
 | **SecureStore** | OFF-Zugangsdaten, Übersetzungs-API-Keys, USDA-Schlüssel, Sprache, Provider | expo-secure-store |
 | **FileSystem** | Backup-Datei (Kopie der SQLite-Datenbank) | expo-file-system |
-| **Zustand** | In-Memory State (5 Stores: filter, catalog, language, settings, allergen) | zustand |
+| **Zustand** | In-Memory State (6 Stores: filter, catalog, language, settings, allergen, recall) | zustand |
 
 ### Datenbank-Schema
-- **`meta`**: key (PK), value — Migrations-Tracking, Rating-Fingerprint, Backup-Einstellungen
+- **`meta`**: key (PK), value — Migrations-Tracking, Rating-Fingerprint, Backup-Einstellungen, Rückruf-Cache mit Zustand der Quelle (`recalls_state`, keine Migration nötig)
 - **`products`**: id, ean (UNIQUE), name, brands, ingredients, nova_score, nutriscore, raw_json, scanned_at, rating, data_version, last_api_fetch, image_url, image_ingredients_url, image_nutrition_url, image_packaging_url, visit_count, last_seen_at, edited_at, edited_fields — Kategorien, Verpackung, Siegel, Markeninhaber, Identitätskennzeichen, Alkoholgehalt und die Quelle (USDA) stehen in `raw_json`
 - **`favorites`**: id, product_id (FK → products.id CASCADE, UNIQUE-Index), added_at
 - **`filter_rules`**: id, type (`ingredient`/`nutrient`/`check`/`company`), key, category, threshold, operator, severity, translations (JSON; bei Marken/Konzernen die Wikidata-ID, die zugehörigen Marken und die abgewählten Namen), created_at
@@ -291,6 +293,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 | **Open Food Facts Write** | Produkt-Upload (mehrsprachig, mit Authentifizierung); Staging in Entwicklungs-, Produktiv in Release-Builds |
 | **Open Food Facts OCR (Google Cloud Vision)** | Bild-zu-Text, nur nach expliziter Zustimmung |
 | **USDA FoodData Central** | Fallback-Suche nach Barcode für Produkte, die Open Food Facts nicht kennt; nur mit eigenem api.data.gov-Schlüssel, 8-Sekunden-Timeout |
+| **lebensmittelwarnung.de** | Rückrufe/Warnungen: nur der offizielle RSS-Feed; beim App-Start höchstens alle 6 Stunden und nur online, 15-Sekunden-Timeout. Nach einem Fehler nächster Versuch nach 24 Stunden, ohne Meldung; nach 7 Tagen ohne Erfolg oder bei unbekanntem Antwortformat wird alles ausgeblendet |
 | **Wikidata** | Suche nach einem Konzern und Sammeln seiner Marken/Tochterfirmen (SPARQL), nur auf Knopfdruck in einer Marken-/Konzern-Regel |
 | **Robotoff** | KI-Vorhersagen für Kategorien, Labels, Inhaltsstoffe |
 | **DeepL Free API** | Übersetzung (API-Key benötigt) |
@@ -305,6 +308,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 | **Open Food Facts** | Produktdaten (Zutaten, Nährwerte, Kategorien, Verpackung, Siegel, Identitätskennzeichen) | Open Database License (ODbL) |
 | **Wikidata** | Marken und Tochterfirmen gemiedener Konzerne | CC0 |
 | **USDA FoodData Central** | Produkte, die Open Food Facts nicht kennt (eigener Schlüssel nötig) | CC0 (gemeinfrei) |
+| **lebensmittelwarnung.de** | Rückrufe und Warnungen (nur Anzeige) | – (offizieller RSS-Feed) |
 | **BVL, Nationale Berichterstattung Pflanzenschutzmittelrückstände 2023** | Auswahl der Pestizid-Risiko-Kulturen | – (übernommen ist nur die Auswahl der Kulturen, keine Messwerte) |
 
 ## Grenzen – was die App nicht wissen kann
@@ -320,10 +324,10 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 
 ## Testing
 
-- **66 Test-Suiten**, **755 Tests**, alle erfolgreich (`npx jest`)
+- **70 Test-Suiten**, **785 Tests**, alle erfolgreich (`npx jest`)
 - Datenbank- und Repository-Tests laufen gegen echtes SQLite (`node:sqlite`-Testdouble), nicht gegen String-Vergleichs-Mocks
 - **Golden-Ratings**: 32 Referenzprodukte mit fest hinterlegtem Bewertungsergebnis, damit Änderungen an der Bewertungslogik als bewusster, überprüfbarer Diff sichtbar werden
-- Getestete Module: Analyse (RedFlagAnalyzer, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating, Produkt-Prüfungen, Marken/Konzerne), Produkt (Badges, Identitätskennzeichen, Mandel-Hinweis), Eiercode, Services (Lookup inkl. USDA-Fallback, Edit, Re-Rating, Hintergrund-Aktualisierung gespeicherter Produkte, Wikidata-Abfrage), API-Clients (inkl. USDA), Repositories/Migrationen (inkl. Migration 9 und 10 ab einer Datenbank mit Nutzerdaten), Backup, OCR, Übersetzungen, Über-Texte (alle Datenquellen genannt), Allergen-Store, Screens/Features
+- Getestete Module: Analyse (RedFlagAnalyzer, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating, Produkt-Prüfungen, Marken/Konzerne), Produkt (Badges, Identitätskennzeichen, Mandel-Hinweis), Eiercode, Services (Lookup inkl. USDA-Fallback, Edit, Re-Rating, Hintergrund-Aktualisierung gespeicherter Produkte, Wikidata-Abfrage), API-Clients (inkl. USDA und Rückrufe), Rückruf-Abgleich und -Cache (Backoff, Ausblenden), Repositories/Migrationen (inkl. Migration 9 und 10 ab einer Datenbank mit Nutzerdaten), Backup, OCR, Übersetzungen, Über-Texte (alle Datenquellen genannt), Allergen-Store, Screens/Features
 - Integrationstests gegen die echte Open Food Facts API sind opt-in (`npm run test:integration`) und laufen ausschließlich gegen den Staging-Server
 
 ---

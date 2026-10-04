@@ -20,6 +20,7 @@ import { parsePackagerCodes } from '../domain/product/packagerCode';
 import { almondPollinationInfo } from '../domain/product/almondInfo';
 import { describePackagerCode } from '../i18n/countryNames';
 import { AllergenWarning } from '../features/allergens/AllergenWarning';
+import { RecallWarning } from '../features/recalls/RecallWarning';
 import { usdaErrorText } from '../features/scanner/ScanResultCard';
 import { SkeletonLoadingScreen } from '../components/SkeletonLoading';
 import { Accordion } from '../components/Accordion';
@@ -218,6 +219,8 @@ function ProductDetails({
         <StatusHero status={rating.status} reasons={rating.reasons} t={t} footnote={footnote} />
 
         <AllergenWarning product={product} t={t} />
+
+        <RecallWarning product={product} t={t} language={language} />
 
         {!hasIngredients && (
           <Card style={styles.missingCard}>

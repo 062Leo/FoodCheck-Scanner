@@ -6,6 +6,7 @@ import { useFilterStore } from '../src/store/filterStore';
 import { refreshOutdatedProducts } from '../src/store/storedProductRefresh';
 import { useLanguageStore } from '../src/store/languageStore';
 import { useAllergenStore } from '../src/store/allergenStore';
+import { useRecallStore } from '../src/store/recallStore';
 import { BackupService } from '../src/infrastructure/db/BackupService';
 import { colors } from '../src/ui/theme';
 
@@ -20,6 +21,8 @@ export default function RootLayout() {
     void loadLanguage();
     void loadAllergenProfile();
     void BackupService.performAutoBackup();
+    // Recalls are optional: the store stays hidden when the source is unavailable.
+    void useRecallStore.getState().load();
   }, [loadRules, loadLanguage, loadAllergenProfile]);
 
   return (

@@ -278,7 +278,7 @@ CREATE TABLE IF NOT EXISTS meta (
   value TEXT NOT NULL
 );
 ```
-Tracks the migration version (`schema_version`) and other metadata (rating fingerprint, backup folder/auto-backup/last-backup time, allergen list `allergen_profile` and the switch `allergen_warning_enabled`). A restore keeps the device's backup settings; the two allergen keys are only kept when the restored backup has none of its own.
+Tracks the migration version (`schema_version`) and other metadata (rating fingerprint, backup folder/auto-backup/last-backup time, allergen list `allergen_profile` and the switch `allergen_warning_enabled`, the cached recall list with its source health `recalls_state`). A restore keeps the device's backup settings; the two allergen keys are only kept when the restored backup has none of its own.
 
 ### `products`
 ```sql
@@ -387,6 +387,18 @@ Migrations are append-only and run inside a transaction (or sequentially where t
 | Errors | `invalid-key` (403 / `API_KEY_*`), `rate-limit` (429 / `OVER_RATE_LIMIT`), `timeout`, `network`, `server`; shown with the "not found" message |
 | Licence | Public domain (CC0) |
 | Client | `UsdaClient`; products get `source: 'usda'` and cannot be sent to Open Food Facts |
+
+### lebensmittelwarnung.de (recalls)
+
+| Property | Value |
+|---|---|
+| Source | Official RSS feed (the only source) `rssnewsfeed_Alle_DE.xml?nn=314268&type=lebensmittel` (food only): title, link, pubDate and the `<b>Label:</b>` fields of the description (product, brand after "Marke:", reason, manufacturer, federal states, batch) |
+| Barcodes | The feed has no EAN field; codes with a valid check digit after "EAN"/"GTIN" in the text are used |
+| State 2026-10-04 | The RSS feed worked (221 food warnings); the unofficial JSON interface used before answered with an empty body and was removed |
+| Timeout | 15 s |
+| Health | `RecallService`: refresh at most every 6 h and only online; after a failure the next attempt waits 24 h; cached data is shown up to 7 days after the last success; an unknown response form hides everything at once. Errors only reach `console.warn` in development builds |
+| Matching | `recallMatch.ts`: a listed barcode decides; otherwise one of the product's brands as a whole phrase plus at least two distinctive name words (or the only one), warnings of the last 365 days only; never by name when the warning lists other barcodes |
+| Client | `RecallClient` (`fetchRecalls`, `parseRssFeed`), `RecallService`, `recallStore` |
 
 ### Wikidata
 
@@ -529,6 +541,7 @@ Expo Router file-based routing in `App/app/`:
 | `app/result.tsx` | `/result` |
 | `app/edit/[ean].tsx` | `/edit/:ean` |
 | `app/egg-code.tsx` | `/egg-code` |
+| `app/recalls.tsx` | `/recalls` |
 | `app/settings/filters.tsx` | `/settings/filters` |
 | `app/settings/allergens.tsx` | `/settings/allergens` |
 | `app/settings/api-key.tsx` | `/settings/api-key` |
@@ -538,7 +551,7 @@ Expo Router file-based routing in `App/app/`:
 ## 12. Testing
 
 - **Framework:** Jest with the `jest-expo` preset
-- **Count:** 66 suites, 755 tests (all passing; measured with `npx jest`)
+- **Count:** 70 suites, 785 tests (all passing; measured with `npx jest`)
 - **Location:** `__tests__/` directories alongside source files
 - **No snapshot tests** — all assertion-based `expect()` calls
 - **Real SQLite in tests:** database and repository tests run against `node:sqlite` through a test double (`src/testing/nodeSqlite.ts`, `useTestDatabase()`), not string-matching mocks; migration tests start from literal legacy schemas with seeded data (up to the v9 schema with user rules, products and favorites for migration 10) and check data survival, idempotency, fresh install = upgrade and rollback of a failing migration
@@ -551,15 +564,15 @@ Expo Router file-based routing in `App/app/`:
 
 | Module | Test files | Focus |
 |---|---|---|
-| API Clients | OpenFoodFactsClient, OpenFoodFactsWriteClient, OffOcrClient, UsdaClient, RobotoffClient, fetchWithTimeout, retry, debounce, config, ApiError, staging integration | HTTP, auth, timeouts, error handling |
+| API Clients | OpenFoodFactsClient, OpenFoodFactsWriteClient, OffOcrClient, UsdaClient, RecallClient, RobotoffClient, fetchWithTimeout, retry, debounce, config, ApiError, staging integration | HTTP, auth, timeouts, error handling |
 | DB / Repositories | ProductRepository, FilterRuleRepository, FavoritesRepository, migrations, BackupService | CRUD, migrations, backup/restore against real SQLite |
 | Domain Analysis | RedFlagAnalyzer, RedFlagMatching, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductNormalizer, ProductRating, productChecks, companyRules, golden ratings | Rating rules, checks, company matching, matching correctness (incl. the alcohol shields) |
-| Domain Product/Catalog/OCR/Barcode/Eggs/Allergens | productForm, productBadges, packagerCode, almondInfo, catalogQuery, nutritionLabel, ocrGeometry, barcode, eggCode, allergenProfile | Validation, parsing, pure logic |
+| Domain Product/Catalog/OCR/Barcode/Eggs/Allergens | productForm, productBadges, packagerCode, almondInfo, catalogQuery, nutritionLabel, ocrGeometry, barcode, eggCode, allergenProfile, recallMatch | Validation, parsing, pure logic |
 | Domain Rules | ingredientTranslations, ruleGroups | Multi-language lookup, grouping/sorting |
-| Services | ProductLookupService, ProductEditService, CatalogRatingService, StoredProductRefreshService, CompanyLookupService | Cache-first lookup incl. USDA fallback, edit tracking, re-rating, background refresh, Wikidata lookup |
+| Services | ProductLookupService, ProductEditService, CatalogRatingService, StoredProductRefreshService, CompanyLookupService, RecallService | Cache-first lookup incl. USDA fallback, edit tracking, re-rating, background refresh, Wikidata lookup, recall cache with backoff and hiding |
 | Stores / i18n | allergenStore, aboutTexts, allergenLabels | Allergen switch and profile, About texts naming every data source, allergen names |
 | OCR / Translation | OcrService, DeepLClient, MyMemoryClient | Recognition, quota/error handling |
-| Screens / Features | AllergenProfileScreen, ApiKeyScreen, CatalogScreen, EditProductScreen, EggCodeScreen, FilterScreen, ProductScreen, ScannerScreen, SettingsScreen, UsdaKeyScreen, ScanGate, RuleEditor, FindingsList, IngredientsSection, OcrCameraSheet, OffAccountSetup, Toast | Screen behaviour with React Native Testing Library |
+| Screens / Features | AllergenProfileScreen, ApiKeyScreen, CatalogScreen, EditProductScreen, EggCodeScreen, FilterScreen, ProductScreen, ScannerScreen, SettingsScreen, UsdaKeyScreen, ScanGate, RuleEditor, FindingsList, IngredientsSection, OcrCameraSheet, OffAccountSetup, Toast, RecallUi | Screen behaviour with React Native Testing Library |
 
 ## 13. Commands (run from `App/`)
 
@@ -593,6 +606,7 @@ Expo Router file-based routing in `App/app/`:
 | Label badges, packager code, almond pollination note | Done |
 | Egg code reader | Done |
 | USDA FoodData Central fallback (user's own key; fills gaps of a later sparse Open Food Facts entry) | Done |
+| Food recalls from lebensmittelwarnung.de (list, product card by barcode or conservative name match, silent backoff and hiding) | Done |
 | Background refresh of products stored with an older Open Food Facts field set (≤ 10 requests/min) | Done |
 | Nova classification and traffic-light rating (OK/Warning/Critical/Unknown) | Done |
 | Local catalog (SQLite) with search, filter, sort, undoable delete | Done |
@@ -614,7 +628,7 @@ Expo Router file-based routing in `App/app/`:
 
 - `npm run typecheck` — clean (0 errors)
 - `npm run lint` — clean (0 errors, ESLint 10 flat config)
-- `npm test` — 66 suites, 755 tests, all passing
+- `npm test` — 70 suites, 785 tests, all passing
 - `npm run test:integration` requires network access to the OFF staging server and is not part of `npm run check`
 - Open work, open questions and known limits are tracked in [OpenTasks.md](OpenTasks.md)
 
@@ -624,7 +638,7 @@ Expo Router file-based routing in `App/app/`:
 |---|---|---|
 | NF-01 | Scan-to-Result < 10s | Done (8 s request timeout, cache-first) |
 | NF-02 | No backend of the app's own | Done |
-| NF-03 | Catalog, favorites, rules and backups stay on the device; only the scanned barcode (to Open Food Facts, and to USDA FoodData Central if a key is saved and Open Food Facts does not know it), a company name you look up (to Wikidata), ingredient text you translate (to the chosen provider) and details/photos you explicitly send go elsewhere | Done |
+| NF-03 | Catalog, favorites, rules and backups stay on the device; only the scanned barcode (to Open Food Facts, and to USDA FoodData Central if a key is saved and Open Food Facts does not know it), a company name you look up (to Wikidata), the request for the recall list (to lebensmittelwarnung.de, without product data), ingredient text you translate (to the chosen provider) and details/photos you explicitly send go elsewhere | Done |
 | NF-04 | Operating cost 0€ | Done |
 | NF-05 | Modular & testable (SOLID) | Done |
 | NF-06 | No ads, no tracking, no analytics | Done |
@@ -636,6 +650,7 @@ Expo Router file-based routing in `App/app/`:
 | Open Food Facts | Product data | Open Database License (ODbL) |
 | Wikidata | Brands and subsidiaries of avoided companies | CC0 |
 | USDA FoodData Central | Products unknown to Open Food Facts; every user needs their own free api.data.gov key | CC0 (public domain) |
+| lebensmittelwarnung.de | Food recalls and warnings (official RSS feed); display only | – |
 | BVL, Nationale Berichterstattung Pflanzenschutzmittelrückstände 2023 | Choice of the pesticide-risk crops (no measured values) | – |
 
 What the app cannot know:

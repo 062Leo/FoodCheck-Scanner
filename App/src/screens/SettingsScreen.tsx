@@ -8,6 +8,7 @@ import { OffAccountSetup } from '../components/OffAccountSetup';
 import { useLanguageStore } from '../store/languageStore';
 import { useFilterStore } from '../store/filterStore';
 import { useAllergenStore } from '../store/allergenStore';
+import { useRecallStore } from '../store/recallStore';
 import { allergenName } from '../i18n/allergenLabels';
 import { reloadStores } from '../store/reloadStores';
 import { useTranslation, type TranslateFn } from '../i18n/useTranslation';
@@ -50,6 +51,7 @@ export default function SettingsScreen() {
   const allergenProfile = useAllergenStore((s) => s.profile);
   const allergenStatus = useAllergenStore((s) => s.status);
   const allergenWarning = useAllergenStore((s) => s.enabled);
+  const recallsVisible = useRecallStore((s) => s.visible);
   const [offUsername, setOffUsername] = useState<string | null>(null);
   const [showOffSetup, setShowOffSetup] = useState(false);
   const [lastBackupTime, setLastBackupTime] = useState<string | null>(null);
@@ -264,6 +266,17 @@ export default function SettingsScreen() {
             description={t('settings.usdaHint')}
             onPress={() => router.push('/settings/usda-key')}
           />
+          {recallsVisible ? (
+            <>
+              <View style={styles.divider} />
+              <ListRow
+                icon="megaphone-outline"
+                title={t('settings.recalls')}
+                description={t('settings.recallsHint')}
+                onPress={() => router.push('/recalls')}
+              />
+            </>
+          ) : null}
         </Group>
 
         <Group title={t('settings.language')}>

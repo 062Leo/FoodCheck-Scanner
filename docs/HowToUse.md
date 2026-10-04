@@ -43,6 +43,7 @@ Scan the QR code with Expo Go, or connect a device via USB.
 - **"Verarbeitet/verpackt in" / "Processed/packed in"** shows the country (for German codes also the state) and the packager code. It names the establishment that last processed or packed the product — not where the raw materials come from.
 - Products with almonds from the USA or of unknown origin show a background note on almond pollination in California; it is for information only and does not affect the rating.
 - Products from USDA FoodData Central show a data-source note below the EAN.
+- **Recall card** below the banner when a current warning from lebensmittelwarnung.de concerns the product: "Recall for this product" when the warning names its barcode, "Possibly affected" when only brand and name fit (compare batch and date on the package). "Open notice" opens the official page. The rating does not change.
 - **Star icon** (top right): toggle favorite.
 - **Edit icon** (top right): opens the Edit Product screen for corrections or contributing new data to Open Food Facts.
 - A footnote shows when the data comes from the offline cache, or is older than 7 days.
@@ -50,6 +51,12 @@ Scan the QR code with Expo Go, or connect a device via USB.
   - No internet and nothing cached → "no connection, this product is not saved yet"
   - Product not found on Open Food Facts → offer to add it yourself
   - Loading failed → retry
+
+### Recalls
+
+- **Settings → Datenquellen & Schlüssel → Rückrufe** lists the current food warnings from lebensmittelwarnung.de (title, product, reason, federal states, date) with a link to each official notice.
+- The list is loaded at app start at most every 6 hours and only when online, and is kept on the device.
+- The source is the official RSS feed of lebensmittelwarnung.de. If it fails, the app tries again after a day without any message; if it keeps failing for 7 days or answers in an unknown form, the Recalls entry and the recall cards disappear until it works again.
 
 ## 5. Catalog
 
