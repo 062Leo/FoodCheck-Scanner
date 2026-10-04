@@ -707,7 +707,8 @@ describe('migration 12: water test rules', () => {
   });
 
   it('adds the product rules and keeps user data and the user’s own rules', async () => {
-    // The user already switched off a product rule for Volvic (other case).
+    // The user already switched off a product rule for Volvic (other case) and avoids
+    // Nestlé under another spelling.
     const database = createV11Database();
     database.native.exec(`
       INSERT INTO products (ean, name, ingredients, raw_json, scanned_at, rating, visit_count,
@@ -724,6 +725,8 @@ describe('migration 12: water test rules', () => {
       VALUES
         ('product', 'volvic', 'Eigene', NULL, NULL, 'ok', '{"brand":"Volvic"}',
          '2025-03-01T00:00:00.000Z'),
+        ('company', 'Nestle AG', 'Marken & Konzerne', NULL, NULL, 'red_flag',
+         '{"names":["Nestle AG","Maggi"]}', '2025-03-01T00:00:00.000Z'),
         ('ingredient', 'Meine Zutat', 'Eigene', NULL, NULL, 'red_flag', '{"fr":"Mon ingrédient"}',
          '2025-03-01T00:00:00.000Z');
     `);
@@ -743,7 +746,12 @@ describe('migration 12: water test rules', () => {
     );
     const rulesAfter = await database.getAllAsync('SELECT * FROM filter_rules ORDER BY id');
     expect(rulesAfter.slice(0, rulesBefore.length)).toEqual(rulesBefore);
-    expect(rulesAfter).toHaveLength(rulesBefore.length + RULES_ADDED_IN_V12 - 1);
+    // Neither Volvic nor Nestlé is added a second time.
+    expect(rulesAfter).toHaveLength(rulesBefore.length + RULES_ADDED_IN_V12 - 2);
+    const companies = await database.getAllAsync<{ key: string }>(
+      "SELECT key FROM filter_rules WHERE type = 'company'"
+    );
+    expect(companies).toEqual([{ key: 'Nestle AG' }]);
 
     const products = await database.getAllAsync<RuleRow & { translations: string }>(
       "SELECT * FROM filter_rules WHERE type = 'product' ORDER BY id"
@@ -780,6 +788,33 @@ describe('migration 12: water test rules', () => {
       expect(data.reason.en).not.toBe('');
       expect(data.sources.length).toBeGreaterThan(0);
     }
+  });
+
+  it('adds Nestlé with its frozen brands and generic names switched off', async () => {
+    const database = createV11Database();
+    useDatabase(database);
+
+    await initDatabase();
+
+    const rules = await database.getAllAsync<RuleRow & { translations: string }>(
+      "SELECT * FROM filter_rules WHERE type = 'company'"
+    );
+    expect(rules).toEqual([
+      expect.objectContaining({
+        key: 'Nestlé',
+        category: 'Marken & Konzerne',
+        severity: 'red_flag',
+      }),
+    ]);
+    const data = JSON.parse(rules[0].translations);
+    expect(data.wikidataId).toBe('Q160746');
+    expect(data.names).toHaveLength(216);
+    expect(data.names).toEqual(
+      expect.arrayContaining(['Nestlé', 'Maggi', 'Perrier', 'Vittel', 'contrex', 'Hépar'])
+    );
+    expect(data.excluded).toEqual(expect.arrayContaining(['Arpège', 'Petfinder', 'Lion', 'Plus']));
+    for (const name of data.excluded) expect(data.names).toContain(name);
+    expect(data.excluded).not.toContain('Nestlé');
   });
 
   it('gives fresh installs and upgraded installs the same rules', async () => {

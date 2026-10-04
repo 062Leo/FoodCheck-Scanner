@@ -26,6 +26,14 @@ async function storedRule(type: string, key?: string) {
   return rules.find((rule) => rule.type === type && (key === undefined || rule.key === key));
 }
 
+/** Removes the seeded Nestlé rule, for tests that add their own company rules. */
+async function removeSeededCompanies() {
+  const rules = await new FilterRuleRepository().findAll();
+  for (const rule of rules.filter(({ type }) => type === 'company')) {
+    await useFilterStore.getState().deleteRule(rule.id);
+  }
+}
+
 describe('FilterScreen', () => {
   useTestDatabase();
 
@@ -149,6 +157,7 @@ describe('FilterScreen', () => {
       { id: 'Q37485297', label: 'Nestle', description: 'Familienname' },
     ]);
     mockCollectCompanyNames.mockResolvedValue(companyData);
+    await removeSeededCompanies();
     render(<FilterScreen />);
 
     fireEvent.press(await screen.findByLabelText('Regel hinzufügen'));
@@ -216,7 +225,7 @@ describe('FilterScreen', () => {
     fireEvent.press(screen.getByTestId('rule-save'));
 
     await waitFor(async () =>
-      expect(await storedRule('company')).toMatchObject({ key: 'Hipp', translations: null })
+      expect(await storedRule('company', 'Hipp')).toMatchObject({ translations: null })
     );
     expect(mockTranslate).not.toHaveBeenCalled();
     fireEvent.changeText(screen.getByTestId('rule-search'), 'Hipp');
@@ -226,6 +235,7 @@ describe('FilterScreen', () => {
 
   it('keeps the brands of a company rule when it is saved again', async () => {
     const companyData = { wikidataId: 'Q160746', names: ['Nestlé', 'Maggi'] };
+    await removeSeededCompanies();
     await useFilterStore.getState().addRule({
       type: 'company',
       key: 'Nestlé',
@@ -256,6 +266,16 @@ describe('FilterScreen', () => {
     );
     expect(mockTranslate).not.toHaveBeenCalled();
     expect(await screen.findByText('Regel gespeichert – Katalog wird neu bewertet.')).toBeTruthy();
+  });
+
+  it('starts with Nestlé as an avoided company with generic names switched off', async () => {
+    render(<FilterScreen />);
+
+    fireEvent.changeText(await screen.findByTestId('rule-search'), 'Nestlé');
+    expect(await screen.findByText('Marke/Konzern · 216 zugehörige Marken')).toBeTruthy();
+    fireEvent.press(screen.getByText('Nestlé'));
+    fireEvent.press(screen.getByText('Namen anzeigen'));
+    expect(screen.getByText('195 von 216 Marken aktiv')).toBeTruthy();
   });
 
   it('shows a water test rule with its reason and sources and changes its severity', async () => {

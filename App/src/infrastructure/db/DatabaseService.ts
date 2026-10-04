@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import { seedRules } from '../../domain/rules/seedRules';
+import { normalizeCompanyName } from '../../domain/analysis/companyRules';
 import { getErrorMessage } from '../../shared/errors';
 
 export const DATABASE_NAME = 'foodscanner.db';
@@ -34,7 +35,7 @@ const migrations: Record<number, Migration> = {
   9: updateFilterList,
   10: addAlcoholRules,
   11: addWaterChecks,
-  12: addWaterTestRules,
+  12: migrateToV12,
 };
 
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -895,6 +896,295 @@ async function addWaterTestRules(database: SQLite.SQLiteDatabase): Promise<void>
       cause: error,
     });
   }
+}
+
+/** v12: the avoided company Nestlé. */
+const V12_NESTLE_RULE_NAME = 'Nestlé';
+
+/** Names collected from Wikidata for Q160746 on 2026-10-04, plus Hépar. */
+const V12_NESTLE_NAMES: readonly string[] = [
+  'Nestlé',
+  'Abuelita',
+  'Acqua Panna',
+  'Acqua Vera',
+  'Aero',
+  'Aero chocolate',
+  'After Eight',
+  "Allen's",
+  'Antiperle',
+  'BabyNes',
+  'Balaton',
+  'Bärenmarke',
+  'Bear Brand',
+  'Beverage Partners Worldwide',
+  'Big Turk',
+  'Biscoitos São Luiz',
+  'Black Magic',
+  'Blue Riband biscuit',
+  'Bonka',
+  'Boost',
+  'Bottle Caps',
+  'Bracafé',
+  'Buitoni',
+  'Café El Águila',
+  'Caramac',
+  'Carlos V chocolate bar',
+  'Carnation',
+  'Centroproizvod',
+  'Cereal Partners Worldwide',
+  'Cerelac',
+  'Chambourcy',
+  'Cheekies',
+  'Chocapic',
+  'Chocolat Kohler',
+  'Chokito',
+  'Cini Minis',
+  'Cinnamon Toast Crunch',
+  'Coffee Crisp',
+  'Coffee-Mate',
+  'Cookie Crisp',
+  'Crisp',
+  "D'Onofrio",
+  'Dancow',
+  'DiGiorno',
+  'Dinossauro',
+  'Dolce Gusto',
+  'Drammens Is',
+  "Dreyer's",
+  'El Chaná',
+  'Fab',
+  'Fitness',
+  'Fitness cereal',
+  'Friskies PetCare Company',
+  'Froneri',
+  'Garden Gourmet',
+  'Garoto',
+  'Gerber Products Company',
+  'Golden Nuggets',
+  'Hollandia',
+  'Hot Pockets',
+  'Hsu Fu Chi',
+  'Ice Mountain',
+  'Jede',
+  'Kit Kat',
+  'Kofila',
+  'La Lechera',
+  'Lanvin',
+  'Lean Cuisine',
+  'Lion',
+  'Lion Bar',
+  'Lion Cereal',
+  'Litoral',
+  'Lollo',
+  "Mackintosh's Toffee",
+  'Maggi',
+  'Matchmakers',
+  'Menier Chocolate',
+  'Milkybar',
+  'Milo',
+  'Mirage',
+  'Mivina',
+  'Mövenpick Ice Cream',
+  'Munchies confectionery',
+  'Nescafé',
+  'Nescau',
+  'Nespresso',
+  'Nesquik',
+  'Nesquik Cereal',
+  'Nestea',
+  'Nestlé (Canada)',
+  'Nestlé (United States)',
+  'Nestlé Bulgaria',
+  'Nestlé Česko',
+  'Nestlé Chunky',
+  "Nestlé Côte d'Ivoire",
+  'Nestlé Crunch',
+  'Nestlé Deutschland',
+  'Nestlé Dibs',
+  'Nestle España',
+  'Nestlé Hellas',
+  'Nestlé India',
+  'Nestlé Ireland',
+  'Nestlé Milk Chocolate',
+  'Nestle Nido',
+  'Nestlé Purina PetCare',
+  'Nestlé Rossiya',
+  'Nestlé Tex',
+  'Nestlé United Kingdom',
+  'Nestlé Waters',
+  'Nuts',
+  'Nuts (Schokoriegel)',
+  'Oh Henry!',
+  'Osem',
+  'Osem Investments',
+  'Panna',
+  'Peppermint Crisp',
+  'Perrier',
+  'Perugina',
+  'Polly Waffle',
+  'Polo mint',
+  'Prestígio',
+  'Quality Street',
+  'Rolo',
+  "Rowntree's",
+  "Rowntree's Fruit Gums",
+  "Rowntree's Fruit Pastilles",
+  'Ruchoco',
+  'Sanpellegrino S.p.A.',
+  'Schokoladenfabrik Menier',
+  "Seattle's Best Coffee",
+  'Shreddies',
+  'Sical',
+  'Skinny Cow',
+  'Smarties',
+  'Société des Produits Nestlé',
+  "Stouffer's",
+  'Svitoch',
+  'The Willy Wonka Candy Company',
+  'Thomy',
+  'Tivall CZ',
+  'Tombstone',
+  'Uncle Tobys',
+  'Unilac, Inc.',
+  'Vascolet',
+  'Violet Crumble',
+  'Vitaflo',
+  'Vitaflo International Ltd.',
+  'Vittel',
+  'Wagner Pizza',
+  'Wagner Tiefkühlprodukte',
+  'Walnut Whip',
+  'Winiary',
+  'Yes Torty',
+  'Yorkie chocolate bar',
+  'Zoégas Kaffe',
+  'Alpo',
+  'Antica Gelateria del Corso',
+  'Aquarel',
+  'Arpège',
+  'Bacio Perugina',
+  'Baton',
+  "Beggin' Strips product line",
+  'Beneful',
+  'Bissli',
+  'Cabana',
+  'Cailler',
+  'Choco Crossies',
+  'Coffee Mate Dirty Soda',
+  'contrex',
+  'Deer Park Spring Water',
+  'Drumstick',
+  "Edy's Pie",
+  'Erikli',
+  'Eskimo',
+  'Fawdon Factory',
+  'Felix',
+  'Fontalegre',
+  'Friskies',
+  'Froneri Ice Cream Deutschland',
+  'Gerber Baby',
+  'Gerber Singles',
+  'Golden Grahams',
+  'Häagen-Dazs',
+  'Henniez',
+  'Henniez (Mineralwasser)',
+  'Joker Is',
+  "Kelly's of Cornwall",
+  'Lentilky',
+  "Lily's Kitchen",
+  'Maxibon',
+  'Nestlé Pure Life',
+  'Nestlé Waters France',
+  'Orion',
+  'Orion (Schokoladenfabrik)',
+  'Ozarka',
+  'Peters Ice Cream',
+  'Petfinder',
+  'Plus',
+  'Poland Spring',
+  'Purina One',
+  'R&R Ice Cream Deutschland',
+  'Ralston Purina',
+  'S.Pellegrino',
+  'San Pellegrino',
+  'Sanpellegrino sparkling drink',
+  'Sarotti',
+  'Serenata de Amor',
+  'Tip Top',
+  'Tivall',
+  'Villa Panna',
+  'Charrier',
+  'Jelly Tip',
+  'Nintendo Cereal System',
+  'Studentská pečeť',
+  'Teenage Mutant Ninja Turtles Cereal',
+  'Hépar',
+];
+
+/** Generic or non-food names, switched off; the user can switch them on in the editor. */
+const V12_NESTLE_EXCLUDED: readonly string[] = [
+  'Arpège',
+  'Lanvin',
+  'Nintendo Cereal System',
+  'Teenage Mutant Ninja Turtles Cereal',
+  'Petfinder',
+  'Plus',
+  'Lion',
+  'Nuts',
+  'Crisp',
+  'Fab',
+  'Fitness',
+  'Orion',
+  'Felix',
+  'Tip Top',
+  'Baton',
+  'Mirage',
+  'Cabana',
+  'Jede',
+  'Boost',
+  'Panna',
+  'Eskimo',
+];
+
+/**
+ * v12: adds Nestlé as an avoided company, unless a company rule with the same
+ * normalized name exists. Its brands are a frozen Wikidata lookup of Q160746
+ * (CC0, 2026-10-04) plus Hépar; generic and non-food names start switched off.
+ */
+async function addNestleCompanyRule(database: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    const existing = await database.getAllAsync<{ key: string }>(
+      "SELECT key FROM filter_rules WHERE type = 'company'"
+    );
+    const own = normalizeCompanyName(V12_NESTLE_RULE_NAME);
+    if (existing.some(({ key }) => normalizeCompanyName(key) === own)) return;
+    const data = {
+      wikidataId: 'Q160746',
+      names: V12_NESTLE_NAMES,
+      excluded: V12_NESTLE_EXCLUDED,
+    };
+    await database.runAsync(
+      `
+        INSERT INTO filter_rules (type, key, category, threshold, operator, severity, translations, created_at)
+        VALUES ('company', $key, 'Marken & Konzerne', NULL, NULL, 'red_flag', $translations, $created_at);
+      `,
+      {
+        $key: V12_NESTLE_RULE_NAME,
+        $translations: JSON.stringify(data),
+        $created_at: new Date().toISOString(),
+      }
+    );
+  } catch (error) {
+    throw new Error(`Failed to add the Nestlé company rule: ${getErrorMessage(error)}`, {
+      cause: error,
+    });
+  }
+}
+
+/** v12: product rules for criticised waters and Nestlé as an avoided company. */
+async function migrateToV12(database: SQLite.SQLiteDatabase): Promise<void> {
+  await addWaterTestRules(database);
+  await addNestleCompanyRule(database);
 }
 
 export function hasLocalEditMarkers(rawJson: string): boolean {

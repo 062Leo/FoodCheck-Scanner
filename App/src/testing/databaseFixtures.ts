@@ -318,8 +318,8 @@ export const PRODUCT_RULE_KEYS_ADDED_IN_V12 = [
   'Hépar',
 ];
 
-/** Number of rules migration 12 adds to a database that has none of them. */
-export const RULES_ADDED_IN_V12 = PRODUCT_RULE_KEYS_ADDED_IN_V12.length;
+/** Number of rules migration 12 adds to a database that has none of them (plus Nestlé). */
+export const RULES_ADDED_IN_V12 = PRODUCT_RULE_KEYS_ADDED_IN_V12.length + 1;
 
 /** raw_json as written by the product screen after a scan (camelCase API data). */
 export const SCANNED_RAW_JSON = JSON.stringify({
