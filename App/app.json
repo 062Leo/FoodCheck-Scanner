@@ -44,7 +44,8 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "./plugins/withArm64Only"
     ],
     "extra": {
       "router": {},

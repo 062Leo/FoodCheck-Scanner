@@ -177,6 +177,7 @@ App/
 ├── assets/
 ├── app.json                 # Expo config (newArchEnabled: true)
 ├── eas.json                  # EAS build profile (production → Android .apk)
+├── plugins/withArm64Only.js  # Config plugin: Android build for arm64-v8a only
 ├── tsconfig.json             # extends expo/tsconfig.base, strict: true
 ├── eslint.config.mjs         # ESLint flat config (ESLint 10)
 ├── jest.config.js / jest.integration.config.js
