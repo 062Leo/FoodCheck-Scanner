@@ -322,7 +322,7 @@ CREATE UNIQUE INDEX idx_favorites_product_id ON favorites(product_id);
 ```sql
 CREATE TABLE IF NOT EXISTS filter_rules (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  type         TEXT NOT NULL,     -- 'ingredient' | 'nutrient' | 'check' | 'company'
+  type         TEXT NOT NULL,     -- 'ingredient' | 'nutrient' | 'check' | 'company' | 'product'
   key          TEXT NOT NULL,
   category     TEXT NOT NULL DEFAULT '',
   threshold    REAL,
@@ -332,11 +332,11 @@ CREATE TABLE IF NOT EXISTS filter_rules (
   created_at   TEXT NOT NULL
 );
 ```
-`check` rules are the product checks (`key` = check key such as `ingredient_count`; only `ingredient_count` uses `threshold`/`operator`). `company` rules store the avoided name in `key`, the fixed category `Marken & Konzerne`, and in `translations` the Wikidata lookup result (`{ wikidataId, names, excluded? }`) instead of translations. `excluded` holds the names the user switched off; JSON without it still parses. A refresh keeps exclusions of names that are still collected (`keepExclusions`).
+`check` rules are the product checks (`key` = check key such as `ingredient_count`; only `ingredient_count` uses `threshold`/`operator`). `company` rules store the avoided name in `key`, the fixed category `Marken & Konzerne`, and in `translations` the Wikidata lookup result (`{ wikidataId, names, excluded? }`) instead of translations. `excluded` holds the names the user switched off; JSON without it still parses. A refresh keeps exclusions of names that are still collected (`keepExclusions`). `product` rules store a readable name in `key`, the category `Wasser-Tests`, and in `translations` `{ brand, nameWords, waterOnly, reason: { de, en }, sources: [{ title, url, date? }] }` (`parseProductRuleData` also accepts a single `source` object).
 
 New product fields (categories, packaging, labels, brand owner, packager codes, alcohol content, `source: 'usda'`) are not columns; they live in `raw_json`.
 
-### Migrations (`DatabaseService`, version 11)
+### Migrations (`DatabaseService`, version 12)
 
 | Version | Migration | Description |
 |---------|-----------|-------------|
@@ -351,6 +351,7 @@ New product fields (categories, packaging, labels, brand owner, packager codes, 
 | 9 | `updateFilterList` | Remove 11 packaging/propellant gas rules; add 86 ingredient rules and the 9 product checks (frozen copies), skipping any rule whose type and key (any case, any severity) already exists |
 | 10 | `addAlcoholRules` | Add 15 alcohol ingredient rules (wine, beer, spirits; frozen copy), skipping any key that already exists as an ingredient rule (any case, any severity) |
 | 11 | `addWaterChecks` | Add the 3 water checks `water_not_mineral`, `water_plastic_bottle`, `water_contaminants` (category Wasser; frozen copy), skipping any key that already exists as a check rule (any case, any severity) |
+| 12 | `migrateToV12` | Add the 13 water test rules of type `product` (category Wasser-Tests; frozen copy, JSON data in `translations`), skipping any name that already exists as a product rule (any case, any severity); add the company rule Nestlé (Wikidata Q160746, 216 frozen names incl. Hépar, 21 pre-excluded) unless a company rule with the same normalized name exists |
 
 Migrations are append-only and run inside a transaction (or sequentially where the platform has no transaction API); a database newer than the app's `DATABASE_VERSION` is left untouched with a warning instead of being downgraded.
 
@@ -484,6 +485,12 @@ Whole-product checks stored as `check` rules; each finding counts like an ingred
 
 The checks only see what Open Food Facts (or USDA) provides; products stored before this data was kept get it from the background refresh (`StoredProductRefreshService`, see [Product Rating](#product-rating-productratingrate)) or their next online lookup.
 
+### Product Rules (`productRules.ts`)
+
+- `product` rules match when the product's brand or `brand_owner` contains `brand` as consecutive words (same normalization as company rules: accents, case, `&`, legal forms, spaces), every entry of `nameWords` appears in the product name as whole consecutive words (or written together), and — with `waterOnly` — the product is a water (`isWater`). Empty `nameWords` means the whole brand.
+- A match is one red flag (severity `critical`, category `Wasser-Tests`, detail `productRule` with name, reason and sources); it is not critical on its own. Rules set to `ok` never match. The keyword analyzer and `translateRuleKeyword` only handle `ingredient` rules, so product rules are never matched against the ingredient text or translated.
+- In the rule editor only the severity can be changed; the rule can be deleted. Product rules cannot be created in the UI.
+
 ### Avoided Companies (`companyRules.ts`)
 
 - `company` rules are matched against the product's brands and `brand_owner`. The avoided name itself may appear inside a brand ("Nestlé Deutschland AG"); names collected from Wikidata must match a whole brand or its first whole words ("Maggi" matches "Maggi Fix", "Lion" does not match "Golden Lion Foods"). Both are also compared without spaces and hyphens ("Kit Kat" = "KitKat", "Coca-Cola" = "CocaCola"). Legal forms and regional suffixes (GmbH, AG, Deutschland, …) are ignored. Names the user switched off (`excluded`, compared normalized) are skipped; the rule's own name can never be switched off. Because `excluded` lives in `translations`, which `ratingFingerprint` hashes, switching a name re-rates the catalog.
@@ -503,13 +510,13 @@ The checks only see what Open Food Facts (or USDA) provides; products stored bef
 
 ### Product Rating (`ProductRating.rate`)
 
-- **Critical**: a brand/company the user avoids, Nova 4, or 3 or more red flags (`CRITICAL_RED_FLAG_COUNT`; ingredient, nutrient and check findings all count)
+- **Critical**: a brand/company the user avoids, Nova 4, or 3 or more red flags (`CRITICAL_RED_FLAG_COUNT`; ingredient, nutrient, check and product rule findings all count)
 - **Warning**: 1–2 red flags, or Nova 3
 - **Unknown**: no ingredient list, no Nova score, and no nutrient-rule finding (i.e. `redFlagCount === 0`)
 - **OK**: none of the above
 - The result also carries machine-readable `reasons` (`avoidedCompany`, `nova`, `redFlags`, `ingredientsMissing`, `insufficientData`, `noFindings`) used to build the "why" text shown in the UI.
 - `rateProduct()` (`domain/analysis/rateProduct.ts`) is the single entry point used by the scanner, the product screen and the edit screen.
-- `CatalogRatingService` re-rates every stored product (in batches of 25, yielding to the UI thread) whenever the rule set or the rating logic changes. A fingerprint (`RATING_LOGIC_VERSION` + a hash of all rules) stored in `meta.rating_fingerprint` decides whether a re-rate is needed; `RATING_LOGIC_VERSION` is bumped whenever a change in the rating code would alter results, forcing a one-time recompute for existing installs (currently 7).
+- `CatalogRatingService` re-rates every stored product (in batches of 25, yielding to the UI thread) whenever the rule set or the rating logic changes. A fingerprint (`RATING_LOGIC_VERSION` + a hash of all rules) stored in `meta.rating_fingerprint` decides whether a re-rate is needed; `RATING_LOGIC_VERSION` is bumped whenever a change in the rating code would alter results, forcing a one-time recompute for existing installs (currently 8).
 - `StoredProductRefreshService` completes products stored with an older Open Food Facts field set. `PRODUCT_DATA_VERSION` (stored in `products.data_version`) is bumped whenever the client requests new fields (2: categories_tags, packaging tags, brand_owner, emb_codes_tags, alcohol_100g; 3: the minerals `sodium_100g`, `calcium_100g`, `magnesium_100g`, `potassium_100g`, `bicarbonate_100g`, `chloride_100g`, `sulphate_100g`, `nitrate_100g`, `nitrite_100g`, `fluoride_100g`, `manganese_100g`). After the rules are loaded at app start, products with an older or unknown version are fetched again in the background: one request at a time, at most 10 per minute, most recently seen first. It stops when the device is offline or a request fails (e.g. HTTP 429) and continues with the remaining products on the next start. The fresh data is merged like a lookup (edited fields and USDA data are kept), re-rated and stored without counting a visit; the update is skipped if the product was edited or deleted meanwhile. A product unknown to Open Food Facts keeps its data and is only marked with the current version. Editing a product keeps its data version.
 
 ## 10. UI Design Tokens (`src/ui/theme.ts`)
@@ -557,7 +564,7 @@ Expo Router file-based routing in `App/app/`:
 ## 12. Testing
 
 - **Framework:** Jest with the `jest-expo` preset
-- **Count:** 71 suites, 828 tests (all passing; measured with `npx jest`)
+- **Count:** 72 suites, 847 tests (all passing; measured with `npx jest`)
 - **Location:** `__tests__/` directories alongside source files
 - **No snapshot tests** — all assertion-based `expect()` calls
 - **Real SQLite in tests:** database and repository tests run against `node:sqlite` through a test double (`src/testing/nodeSqlite.ts`, `useTestDatabase()`), not string-matching mocks; migration tests start from literal legacy schemas with seeded data (up to the v9 schema with user rules, products and favorites for migration 10) and check data survival, idempotency, fresh install = upgrade and rollback of a failing migration
@@ -572,7 +579,7 @@ Expo Router file-based routing in `App/app/`:
 |---|---|---|
 | API Clients | OpenFoodFactsClient, OpenFoodFactsWriteClient, OffOcrClient, UsdaClient, RecallClient, RobotoffClient, fetchWithTimeout, retry, debounce, config, ApiError, staging integration | HTTP, auth, timeouts, error handling |
 | DB / Repositories | ProductRepository, FilterRuleRepository, FavoritesRepository, migrations, BackupService | CRUD, migrations, backup/restore against real SQLite |
-| Domain Analysis | RedFlagAnalyzer, RedFlagMatching, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductNormalizer, ProductRating, productChecks, companyRules, golden ratings | Rating rules, checks, company matching, matching correctness (incl. the alcohol shields) |
+| Domain Analysis | RedFlagAnalyzer, RedFlagMatching, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductNormalizer, ProductRating, productChecks, productRules, companyRules, golden ratings | Rating rules, checks, company matching, matching correctness (incl. the alcohol shields) |
 | Domain Product/Catalog/OCR/Barcode/Eggs/Allergens | productForm, productBadges, packagerCode, almondInfo, waterInfo, catalogQuery, nutritionLabel, ocrGeometry, barcode, eggCode, allergenProfile, recallMatch | Validation, parsing, pure logic |
 | Domain Rules | ingredientTranslations, ruleGroups | Multi-language lookup, grouping/sorting |
 | Services | ProductLookupService, ProductEditService, CatalogRatingService, StoredProductRefreshService, CompanyLookupService, RecallService | Cache-first lookup incl. USDA fallback, edit tracking, re-rating, background refresh, Wikidata lookup, recall cache with backoff and hiding |
@@ -634,7 +641,7 @@ Expo Router file-based routing in `App/app/`:
 
 - `npm run typecheck` — clean (0 errors)
 - `npm run lint` — clean (0 errors, ESLint 10 flat config)
-- `npm test` — 71 suites, 828 tests, all passing
+- `npm test` — 72 suites, 847 tests, all passing
 - `npm run test:integration` requires network access to the OFF staging server and is not part of `npm run check`
 - Open work, open questions and known limits are tracked in [OpenTasks.md](OpenTasks.md)
 

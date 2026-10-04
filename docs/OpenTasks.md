@@ -1,7 +1,7 @@
 # Open Tasks — FoodCheck
 
-State of branch `feature/natural-food-checks` (database version 11, `RATING_LOGIC_VERSION` 7,
-780 built-in rules, 71 test suites / 828 tests). Items 01 and 02 are done; everything else below
+State of branch `feature/natural-food-checks` (database version 12, `RATING_LOGIC_VERSION` 8,
+794 built-in rules, 72 test suites / 847 tests). Items 01 and 02 are done; everything else below
 is still open.
 
 Markers: 👤 decided by the owner · 💡 proposal · ❓ open · ⚠️ risk · 🔴 high · 🟠 medium · ⚪ low
@@ -45,6 +45,9 @@ Check:
 
 - **Migrations 9 and 10** on the existing test database (a v8 installation with user data):
   rules, products and favorites survive; new rules are added once; no duplicates.
+- **Migration 12:** category Wasser-Tests with 13 rules and the Nestlé rule (216 names, 195
+  active) appear once; an existing own Nestlé rule is kept and not duplicated; findings on a
+  real Volvic, Perrier or Gut & Günstig water show reason and sources.
 - **Background refresh** of stored products (`StoredProductRefreshService`): runs after start,
   at most 10 requests per minute, catalog ratings update, edits and USDA data are kept, stops
   offline and continues on the next start.
@@ -90,12 +93,31 @@ The branch is local only. Push it and open a pull request only after the owner's
     tags containing säugling/sauglings/infant/nourrisson/baby (not "not recommended"). Not seen
     on a real product yet.
   - Many waters carry both `en:natural-mineral-waters` and `en:table-waters` (e.g. a regional
-    brand); as specified, table water always flags. ❓ Keep or let natural mineral water win.
+    brand); such products currently flag as table water. Kept strict for now. ❓ Keep or let
+    natural mineral water win.
   - Nitrite, manganese, arsenic and uranium are hardly ever entered; arsenic and uranium have no
     Open Food Facts field, so they are not checked.
   - The golden products contain no water with categories, so the golden baseline did not
     change. 💡 Add a few waters to the golden set.
   - The category preset "Wasser" is also offered for new ingredient rules. ❓ Keep?
+- **Water test rules (migration 12), open points** ❓:
+  - "Reinbeker Klosterquelle Frische Brise" matches every Frische Brise variant of that brand,
+    not only the still one that Öko-Test rated; "Frische Brise" is also a product line with
+    several variants. ⚠️ Possibly too broad; narrow it with "Still" once real product names
+    are known.
+  - Product names on Open Food Facts vary ("Naturelle" vs. "Naturell", missing variant
+    words), so some criticised waters may not match. Not checked against real entries yet.
+  - The test results (Öko-Test 07/2025 and 07/2026) are taken from the press articles named
+    as sources; the original Öko-Test issues were not checked.
+  - Perrier, Vittel, Contrex and Hépar also match the Nestlé company rule, so such a water is
+    critical and additionally carries the water test red flag.
+  - Hépar is not linked to Nestlé in Wikidata; it was added to the frozen Nestlé names by hand.
+  - Pre-excluded Nestlé names (generic or non-food, switch on in the editor): Arpège, Lanvin,
+    Nintendo Cereal System, Teenage Mutant Ninja Turtles Cereal, Petfinder, Plus, Lion, Nuts,
+    Crisp, Fab, Fitness, Orion, Felix, Tip Top, Baton, Mirage, Cabana, Jede, Boost, Panna,
+    Eskimo.
+  - The golden rule sets contain no product or company rules, so the golden baseline did not
+    change.
 
 <a id="t06"></a>
 ## 06 Known limits

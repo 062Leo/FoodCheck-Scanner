@@ -41,10 +41,11 @@
 ## Produkt-Analyse
 
 ### Red Flag System
-- **780 vordefinierte Regeln**: 768 Zutaten-Regeln in 24 belegten Kategorien plus 12 Produkt-Prüfungen (26 Kategorie-Presets stehen beim Anlegen einer neuen Zutaten-Regel zur Auswahl)
+- **794 vordefinierte Regeln**: 768 Zutaten-Regeln in 24 belegten Kategorien, 12 Produkt-Prüfungen, 13 Wasser-Test-Regeln und Nestlé als gemiedener Konzern (26 Kategorie-Presets stehen beim Anlegen einer neuen Zutaten-Regel zur Auswahl)
 - **Neu in der Filterliste (Datenbank-Version 9)**: 86 Zutaten-Regeln – 31 E-Nummern (u. a. E120, E200, E203, E214/E215/E219, Cellulosen E460–E466, E476, Sorbitanester E492–E495, E952, modifizierte Stärken E1404–E1452, E1520), Zusatzstoff-Namen (Carmin, Cyclamat, Sorbinsäure, PHB-Ester, Propylenglycol, Citronensäure …), Gentechnik, Insekten, Samenöle (zählen auch kaltgepresst), Fleischersatz-Proteine (Erbsen-, Weizen-, Ackerbohnenprotein, Seitan, Mycoprotein), Zuchtfisch, Alkohol, erhitzte Milch (pasteurisiert, UHT, H-Milch) und versteckte Pökelung über Sellerieextrakt/Selleriesaftpulver. Entfernt wurden 11 Verpackungs- und Treibgase (u. a. Kohlendioxid, Distickstoffmonoxid, E290, E938–E949)
 - **Neu in der Filterliste (Datenbank-Version 10)**: 15 Zutaten-Regeln in der Kategorie Alkohol – Wein (auch Rot-, Weiß- und Glühwein), Portwein, Sherry, Marsala, Sake, Bier, Brandy, Weinbrand, Cognac, Kirschwasser, Rum (auch Rumaroma), Whisky, Whiskey, Wodka und Likör. Alkoholfreies Bier und alkoholfreier Wein zählen weiterhin (bis 0,5 % vol.)
 - **Neu in der Filterliste (Datenbank-Version 11)**: 3 Prüfungen in der Kategorie Wasser – kein natürliches Mineralwasser, Wasser in Plastikflasche, Werte über den Grenzwerten für Säuglingsnahrung. Quellen: Min/TafelWV Anlage 6 (gesetze-im-internet.de/min_tafelwv), Columbia University/PNAS 2024, ANSES 2025
+- **Neu in der Filterliste (Datenbank-Version 12)**: Kategorie Wasser-Tests mit 13 Produkt-Regeln (Forstetal Calciumquelle Pure, Naturpark Quelle Naturelle, Vitrex Naturelle, Reinbeker Klosterquelle Frische Brise, Gut & Günstig Mineralwasser, Bad Harzburger Medium, Naturalis Medium, Volvic, Gerolsteiner Naturell, Perrier, Vittel, Contrex, Hépar), Quellen: Öko-Test 07/2025 und 07/2026 laut leinetal24, t-online (26.06.2025), heidelberg24, Utopia (05.08.2026), The Local (25.09.2025, 19.11.2025); dazu Nestlé als gemiedener Konzern
 - **Eigene Filter-Regeln**: Benutzer kann Zutaten- und Nährwert-Regeln sowie gemiedene Marken/Konzerne hinzufügen/ändern/löschen; Severity `Red Flag` oder `Erlaubt` (whitelistet eine Zutat oder — solange die Bedingung zutrifft — eine Nährwert-Regel; bei einer Produkt-Prüfung schaltet `Erlaubt` die Prüfung aus)
 - **Vier Typen**:
   - **Zutaten-Regel**: Keyword-Matching in der Zutatenliste, span-basiert (ein Treffer innerhalb eines längeren Treffers einer anderen Regel zählt nicht); mehrsprachig (de/en/fr/it/es/nl/pt/pl)
@@ -85,6 +86,12 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 - **Einzelne Marken abwählen**: Unter „Namen anzeigen“ ist jeder gesammelte Name ein Eintrag zum An- und Ausschalten (Zähler „N von M Marken aktiv“, Filterfeld und seitenweise je 50 Namen bei langen Listen); abgewählte Namen treffen keine Produkte mehr (normalisierter Vergleich). Der Name der Regel selbst bleibt immer aktiv. „Erneut abfragen“ behält die Abwahl für Namen, die weiterhin gefunden werden
 - **Ohne Abfrage** (oder wenn Wikidata nicht erreichbar ist) wird nur der Name selbst erkannt, nicht die Marken des Konzerns
 - Eine Marke bzw. ein Konzern kann nur einmal in der Liste stehen
+- **Nestlé ab Werk**: Migration 12 legt Nestlé an (Wikidata Q160746, 216 eingefrorene Namen vom 04.10.2026 inkl. Perrier, Vittel, Contrex, Hépar), sofern noch keine Konzern-Regel mit gleichem normalisierten Namen existiert. 21 allgemeine oder fachfremde Namen sind vorab abgewählt und lassen sich im Editor wieder einschalten: Arpège, Lanvin, Nintendo Cereal System, Teenage Mutant Ninja Turtles Cereal, Petfinder, Plus, Lion, Nuts, Crisp, Fab, Fitness, Orion, Felix, Tip Top, Baton, Mirage, Cabana, Jede, Boost, Panna, Eskimo
+
+### Wasser-Tests (Produkt-Regeln)
+- **Regeltyp „product“**: Marke (zusammenhängende Wörter in Marke oder Markeninhaber) plus Wörter im Produktnamen, hier immer nur für Wasser; ein Treffer zählt als **eine Red Flag** (nicht sofort kritisch)
+- **Treffer** zeigen Begründung und Quellen (z. B. „Öko-Test 07/2025: „ungenügend“ – erhöhter Urangehalt. Quelle: leinetal24“)
+- **Editor**: zeigt Geltungsbereich, Begründung und Quellen-Links; nur Schweregrad änderbar, Löschen möglich; neue Regeln dieses Typs lassen sich in der App nicht anlegen
 
 ### NOVA-Bewertung
 - NOVA-Score 1–4 (unverarbeitet → ultra-verarbeitet); ein fehlender oder ungültiger Wert gilt als unbekannt, nicht als NOVA 1
@@ -173,7 +180,7 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 
 ## Filter Rules Management
 
-- **780 vordefinierte Regeln** (768 Zutaten-Regeln + 12 Produkt-Prüfungen) — automatisch bei erster DB-Erstellung, ergänzt durch spätere App-Updates; die Migrationen 9, 10 und 11 fügen bei bestehenden Installationen nur Regeln hinzu, die es mit gleichem Typ und Schlüssel noch nicht gibt (eigene Regeln werden weder doppelt angelegt noch überschrieben)
+- **794 vordefinierte Regeln** (768 Zutaten-Regeln + 12 Produkt-Prüfungen + 13 Wasser-Test-Regeln + Nestlé) — automatisch bei erster DB-Erstellung, ergänzt durch spätere App-Updates; die Migrationen 9 bis 12 fügen bei bestehenden Installationen nur Regeln hinzu, die es mit gleichem Typ und Schlüssel noch nicht gibt (eigene Regeln werden weder doppelt angelegt noch überschrieben)
 - **Kategorie-Gruppierung**: nur Kategorien mit Regeln werden angezeigt, sortiert nach angezeigtem Namen; bei Suche werden alle Kategorien mit Treffer aufgeklappt
 - **Suche**: filtert nach Zutat/Kategorie (auch übersetzte Namen)
 - **Regel-Editor als Sheet**: Chips statt Rohschlüssel und gt/lt/eq, Komma-Schwellwerte, Validierungsmeldungen, Speicher-Fortschritt und Fehler-Feedback, Löschen direkt im Editor (nicht bei Produkt-Prüfungen)
@@ -185,9 +192,9 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
   - **Severity**: RED FLAG / Erlaubt (mit Erklärung der jeweiligen Wirkung)
 - **Bearbeiten ohne Datenverlust**: eine gespeicherte Übersetzung bleibt erhalten, solange sich das Keyword nicht ändert
 - **Auto-Translation**: Neue Zutaten werden parallel in 7 Sprachen übersetzt
-- **Löschen** mit Bestätigungsdialog (Zutaten-, Nährwert- und Marken-/Konzern-Regeln; Produkt-Prüfungen nicht)
+- **Löschen** mit Bestätigungsdialog (Zutaten-, Nährwert-, Marken-/Konzern- und Wasser-Test-Regeln; Produkt-Prüfungen nicht)
 - **26 Kategorie-Presets**: Süßungsmittel, Farbstoffe, Konservierungsstoffe, Geschmacksverstärker & Aromen, Emulgatoren & Stabilisatoren, Verdickungs- & Geliermittel, Säuren & Säureregulatoren, Antioxidationsmittel, Gehärtete Fette & raffinierte Öle, Zucker & Sirupe, Modifizierte Stärken, Phosphate & Mineralstoffe, Füll- & Trägerstoffe, Proteine & Fleischersatz, Trenn- & Überzugsmittel, Treib- & Schutzgase, Metalle, E-Nummern, Sonstige Zusatzstoffe, Gentechnik, Insekten, Samenöle, Zuchtfisch, Alkohol, Erhitzte Milch, Wasser
-- **Kategorien der Prüfungen und Marken**: Verarbeitung, Verpackung, Schadstoffe sowie Marken & Konzerne erscheinen in der Liste, sind aber keine Presets für Zutaten-Regeln
+- **Kategorien der Prüfungen und Marken**: Verarbeitung, Verpackung, Schadstoffe, Wasser-Tests sowie Marken & Konzerne erscheinen in der Liste, sind aber keine Presets für Zutaten-Regeln
 
 ---
 
@@ -274,9 +281,9 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 - **`meta`**: key (PK), value — Migrations-Tracking, Rating-Fingerprint, Backup-Einstellungen, Rückruf-Cache mit Zustand der Quelle (`recalls_state`, keine Migration nötig)
 - **`products`**: id, ean (UNIQUE), name, brands, ingredients, nova_score, nutriscore, raw_json, scanned_at, rating, data_version, last_api_fetch, image_url, image_ingredients_url, image_nutrition_url, image_packaging_url, visit_count, last_seen_at, edited_at, edited_fields — Kategorien, Verpackung, Siegel, Markeninhaber, Identitätskennzeichen, Alkoholgehalt und die Quelle (USDA) stehen in `raw_json`
 - **`favorites`**: id, product_id (FK → products.id CASCADE, UNIQUE-Index), added_at
-- **`filter_rules`**: id, type (`ingredient`/`nutrient`/`check`/`company`), key, category, threshold, operator, severity, translations (JSON; bei Marken/Konzernen die Wikidata-ID, die zugehörigen Marken und die abgewählten Namen), created_at
-- **11 Migrationen** (Datenbank-Version 11): initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte → Favoriten-Eindeutigkeit + edited_at → edited_fields → Filterliste aktualisiert (11 Gase entfernt, 86 Zutaten-Regeln und 9 Prüfungen ergänzt) → Alkohol-Regeln ergänzt (15 Zutaten-Regeln) → Wasser-Prüfungen ergänzt (3 Prüfungen)
-- **Neu-Bewertung**: `RATING_LOGIC_VERSION` 7 – gespeicherte Produkte werden nach dem Update einmal neu bewertet
+- **`filter_rules`**: id, type (`ingredient`/`nutrient`/`check`/`company`/`product`), key, category, threshold, operator, severity, translations (JSON; bei Marken/Konzernen die Wikidata-ID, die zugehörigen Marken und die abgewählten Namen; bei Wasser-Tests Marke, Namenswörter, Begründung und Quellen), created_at
+- **12 Migrationen** (Datenbank-Version 12): initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte → Favoriten-Eindeutigkeit + edited_at → edited_fields → Filterliste aktualisiert (11 Gase entfernt, 86 Zutaten-Regeln und 9 Prüfungen ergänzt) → Alkohol-Regeln ergänzt (15 Zutaten-Regeln) → Wasser-Prüfungen ergänzt (3 Prüfungen) → Wasser-Tests (13 Produkt-Regeln) und Nestlé ergänzt
+- **Neu-Bewertung**: `RATING_LOGIC_VERSION` 8 – gespeicherte Produkte werden nach dem Update einmal neu bewertet
 - **Daten nachladen**: `PRODUCT_DATA_VERSION` 3 – Produkte, die vor den neuen Open-Food-Facts-Feldern (Kategorien, Verpackung, Markeninhaber, Identitätskennzeichen, Alkoholgehalt; ab Version 3 die Mineralstoffe von Wasser: Natrium, Calcium, Magnesium, Kalium, Hydrogencarbonat, Chlorid, Sulfat, Nitrat, Nitrit, Fluorid, Mangan) gespeichert wurden, werden nach dem App-Start im Hintergrund neu geladen und bewertet: höchstens 10 Anfragen pro Minute, nacheinander; offline oder bei einem Fehler geht es beim nächsten Start weiter. Eigene Änderungen und USDA-Daten bleiben erhalten.
 
 ### Backup & Wiederherstellung
@@ -329,10 +336,10 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 
 ## Testing
 
-- **71 Test-Suiten**, **828 Tests**, alle erfolgreich (`npx jest`)
+- **72 Test-Suiten**, **847 Tests**, alle erfolgreich (`npx jest`)
 - Datenbank- und Repository-Tests laufen gegen echtes SQLite (`node:sqlite`-Testdouble), nicht gegen String-Vergleichs-Mocks
 - **Golden-Ratings**: 32 Referenzprodukte mit fest hinterlegtem Bewertungsergebnis, damit Änderungen an der Bewertungslogik als bewusster, überprüfbarer Diff sichtbar werden
-- Getestete Module: Analyse (RedFlagAnalyzer, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating, Produkt-Prüfungen, Marken/Konzerne), Produkt (Badges, Identitätskennzeichen, Mandel- und Wasser-Hinweis), Eiercode, Services (Lookup inkl. USDA-Fallback, Edit, Re-Rating, Hintergrund-Aktualisierung gespeicherter Produkte, Wikidata-Abfrage), API-Clients (inkl. USDA und Rückrufe), Rückruf-Abgleich und -Cache (Backoff, Ausblenden), Repositories/Migrationen (inkl. Migration 9, 10 und 11 ab einer Datenbank mit Nutzerdaten), Backup, OCR, Übersetzungen, Über-Texte (alle Datenquellen genannt), Allergen-Store, Screens/Features
+- Getestete Module: Analyse (RedFlagAnalyzer, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating, Produkt-Prüfungen, Wasser-Tests, Marken/Konzerne), Produkt (Badges, Identitätskennzeichen, Mandel- und Wasser-Hinweis), Eiercode, Services (Lookup inkl. USDA-Fallback, Edit, Re-Rating, Hintergrund-Aktualisierung gespeicherter Produkte, Wikidata-Abfrage), API-Clients (inkl. USDA und Rückrufe), Rückruf-Abgleich und -Cache (Backoff, Ausblenden), Repositories/Migrationen (inkl. Migration 9 bis 12 ab einer Datenbank mit Nutzerdaten), Backup, OCR, Übersetzungen, Über-Texte (alle Datenquellen genannt), Allergen-Store, Screens/Features
 - Integrationstests gegen die echte Open Food Facts API sind opt-in (`npm run test:integration`) und laufen ausschließlich gegen den Staging-Server
 
 ---
