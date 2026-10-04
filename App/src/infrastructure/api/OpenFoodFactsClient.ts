@@ -81,6 +81,17 @@ function parseNutriments(raw: unknown): ProductNutriments | undefined {
     proteins100g: get('proteins_100g'),
     salt100g: get('salt_100g'),
     alcohol100g: get('alcohol_100g'),
+    sodium100g: get('sodium_100g'),
+    calcium100g: get('calcium_100g'),
+    magnesium100g: get('magnesium_100g'),
+    potassium100g: get('potassium_100g'),
+    bicarbonate100g: get('bicarbonate_100g'),
+    chloride100g: get('chloride_100g'),
+    sulphate100g: get('sulphate_100g'),
+    nitrate100g: get('nitrate_100g'),
+    nitrite100g: get('nitrite_100g'),
+    fluoride100g: get('fluoride_100g'),
+    manganese100g: get('manganese_100g'),
   };
 }
 

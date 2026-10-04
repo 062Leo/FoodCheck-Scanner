@@ -58,6 +58,20 @@ export interface ProductNutriments {
   salt100g?: number;
   /** Alcohol in % vol. */
   alcohol100g?: number;
+  /**
+   * Minerals in g per 100 g as Open Food Facts stores them (water: × 10000 = mg/l).
+   */
+  sodium100g?: number;
+  calcium100g?: number;
+  magnesium100g?: number;
+  potassium100g?: number;
+  bicarbonate100g?: number;
+  chloride100g?: number;
+  sulphate100g?: number;
+  nitrate100g?: number;
+  nitrite100g?: number;
+  fluoride100g?: number;
+  manganese100g?: number;
 }
 
 export interface Product {

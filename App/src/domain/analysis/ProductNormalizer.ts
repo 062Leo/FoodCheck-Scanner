@@ -6,8 +6,9 @@ import { hasProductName } from '../product/productName';
  * requests new fields, so products stored before are fetched again in the background
  * (see StoredProductRefreshService).
  * 2: categories_tags, packaging tags, brand_owner, emb_codes_tags, alcohol_100g.
+ * 3: minerals of waters (sodium, calcium, magnesium, nitrate, sulphate, fluoride, ...).
  */
-export const PRODUCT_DATA_VERSION = 2;
+export const PRODUCT_DATA_VERSION = 3;
 
 export interface NormalizedProduct {
   ean: string;
@@ -197,6 +198,17 @@ export class ProductNormalizer {
         setNut('proteins100g', 'proteins100g', 'proteins_100g');
         setNut('salt100g', 'salt100g', 'salt_100g');
         setNut('alcohol100g', 'alcohol100g', 'alcohol_100g');
+        setNut('sodium100g', 'sodium100g', 'sodium_100g');
+        setNut('calcium100g', 'calcium100g', 'calcium_100g');
+        setNut('magnesium100g', 'magnesium100g', 'magnesium_100g');
+        setNut('potassium100g', 'potassium100g', 'potassium_100g');
+        setNut('bicarbonate100g', 'bicarbonate100g', 'bicarbonate_100g');
+        setNut('chloride100g', 'chloride100g', 'chloride_100g');
+        setNut('sulphate100g', 'sulphate100g', 'sulphate_100g');
+        setNut('nitrate100g', 'nitrate100g', 'nitrate_100g');
+        setNut('nitrite100g', 'nitrite100g', 'nitrite_100g');
+        setNut('fluoride100g', 'fluoride100g', 'fluoride_100g');
+        setNut('manganese100g', 'manganese100g', 'manganese_100g');
         if (Object.keys(nut).length > 0) product.nutriments = nut;
       }
     } catch {
