@@ -56,6 +56,22 @@ export interface ProductNutriments {
   fiber100g?: number;
   proteins100g?: number;
   salt100g?: number;
+  /** Alcohol in % vol. */
+  alcohol100g?: number;
+  /**
+   * Minerals in g per 100 g as Open Food Facts stores them (water: × 10000 = mg/l).
+   */
+  sodium100g?: number;
+  calcium100g?: number;
+  magnesium100g?: number;
+  potassium100g?: number;
+  bicarbonate100g?: number;
+  chloride100g?: number;
+  sulphate100g?: number;
+  nitrate100g?: number;
+  nitrite100g?: number;
+  fluoride100g?: number;
+  manganese100g?: number;
 }
 
 export interface Product {
@@ -78,8 +94,18 @@ export interface Product {
   tracesTags?: string[];
   additivesTags?: string[];
   categories?: string;
+  /** Normalised categories including their parents, e.g. "en:canned-tunas", "en:fishes". */
+  categoriesTags?: string[];
   miscTags?: string[];
   labelsTags?: string[];
+  /** Packaging shapes, materials and free tags, e.g. "en:can", "en:metal". */
+  packagingTags?: string[];
+  /** Company that owns the brand (from GS1 data at Open Food Facts). */
+  brandOwner?: string;
+  /** Packager codes (identification marks), e.g. "de-by-123-eg". */
+  embCodesTags?: string[];
+  /** Where the product data comes from; Open Food Facts when not set. */
+  source?: 'usda';
   quantity?: string;
   servingSize?: string;
   imageNutritionUrl?: string;

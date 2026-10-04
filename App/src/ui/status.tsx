@@ -32,6 +32,8 @@ export function reasonText(reason: RatingReason, t: TranslateFn): string {
       return reason.count === 1
         ? t('rating.reason.redFlagsOne')
         : t('rating.reason.redFlagsMany', { count: reason.count });
+    case 'avoidedCompany':
+      return t('rating.reason.avoidedCompany', { company: reason.company });
     case 'ingredientsMissing':
       return t('rating.reason.ingredientsMissing');
     case 'insufficientData':

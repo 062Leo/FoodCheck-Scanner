@@ -37,6 +37,62 @@ function definedNutriments(nutriments: ProductNutriments | undefined): ProductNu
   return result;
 }
 
+function hasIngredients(product: Product): boolean {
+  return (
+    isPresent(product.ingredientsText) ||
+    isPresent(product.ingredientsTextDe) ||
+    isPresent(product.ingredientsTextEn) ||
+    Object.values(product.ingredientsTextByLang ?? {}).some(isPresent)
+  );
+}
+
+/** Fields taken over one by one from stored USDA data when Open Food Facts lacks them. */
+const USDA_FILL_FIELDS = [
+  'brand',
+  'brandOwner',
+  'categories',
+  'quantity',
+  'servingSize',
+] as const satisfies readonly (keyof Product)[];
+
+/**
+ * Combines a fresh Open Food Facts entry with a product stored from USDA FoodData
+ * Central, so a sparse entry (e.g. only a photo) does not throw away the USDA data.
+ * Open Food Facts wins wherever it has a value; fields it lacks come from USDA.
+ * Ingredients (all language texts together) and nutriments are taken as a whole, never
+ * mixed. Source rule: the result keeps source 'usda' whenever it uses the USDA
+ * ingredient text or USDA nutriments, so the USDA source line stays visible; otherwise
+ * it is an Open Food Facts product.
+ */
+export function fillFromUsda(fresh: Product, stored: Product | null): Product {
+  if (stored?.source !== 'usda') return fresh;
+
+  const merged: Product = { ...fresh };
+  delete merged.source;
+  const target = merged as unknown as Record<string, unknown>;
+  for (const field of USDA_FILL_FIELDS) {
+    if (!isPresent(fresh[field]) && isPresent(stored[field])) target[field] = stored[field];
+  }
+  if (!hasProductName(fresh.name) && hasProductName(stored.name)) merged.name = stored.name;
+
+  let usesUsdaData = false;
+  if (!hasIngredients(fresh) && hasIngredients(stored)) {
+    merged.ingredientsText = stored.ingredientsText;
+    merged.ingredientsTextDe = stored.ingredientsTextDe;
+    merged.ingredientsTextEn = stored.ingredientsTextEn;
+    merged.ingredientsTextByLang = stored.ingredientsTextByLang;
+    usesUsdaData = true;
+  }
+  const freshNutriments = definedNutriments(fresh.nutriments);
+  const storedNutriments = definedNutriments(stored.nutriments);
+  if (Object.keys(freshNutriments).length === 0 && Object.keys(storedNutriments).length > 0) {
+    merged.nutriments = storedNutriments;
+    usesUsdaData = true;
+  }
+  if (usesUsdaData) merged.source = 'usda';
+  return merged;
+}
+
 /**
  * Combines fresh Open Food Facts data with the locally stored product.
  *

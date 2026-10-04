@@ -9,6 +9,7 @@ import {
   type LookupFailure,
   type LookupResult,
 } from '../../services/ProductLookupService';
+import type { UsdaErrorCode } from '../../infrastructure/api/UsdaClient';
 import { useFilterStore } from '../../store/filterStore';
 import { useCatalogStore } from '../../store/catalogStore';
 import { ScanGate } from './ScanGate';
@@ -18,7 +19,7 @@ export type FoundResult = Extract<LookupResult, { status: 'found' }>;
 export type ScanCard =
   | { ean: string; phase: 'loading' }
   | { ean: string; phase: 'ready'; data: FoundResult }
-  | { ean: string; phase: 'failed'; reason: LookupFailure };
+  | { ean: string; phase: 'failed'; reason: LookupFailure; usdaError?: UsdaErrorCode };
 
 const lookupService = new ProductLookupService();
 
@@ -62,7 +63,7 @@ export function useScanSession(announce?: (card: ScanCard) => string) {
       const next: ScanCard =
         result.status === 'found'
           ? { ean, phase: 'ready', data: result }
-          : { ean, phase: 'failed', reason: result.status };
+          : { ean, phase: 'failed', reason: result.status, usdaError: result.usdaError };
       setCard(next);
       feedback(result);
       if (announce) AccessibilityInfo.announceForAccessibility(announce(next));

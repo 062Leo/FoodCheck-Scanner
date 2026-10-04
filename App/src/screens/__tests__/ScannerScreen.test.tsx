@@ -228,6 +228,17 @@ describe('ScannerScreen', () => {
     expect(screen.queryByTestId('scan-card')).toBeNull();
   });
 
+  it('shows the not-found card with a hint when the USDA lookup failed', async () => {
+    mockLookup.mockResolvedValue({ status: 'not-found', usdaError: 'rate-limit' });
+    render(<ScannerScreen />);
+
+    scan(EAN);
+
+    expect(await screen.findByText('USDA-Abfrage fehlgeschlagen: Limit erreicht.')).toBeTruthy();
+    expect(screen.getByText('Open Food Facts kennt diesen Barcode nicht.')).toBeTruthy();
+    expect(screen.getByText('Produkt erfassen')).toBeTruthy();
+  });
+
   it('validates manually entered barcodes', async () => {
     render(<ScannerScreen />);
 
@@ -240,6 +251,16 @@ describe('ScannerScreen', () => {
     fireEvent.changeText(input, '4006 3813 33931');
     fireEvent(input, 'submitEditing');
     await waitFor(() => expect(mockLookup).toHaveBeenCalledWith(EAN, 'scan', SEEDED_RULES));
+  });
+
+  it('opens the egg code reader', () => {
+    render(<ScannerScreen />);
+
+    fireEvent.press(screen.getByTestId('egg-code-button'));
+
+    expect(screen.getByLabelText('Eiercode prüfen')).toBeTruthy();
+    expect(screen.queryByText('Eiercode prüfen')).toBeNull();
+    expect(mockRouter.push).toHaveBeenCalledWith('/egg-code');
   });
 
   it('sends the user to the system settings when camera access was denied', async () => {

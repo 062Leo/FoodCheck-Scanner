@@ -13,6 +13,7 @@ export function FormField({
   multiline,
   required,
   secret,
+  code,
   testID,
 }: {
   label: string;
@@ -26,6 +27,8 @@ export function FormField({
   required?: boolean;
   /** Keys and passwords: hidden, no capitalisation, correction or suggestions. */
   secret?: boolean;
+  /** Codes such as an egg code: upper case, no correction or suggestions. */
+  code?: boolean;
   testID?: string;
 }) {
   return (
@@ -42,9 +45,9 @@ export function FormField({
         keyboardType={keyboardType}
         multiline={multiline}
         secureTextEntry={secret}
-        autoCapitalize={secret ? 'none' : undefined}
-        autoCorrect={secret ? false : undefined}
-        autoComplete={secret ? 'off' : undefined}
+        autoCapitalize={secret ? 'none' : code ? 'characters' : undefined}
+        autoCorrect={secret || code ? false : undefined}
+        autoComplete={secret || code ? 'off' : undefined}
         textAlignVertical={multiline ? 'top' : 'center'}
         style={[styles.input, multiline && styles.multiline, error ? styles.inputError : null]}
         accessibilityLabel={label}

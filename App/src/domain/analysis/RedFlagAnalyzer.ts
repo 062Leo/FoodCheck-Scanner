@@ -68,6 +68,140 @@ const CONTEXT_BOUND_E_NUMBERS: Record<string, RegExp> = {
 };
 
 /**
+ * Labels that state the opposite of what a rule looks for: "nicht pasteurisiert",
+ * "aus nicht gentechnisch veränderten Sojabohnen", "alkoholfrei". For the keys below a
+ * match does not count when the text right before or after it negates it.
+ */
+const NEGATION_WORD_BEFORE =
+  /(?:^|[^\p{L}])(?:nicht|ohne|kein(?:e[mnrs]?)?|frei\s+von|not|non|no|free\s+(?:from|of)|sans|senza|sin|sem|não|nao|niet|zonder|nie|bez)[\s-]+(?:aus\s+|from\s+)?$/u;
+/** "unpasteurisiert", "ongepasteuriseerd", "niepasteryzowany". */
+const NEGATING_PREFIX = /(?:^|[^\p{L}])(?:un|on|nie)-?$/u;
+/**
+ * Not a drink's alcohol: "Zuckeralkohole", "sugar alcohols", "entalkoholisiert",
+ * "analcolico", "bezalkoholowy", "0,0 % Alkohol" (but not "10,0 % Alkohol") and spirit
+ * vinegar ("vinaigre d'alcool").
+ */
+const NOT_ALCOHOL_BEFORE =
+  /(?:zucker|sugar\s|suiker|(?:^|[^\p{L}])(?:ent|de-?|dés|des|an|bez))$|(?:^|[^\d,.])0[,.]0\s*%\s*(?:vol\.?\s*)?$|(?:vinaigre\s+d['’]|vinagre\s+de\s+)$/u;
+/** "alkoholfrei", "alcohol-free", "alcoholvrij", "Alkoholessig". */
+const NOT_ALCOHOL_AFTER = /^(?:[\s-]*(?:frei|free|vrij)|essig)/u;
+/**
+ * Vinegar and yeast named after a drink are not the drink: "vinaigre de vin", "aceto di
+ * vino", "vinagre de Jerez", "levure de bière", "lievito di birra".
+ */
+const NOT_A_DRINK_BEFORE =
+  /(?:vinaigre|vinagre|aceto|levure|lievito|levadura|levedura)\s+(?:de|di|do|d['’])\s*$/u;
+/** "Weinessig", "Branntweinessig", "wine vinegar", "wijnazijn", "Bierhefe", "biergist". */
+const NOT_A_DRINK_AFTER = /^[\s-]*(?:essig|vinegar|azijn|hefe|yeast|gist)/u;
+
+/**
+ * Usually alcohol-free soft drinks named after beer: "Ginger Beer", "Ingwerbier", "Root
+ * Beer", "Birch Beer". Their sugar, sweeteners and colours are found by other rules.
+ */
+const SOFT_DRINK_BEER_BEFORE = /(?:^|[^\p{L}])(?:ginger|ingwer|root|birch)[\s-]*$/u;
+
+interface Negation {
+  before: RegExp[];
+  after?: RegExp;
+}
+
+const NOT_GENETICALLY_MODIFIED: Negation = { before: [NEGATION_WORD_BEFORE] };
+const NOT_HEAT_TREATED: Negation = { before: [NEGATION_WORD_BEFORE, NEGATING_PREFIX] };
+const NO_ALCOHOL: Negation = {
+  before: [NEGATION_WORD_BEFORE, NOT_ALCOHOL_BEFORE],
+  after: NOT_ALCOHOL_AFTER,
+};
+/**
+ * Alcohol-free beer and wine still count (up to 0.5 % vol.), so "alkoholfrei" does not
+ * negate a drink; only "ohne …" and vinegar or yeast made from it do.
+ */
+const NOT_A_DRINK: Negation = {
+  before: [NEGATION_WORD_BEFORE, NOT_A_DRINK_BEFORE],
+  after: NOT_A_DRINK_AFTER,
+};
+/** Beer, but not the soft drinks ginger beer, root beer and birch beer. */
+const NOT_BEER: Negation = {
+  before: [...NOT_A_DRINK.before, SOFT_DRINK_BEER_BEFORE],
+  after: NOT_A_DRINK_AFTER,
+};
+
+/** Rule keys (lower case) whose matches are checked for a negation. */
+const NEGATABLE_KEYS: Record<string, Negation> = {
+  'genetically modified': NOT_GENETICALLY_MODIFIED,
+  'gentechnisch verändert': NOT_GENETICALLY_MODIFIED,
+  pasteurised: NOT_HEAT_TREATED,
+  pasteurized: NOT_HEAT_TREATED,
+  uht: NOT_HEAT_TREATED,
+  ultrahocherhitzt: NOT_HEAT_TREATED,
+  wärmebehandelt: NOT_HEAT_TREATED,
+  'h-milch': NOT_HEAT_TREATED,
+  alcohol: NO_ALCOHOL,
+  ethanol: NO_ALCOHOL,
+  wine: NOT_A_DRINK,
+  'port wine': NOT_A_DRINK,
+  sherry: NOT_A_DRINK,
+  marsala: NOT_A_DRINK,
+  sake: NOT_A_DRINK,
+  beer: NOT_BEER,
+  brandy: NOT_A_DRINK,
+  weinbrand: NOT_A_DRINK,
+  cognac: NOT_A_DRINK,
+  kirschwasser: NOT_A_DRINK,
+  rum: NOT_A_DRINK,
+  whisky: NOT_A_DRINK,
+  whiskey: NOT_A_DRINK,
+  vodka: NOT_A_DRINK,
+  liqueur: NOT_A_DRINK,
+};
+
+/** Characters around a match that are searched for a negation. */
+const NEGATION_WINDOW = 24;
+
+function isNegated(lowerText: string, span: TextSpan, negation: Negation): boolean {
+  const before = lowerText.slice(Math.max(0, span.start - NEGATION_WINDOW), span.start);
+  const after = lowerText.slice(span.end, span.end + NEGATION_WINDOW);
+  return negation.before.some((pattern) => pattern.test(before)) || !!negation.after?.test(after);
+}
+
+/**
+ * Words that contain a rule's term but name something else. For the keys below a match
+ * does not count when it overlaps such a word: the Dutch and Polish "talk" (talc) inside
+ * "entalkoholisiert" (de-alcoholised).
+ */
+const OTHER_WORDS: Record<string, RegExp> = {
+  talc: /alkohol|alcohol/gu,
+  // Pork and boar, tartaric acid, cream of tartar, grapes, raisins, vine leaves, vineyard
+  // snails and peaches, rue, wine gums; the English "vine" and the Polish "winorośl".
+  wine: /schwein|swine|zwijn|wein(?:säure|stein|traube|beere|blatt|blätter|berg|raute|rebe|gummi)|wijn(?:steen|druif|druiven|blad|ruit)|winogron|winow|winoro[śs]l|^vines?$/gu,
+  // Berries ("Erdbeeren"), the Polish brewer's yeast ("drożdże piwowarskie"), sausages
+  // named after beer ("Bierschinken", "Bierwurst") and spent grain ("Biertreber").
+  beer: /beere|piwowar|bier(?:schinken|wurst|treber)/gu,
+  // Only at the start of a word ("Rumaroma" counts): not "Krume", "crumb", "Milchserum",
+  // "Rumpsteak", "Rumex", "rumänisch" or the Polish "rumianek" (camomile).
+  rum: /\p{L}rh?um|rh?um(?:p|ex|än|ian)/gu,
+  // Licorice.
+  liqueur: /licoric/gu,
+  // Only as a word of its own.
+  sake: /\p{L}sak[eé]|sak[eé]\p{L}/gu,
+  // Portobello mushrooms.
+  'port wine': /portobell/gu,
+};
+
+const WORD_LETTER = /\p{L}/u;
+
+function isPartOfOtherWord(lowerText: string, span: TextSpan, otherWords: RegExp): boolean {
+  let start = span.start;
+  while (start > 0 && WORD_LETTER.test(lowerText[start - 1])) start--;
+  let end = span.end;
+  while (end < lowerText.length && WORD_LETTER.test(lowerText[end])) end++;
+  for (const match of lowerText.slice(start, end).matchAll(otherWords)) {
+    const otherStart = start + match.index;
+    if (otherStart < span.end && span.start < otherStart + match[0].length) return true;
+  }
+  return false;
+}
+
+/**
  * Written-out E472a–f, e.g. "Mono- und Diacetylweinsäureester von Mono- und Diglyceriden
  * von Speisefettsäuren": one emulsifier, not tartaric acid, E471 and fatty acids. The
  * first group names the acid, which decides the E-number.
@@ -269,10 +403,14 @@ export class RedFlagAnalyzer {
     );
 
     // 1. Drop occurrences inside a longer match of another rule, inside the written-out
-    //    name of a different additive, and context-bound words outside their context.
+    //    name of a different additive, negated ones ("nicht pasteurisiert"), parts of
+    //    other words ("entalkoholisiert") and context-bound words outside their context.
     const located: Located[] = [];
     for (const candidate of candidates) {
       const context = CONTEXT_BOUND_KEYS[candidate.canonicalKey.toLowerCase()];
+      const resolvedKey = resolveIngredientKey(candidate.canonicalKey).toLowerCase();
+      const negation = NEGATABLE_KEYS[resolvedKey];
+      const otherWords = OTHER_WORDS[resolvedKey];
       const family = candidate.eNumber ? eNumberFamily(candidate.eNumber) : undefined;
       const surviving = candidate.occurrences.filter((span) => {
         const covered = allOccurrences.some(
@@ -281,6 +419,8 @@ export class RedFlagAnalyzer {
         if (covered) return false;
         const shielded = shields.some((shield) => hides(shield, span, family));
         if (shielded) return false;
+        if (negation && isNegated(lowerText, span, negation)) return false;
+        if (otherWords && isPartOfOtherWord(lowerText, span, otherWords)) return false;
         if (!context) return true;
         const item = structure.itemAt(span.start);
         return context.test(text.slice(item.start, item.end));

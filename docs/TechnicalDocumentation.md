@@ -2,15 +2,15 @@
 
 ## 1. Project Overview
 
-**FoodCheck** is a React Native (Expo) mobile app for iOS and Android that scans food product barcodes and instantly evaluates them for unhealthy ingredients and processing levels. The app uses the Open Food Facts API for product data and on-device ML Kit for OCR.
+**FoodCheck** is a React Native (Expo) mobile app for iOS and Android that scans food product barcodes and instantly evaluates them for unhealthy ingredients and processing levels. The app uses the Open Food Facts API for product data, USDA FoodData Central as an optional fallback (with the user's own key), Wikidata for the brands of avoided companies, and on-device ML Kit for OCR.
 
 - **Language:** TypeScript (strict mode)
 - **Framework:** Expo SDK 54 (managed workflow) with Expo Router; `App/index.ts` only imports `expo-router/entry` — there is no separate root component
-- **State:** Zustand (4 stores)
+- **State:** Zustand (5 stores)
 - **Database:** expo-sqlite (SQLite)
 - **OCR:** @react-native-ml-kit/text-recognition (on-device, default) + Open Food Facts Cloud Vision pipeline (opt-in, after explicit consent)
 - **Translation:** DeepL API + MyMemory API (via the domain `Translator` interface)
-- **Credentials:** expo-secure-store
+- **Credentials:** expo-secure-store (Open Food Facts account, translation keys, USDA key)
 - **Navigation:** Expo Router file-based routing (`App/app/`)
 
 ## 2. Architecture
@@ -57,8 +57,9 @@ The design system lives in `src/ui/` (design tokens, base components, status com
 App/
 ├── app/                        # Expo Router file-based routes
 │   ├── (tabs)/                 # Scanner, Catalog, Favorites, Settings tabs
-│   ├── settings/                # filters, api-key (translation), about
+│   ├── settings/                # filters, allergens, api-key (translation), usda-key, about
 │   ├── edit/[ean].tsx
+│   ├── egg-code.tsx
 │   └── result.tsx
 ├── src/
 │   ├── screens/
@@ -68,19 +69,26 @@ App/
 │   │   ├── FavoritesScreen.tsx        # Favorite product list
 │   │   ├── FilterScreen.tsx           # Custom filter rules management
 │   │   ├── SettingsScreen.tsx         # Settings hub (grouped list rows)
+│   │   ├── AllergenProfileScreen.tsx  # "Meine Allergene" (14 EU allergens)
 │   │   ├── ApiKeyScreen.tsx           # Translation provider + API key management
-│   │   ├── AboutScreen.tsx            # Guide, rating explanation, privacy, data source
+│   │   ├── UsdaKeyScreen.tsx          # The user's own api.data.gov key for USDA FoodData Central
+│   │   ├── EggCodeScreen.tsx          # Egg code reader (housing system, origin)
+│   │   ├── AboutScreen.tsx            # Guide, rating explanation, privacy, data sources
 │   │   └── EditProductScreen.tsx      # Product edit + OFF contribution (OCR, upload)
 │   ├── features/                # Screen-specific hooks and subcomponents
 │   │   ├── scanner/                   # useScanSession, ScanGate, ScanResultCard, ManualEntrySheet
-│   │   ├── product/                   # useProductDetails, useRobotoffInsights, FindingsList, IngredientsSection
+│   │   ├── product/                   # useProductDetails, useRobotoffInsights, FindingsList, IngredientsSection,
+│   │   │                              # ProductBadges, AlmondPollinationNote, WaterInfoNote
 │   │   ├── edit/                      # useProductEditForm, LanguagePicker
-│   │   ├── filters/                   # RuleEditorSheet
+│   │   ├── filters/                   # RuleEditorSheet, CompanyRuleForm (Wikidata lookup), ruleTexts
+│   │   ├── allergens/                 # AllergenWarning
 │   │   └── catalog/                   # useProductListActions (open/favorite/edit/delete + undo)
 │   ├── services/
 │   │   ├── ProductLookupService.ts    # Cache-first lookup, merge, rate, persist
 │   │   ├── ProductEditService.ts      # Load/save an edit session, contribute to OFF
 │   │   ├── CatalogRatingService.ts    # Re-rates stored products when rules/logic change
+│   │   ├── StoredProductRefreshService.ts # Fetches products stored with an older OFF field set
+│   │   ├── CompanyLookupService.ts    # Wikidata: find a company, collect its brands/subsidiaries
 │   │   └── RuleTranslationService.ts  # Translates a new rule keyword into search languages
 │   ├── components/               # Shared, screen-agnostic components
 │   │   ├── ProductCard.tsx            # Reusable product list row
@@ -90,17 +98,21 @@ App/
 │   │   ├── ImageGallery.tsx           # Swipeable product image gallery
 │   │   └── NutritionTable.tsx         # Full nutrition facts table
 │   ├── store/                    # Zustand stores
-│   │   ├── catalogStore.ts, filterStore.ts, languageStore.ts, settingsStore.ts
+│   │   ├── catalogStore.ts, filterStore.ts, languageStore.ts, settingsStore.ts, allergenStore.ts
+│   │   ├── storedProductRefresh.ts    # Starts StoredProductRefreshService after the rules are loaded
 │   │   └── reloadStores.ts            # Reloads all stores after a backup restore
 │   ├── i18n/
 │   │   ├── translations.ts            # DE/EN UI strings (~800 keys)
-│   │   ├── useTranslation.ts, languageLabel.ts, categoryLabels.ts
+│   │   ├── useTranslation.ts, languageLabel.ts, categoryLabels.ts, allergenLabels.ts
+│   │   └── countryNames.ts             # Country and German state names for packager codes
 │   ├── domain/
 │   │   ├── analysis/
 │   │   │   ├── RedFlagAnalyzer.ts      # Ingredients + nutrients → red flags (pure)
 │   │   │   ├── IngredientMatching.ts   # Span-based text matching primitives
 │   │   │   ├── NovaScoreEvaluator.ts   # Nova 1-4 → label + color
-│   │   │   ├── ProductRating.ts        # Red flags + Nova → status + reasons
+│   │   │   ├── ProductRating.ts        # Red flags + checks + avoided companies + Nova → status + reasons
+│   │   │   ├── productChecks.ts        # Whole-product checks (ingredient count, can, mercury fish, …)
+│   │   │   ├── companyRules.ts         # Matches avoided brands/companies against brand + brand owner
 │   │   │   ├── rateProduct.ts          # Single entry point (falls back to built-in defaultRules)
 │   │   │   ├── IngredientParser.ts     # Ingredient list tokenizing
 │   │   │   ├── IngredientTaxonomy.ts   # Additive risk/function-class lookup
@@ -113,7 +125,14 @@ App/
 │   │   │   ├── productForm.ts          # Edit-form parsing, validation, OFF payload mapping
 │   │   │   ├── editedFields.ts         # Which fields the user changed (kept across OFF refreshes)
 │   │   │   ├── mergeProductData.ts     # Combines fresh OFF data with local edits
+│   │   │   ├── productBadges.ts        # Label badges (organic, GMO, husbandry level, MSC/ASC, raw milk)
+│   │   │   ├── packagerCode.ts         # Parses packager codes (identification marks)
+│   │   │   ├── almondInfo.ts           # Almond pollination note (display only)
+│   │   │   ├── waterInfo.ts            # Water detection, limits, water note (display only)
+│   │   │   ├── rawMilk.ts              # Raw-milk mentions, including negated ones
 │   │   │   └── productName.ts
+│   │   ├── allergens/allergenProfile.ts
+│   │   ├── eggs/eggCode.ts             # Parses and validates egg producer codes
 │   │   ├── barcode/barcode.ts          # EAN-8/EAN-13/UPC-A check-digit validation
 │   │   ├── catalog/catalogQuery.ts     # Filter, search, sort, counts for the catalog
 │   │   ├── ocr/
@@ -122,7 +141,7 @@ App/
 │   │   ├── translation/Translator.ts   # Translation interface
 │   │   └── rules/
 │   │       ├── defaultRules.ts         # Small hardcoded fallback rule list
-│   │       ├── seedRules.ts            # 678 seed red-flag rules (DB seed, migration 2)
+│   │       ├── seedRules.ts            # 768 seed ingredient rules (DB seed, migration 2)
 │   │       ├── ruleGroups.ts           # Groups rules by category for the Filter Rules screen
 │   │       └── ingredientTranslations.ts # Multi-language ingredient search terms
 │   ├── infrastructure/
@@ -131,6 +150,7 @@ App/
 │   │   │   ├── OpenFoodFactsWriteClient.ts  # Write client (POST), staging/production
 │   │   │   ├── OffOcrClient.ts              # OFF Cloud Vision OCR (consent-gated)
 │   │   │   ├── RobotoffClient.ts            # Robotoff AI predictions, 15 min cache
+│   │   │   ├── UsdaClient.ts                # USDA FoodData Central search by GTIN, 8 s timeout
 │   │   │   ├── fetchWithTimeout.ts          # fetch with AbortController timeout
 │   │   │   ├── config.ts                    # Base URLs, write environment, app UUID
 │   │   │   ├── debounce.ts / retry.ts       # Utility decorators
@@ -142,7 +162,7 @@ App/
 │   │   │   ├── DeepLClient.ts, MyMemoryClient.ts, TranslationRouter.ts
 │   │   ├── network/connectivity.ts     # isOnline() / subscribeToConnectivity()
 │   │   └── db/
-│   │       ├── DatabaseService.ts       # SQLite init + 8 migrations
+│   │       ├── DatabaseService.ts       # SQLite init + 10 migrations
 │   │       ├── ProductRepository.ts     # CRUD, scan vs. refresh vs. edit writes
 │   │       ├── FavoritesRepository.ts   # CRUD for favorites
 │   │       ├── FilterRuleRepository.ts  # CRUD for filter rules
@@ -170,18 +190,18 @@ App/
 | Expo SDK 54 (managed) | Framework, no native setup needed |
 | TypeScript (strict) | Type safety, no `any` |
 | Expo Router | File-based tab + stack navigation |
-| Zustand | Lightweight state management (4 stores) |
+| Zustand | Lightweight state management (5 stores) |
 | expo-sqlite | Local persistent relational database |
 | expo-camera | Barcode scanning + OCR photo capture |
 | @react-native-ml-kit/text-recognition | On-device OCR (no cloud, offline-capable) |
 | @react-native-community/netinfo | Connectivity check for the offline fallback |
-| expo-secure-store | Secure credential storage for the OFF account + translation API keys |
+| expo-secure-store | Secure credential storage for the OFF account, translation API keys and the USDA key |
 | expo-image-manipulator | OCR photo preprocessing (resize, crop) |
 | expo-file-system | Backup file read/write, image folders |
 | expo-document-picker | Picking a backup file to restore |
 | expo-haptics | Scan/save feedback |
 | expo-build-properties | Android SDK version pins |
-| Jest + jest-expo | Unit testing (52 suites, 437 tests) |
+| Jest + jest-expo | Unit testing (66 suites, 755 tests) |
 | ESLint 10 (flat config) + Prettier | Code quality & formatting |
 
 ## 5. Data Flow
@@ -201,9 +221,13 @@ User points the camera at a barcode
       3. Online: OpenFoodFactsClient.getProductByEan(ean), 8 s timeout
          (fetchWithTimeout); on timeout/server error, fall back to the cached
          product if there is one.
+         Unknown to OFF and not cached: UsdaClient.findByGtin(ean, key), only
+         if the user saved an api.data.gov key; a USDA error keeps the
+         "not found" result and adds the reason (usdaError).
       4. mergeProductData(fresh, cached, editedFields): a locally edited field
          keeps the user's value; everything else takes the fresh OFF data.
-      5. rateProduct(product, rules) → ScanResult (status + reasons)
+      5. rateProduct(product, rules) → ScanResult (status + reasons):
+         ingredient/nutrient rules, product checks, avoided companies, Nova
       6. ProductRepository.saveScan(record): counts as a visit
   → Result shown as a card over the camera (ScanResultCard); the camera keeps
     running so the next product can be scanned immediately.
@@ -255,7 +279,7 @@ CREATE TABLE IF NOT EXISTS meta (
   value TEXT NOT NULL
 );
 ```
-Tracks the migration version (`schema_version`) and other metadata (rating fingerprint, backup folder/auto-backup/last-backup time, allergen list `allergen_profile` and the switch `allergen_warning_enabled`). A restore keeps the device's backup settings; the two allergen keys are only kept when the restored backup has none of its own.
+Tracks the migration version (`schema_version`) and other metadata (rating fingerprint, backup folder/auto-backup/last-backup time, allergen list `allergen_profile` and the switch `allergen_warning_enabled`, the cached recall list with its source health `recalls_state`). A restore keeps the device's backup settings; the two allergen keys are only kept when the restored backup has none of its own.
 
 ### `products`
 ```sql
@@ -298,7 +322,7 @@ CREATE UNIQUE INDEX idx_favorites_product_id ON favorites(product_id);
 ```sql
 CREATE TABLE IF NOT EXISTS filter_rules (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  type         TEXT NOT NULL,     -- 'ingredient' | 'nutrient'
+  type         TEXT NOT NULL,     -- 'ingredient' | 'nutrient' | 'check' | 'company' | 'product'
   key          TEXT NOT NULL,
   category     TEXT NOT NULL DEFAULT '',
   threshold    REAL,
@@ -308,19 +332,26 @@ CREATE TABLE IF NOT EXISTS filter_rules (
   created_at   TEXT NOT NULL
 );
 ```
+`check` rules are the product checks (`key` = check key such as `ingredient_count`; only `ingredient_count` uses `threshold`/`operator`). `company` rules store the avoided name in `key`, the fixed category `Marken & Konzerne`, and in `translations` the Wikidata lookup result (`{ wikidataId, names, excluded? }`) instead of translations. `excluded` holds the names the user switched off; JSON without it still parses. A refresh keeps exclusions of names that are still collected (`keepExclusions`). `product` rules store a readable name in `key`, the category `Wasser-Tests`, and in `translations` `{ brand, nameWords, waterOnly, reason: { de, en }, sources: [{ title, url, date? }] }` (`parseProductRuleData` also accepts a single `source` object).
 
-### Migrations (`DatabaseService`, version 8)
+New product fields (categories, packaging, labels, brand owner, packager codes, alcohol content, `source: 'usda'`) are not columns; they live in `raw_json`.
+
+### Migrations (`DatabaseService`, version 12)
 
 | Version | Migration | Description |
 |---------|-----------|-------------|
 | 1 | `createInitialSchema` | Create products, favorites, filter_rules tables |
-| 2 | `seedDefaultFilterRules` | Seed 678 red-flag rules from `seedRules.ts` |
+| 2 | `seedDefaultFilterRules` | Seed the red-flag rules from `seedRules.ts` (currently 768) |
 | 3 | `addProductStorageColumns` | Add data_version, last_api_fetch, 4 image columns |
 | 4 | `addVisitTrackingColumns` | Add visit_count, last_seen_at |
 | 5 | `addCategoryColumn` | Add category column; backfill missing seed rules and categories |
 | 6 | `addTranslationsColumn` | Add translations (JSON) for multi-language rule keywords |
 | 7 | `addFavoritesUniquenessAndEditTracking` | Deduplicate favorites + unique index; add products.edited_at, backfilled from raw_json markers left by the old edit screen |
 | 8 | `addEditedFieldsColumn` | Add products.edited_fields |
+| 9 | `updateFilterList` | Remove 11 packaging/propellant gas rules; add 86 ingredient rules and the 9 product checks (frozen copies), skipping any rule whose type and key (any case, any severity) already exists |
+| 10 | `addAlcoholRules` | Add 15 alcohol ingredient rules (wine, beer, spirits; frozen copy), skipping any key that already exists as an ingredient rule (any case, any severity) |
+| 11 | `addWaterChecks` | Add the 3 water checks `water_not_mineral`, `water_plastic_bottle`, `water_contaminants` (category Wasser; frozen copy), skipping any key that already exists as a check rule (any case, any severity) |
+| 12 | `migrateToV12` | Add the 13 water test rules of type `product` (category Wasser-Tests; frozen copy, JSON data in `translations`), skipping any name that already exists as a product rule (any case, any severity); add the company rule Nestlé (Wikidata Q160746, 216 frozen names incl. Hépar, 19 pre-excluded) unless a company rule with the same normalized name exists |
 
 Migrations are append-only and run inside a transaction (or sequentially where the platform has no transaction API); a database newer than the app's `DATABASE_VERSION` is left untouched with a warning instead of being downgraded.
 
@@ -346,6 +377,43 @@ Migrations are append-only and run inside a transaction (or sequentially where t
 | Fields sent | `code`, `user_id`, `password`, plus only the fields the user changed on this device (`ProductEditService.offPayload`, based on `edited_fields`); a product that never came from OFF is sent with every filled-in field |
 | Success | Read from the JSON status field (not "response contains a 1") |
 | Multi-language | `product_name_de`, `ingredients_text_de`, etc. |
+
+### USDA FoodData Central
+
+| Property | Value |
+|---|---|
+| Endpoint | `GET https://api.nal.usda.gov/fdc/v1/foods/search?query=<gtin variants>&dataType=Branded&pageSize=10` |
+| Auth | The user's own api.data.gov key in the `X-Api-Key` header (never in the URL), stored via expo-secure-store; the app ships no key |
+| When | Only for a barcode Open Food Facts does not know and that is not stored locally, and only if a key is saved |
+| Matching | The GTIN is searched as 12/13/14-digit variants; the exact match with the latest publication date wins |
+| Timeout | 8 s |
+| Errors | `invalid-key` (403 / `API_KEY_*`), `rate-limit` (429 / `OVER_RATE_LIMIT`), `timeout`, `network`, `server`; shown with the "not found" message |
+| Licence | Public domain (CC0) |
+| Client | `UsdaClient`; products get `source: 'usda'` and cannot be sent to Open Food Facts |
+
+### lebensmittelwarnung.de (recalls)
+
+| Property | Value |
+|---|---|
+| Source | Official RSS feed (the only source) `rssnewsfeed_Alle_DE.xml?nn=314268&type=lebensmittel` (food only): title, link, pubDate and the `<b>Label:</b>` fields of the description (product, brand after "Marke:", reason, manufacturer, federal states, batch) |
+| Barcodes | The feed has no EAN field; codes with a valid check digit after "EAN"/"GTIN" in the text are used |
+| State 2026-10-04 | The RSS feed worked (221 food warnings); the unofficial JSON interface used before answered with an empty body and was removed |
+| Timeout | 15 s |
+| Health | `RecallService`: refresh at most every 6 h and only online; after a failure the next attempt waits 24 h; cached data is shown up to 7 days after the last success; an unknown response form hides everything at once. Errors only reach `console.warn` in development builds |
+| Matching | `recallMatch.ts`: a listed barcode decides; otherwise one of the product's brands as a whole phrase plus at least two distinctive name words (or the only one), warnings of the last 365 days only; never by name when the warning lists other barcodes |
+| Client | `RecallClient` (`fetchRecalls`, `parseRssFeed`), `RecallService`, `recallStore` |
+
+### Wikidata
+
+| Property | Value |
+|---|---|
+| Search | `GET https://www.wikidata.org/w/api.php` (entity search, up to 7 candidates for the user to pick) |
+| Brands | `GET https://query.wikidata.org/sparql`: items whose parent organization (P749), owner (P127) or manufacturer (P176) is the company, up to 3 levels, at most 1,000 names; ended statements are ignored |
+| When | Only when the user starts the lookup in a brand/company rule; the result is stored with the rule |
+| Timeout | 15 s |
+| User-Agent | App name and version plus the public project URL, as Wikimedia's User-Agent policy asks (no e-mail address) |
+| Licence | CC0 |
+| Client | `CompanyLookupService` |
 
 ### Robotoff API
 
@@ -392,7 +460,49 @@ Migrations are append-only and run inside a transaction (or sequentially where t
 - Context-bound words (`Amaranth`, `Caramel`) only count as colours in a colour context within the same ingredient.
 - `ok`-severity rules whitelist an ingredient (by key, translation, or resolved E-number) or a nutrient condition, suppressing both keyword and taxonomy findings for it; an `ok` nutrient rule only whitelists while its own condition holds.
 - Nutrient rules are evaluated against `product.nutriments` (sugars_100g, fat_100g, saturated-fat_100g, salt_100g, energy-kcal_100g), not against the ingredient text.
-- Built-in data: 678 seed ingredient rules across 18 categories (19 category presets are offered when adding a new rule), plus an additive taxonomy of ~160 E-numbers with risk levels (`none`/`low`/`medium`/`high`) and function classes (`AdditiveTaxonomyData.ts`). A small hardcoded `defaultRules` list is used only as a last-resort fallback if no rules are available at all.
+- Matches of the genetic-engineering, heated-milk and alcohol rules do not count when negated ("nicht pasteurisiert", "unpasteurisiert", "ohne Gentechnik", "alkoholfrei", "entalkoholisiert", "Zuckeralkohole"); `talc` does not match inside "entalkoholisiert".
+- The wine, beer and spirit rules are not negated by "alkoholfrei" (alcohol-free beer and wine still count), only by "ohne …" and by vinegar or yeast made from the drink ("Weinessig", "wine vinegar", "vinaigre de vin", "Bierhefe", "lievito di birra"). Words that contain a drink's name but mean something else do not count: tartaric acid, cream of tartar, grapes, vine leaves and pork for wine ("Weinsäure", "Weinstein", "Weintrauben", "Schwein"), berries, sausages and spent grain for beer ("Erdbeeren", "Bierschinken", "Bierwurst", "Biertreber"), "Portobello" for port wine and "licorice" for liqueur. Rum only counts at the start of a word ("Rumaroma" yes, "Krume", "Rumpsteak" no), sake only as a word of its own, port only as "port wine", "Portwein" or "porto" (not "portion", "Portugal"). The beer rule is also not triggered by the usually alcohol-free soft drinks "ginger beer", "Ingwerbier", "root beer" and "birch beer" (`SOFT_DRINK_BEER_BEFORE`); their sugar, sweeteners and colours are still found by the other rules.
+- Built-in data: 768 seed ingredient rules across 24 categories (25 category presets are offered when adding a new rule) plus 12 product checks, plus an additive taxonomy of ~160 E-numbers with risk levels (`none`/`low`/`medium`/`high`) and function classes (`AdditiveTaxonomyData.ts`). A small hardcoded `defaultRules` list is used only as a last-resort fallback if no rules are available at all.
+
+### Product Checks (`productChecks.ts`)
+
+Whole-product checks stored as `check` rules; each finding counts like an ingredient red flag. A check rule set to `ok` is switched off. The rule editor offers no delete for checks (it explains that a check is switched off with "Allowed" instead), because a deleted check would not come back.
+
+| Key | Fires when | Category |
+|---|---|---|
+| `ingredient_count` | more ingredients than the limit (default `gt 5`); compound ingredients count with their parts, not as an extra one | Verarbeitung |
+| `canned` | packaging shape can/tin, or category canned foods with a metal packaging material | Verpackung |
+| `mercury_fish` | tuna, swordfish, shark, marlin in categories or ingredient text | Schadstoffe |
+| `rice_arsenic` | rice category, or rice as the first ingredient | Schadstoffe |
+| `pesticide_risk` | category mango, pepper, rice, tea, peanuts, green beans or cherries, and no organic label (organic labels, national control body codes or organic wording in the ingredients); crops from the BVL report on pesticide residues 2023 | Schadstoffe |
+| `not_raw_milk` | dairy category without a raw-milk mention (a negated mention counts as heated milk) | Erhitzte Milch |
+| `alcoholic` | category alcoholic beverages, or `alcohol_100g` > 0 | Alkohol |
+| `meat_substitute` | category meat analogues/alternatives | Proteine & Fleischersatz |
+| `farmed_fish` | responsible-aquaculture label or a `farmed-` category | Zuchtfisch |
+| `water_not_mineral` | a water (`en:waters` or one of its child categories) that has `en:table-waters` (even when also tagged natural mineral water) or lacks `en:natural-mineral-waters` / `en:carbonated-natural-mineral-waters` / `en:non-carbonated-natural-mineral-waters`; the detail names the kind (`table`, `spring` for `en:spring-waters`, `other`) | Wasser |
+| `water_plastic_bottle` | a water whose packaging tags (prefix stripped) contain plastic/PET as a hyphen-separated word: plastic(s), pet, rpet, kunststoff, plastique, plastica, plastico, plástico, plastik(flasche), pet-flasche, polyethylene terephthalate (also the German spellings) | Wasser |
+| `water_contaminants` | a water with given values above the infant-food limits of Min/TafelWV annex 6 (mg/l): nitrate 10, nitrite 0.02, sodium 20, sulphate 240, fluoride 0.7, manganese 0.05; the detail lists each exceeded value with its limit. Missing values never flag | Wasser |
+
+The checks only see what Open Food Facts (or USDA) provides; products stored before this data was kept get it from the background refresh (`StoredProductRefreshService`, see [Product Rating](#product-rating-productratingrate)) or their next online lookup.
+
+### Product Rules (`productRules.ts`)
+
+- `product` rules match when the product's brand or `brand_owner` contains `brand` as consecutive words (same normalization as company rules: accents, case, `&`, legal forms, spaces), every entry of `nameWords` appears in the product name as whole consecutive words (or written together), and — with `waterOnly` — the product is a water (`isWater`). Empty `nameWords` means the whole brand.
+- A match is one red flag (severity `critical`, category `Wasser-Tests`, detail `productRule` with name, reason and sources); it is not critical on its own. Rules set to `ok` never match. The keyword analyzer and `translateRuleKeyword` only handle `ingredient` rules, so product rules are never matched against the ingredient text or translated.
+- In the rule editor only the severity can be changed; the rule can be deleted. Product rules cannot be created in the UI.
+
+### Avoided Companies (`companyRules.ts`)
+
+- `company` rules are matched against the product's brands and `brand_owner`. The avoided name itself may appear inside a brand ("Nestlé Deutschland AG"); names collected from Wikidata must match a whole brand or its first whole words ("Maggi" matches "Maggi Fix", "Lion" does not match "Golden Lion Foods"). Both are also compared without spaces and hyphens ("Kit Kat" = "KitKat", "Coca-Cola" = "CocaCola"). Legal forms and regional suffixes (GmbH, AG, Deutschland, …) are ignored. Names the user switched off (`excluded`, compared normalized) are skipped; the rule's own name can never be switched off. Because `excluded` lives in `translations`, which `ratingFingerprint` hashes, switching a name re-rates the catalog.
+- A match makes the product **Critical** on its own and adds an `avoidedCompany` reason.
+
+### Product Information (display only)
+
+- `productBadges.ts`: organic (with Demeter/Bioland/Naturland), GMO-free, contains GMO, husbandry level 1–5, free range, MSC, ASC, raw milk — from `labels_tags` and categories.
+- `packagerCode.ts`: parses `emb_codes_tags`; shown as "Verarbeitet/verpackt in" with country (and German state). The code names the last processing or packing establishment, not the origin of the raw materials.
+- `almondInfo.ts`: a pollination note for products with almonds from the USA or of unknown origin; never affects the rating.
+- `waterInfo.ts`: water detection and the water checks' helpers, plus the `WaterInfoNote` on the product page (natural mineral water, infant-food label, glass bottle without plastic, very low in minerals when at least three ion values sum below 50 mg/l, calcium > 150 or magnesium > 50 mg/l, and always the list of things product data cannot show); never affects the rating. Open Food Facts stores minerals in g per 100 g; `toMgPerLitre` multiplies by 10,000 (1 l of water ≈ 1 kg) and rounds to 4 decimals.
+- `eggCode.ts`: parses egg producer codes (`0-DE-0312345`): housing system 0–3, country, and for German codes state, farm and stall number.
 
 ### Nova Score Evaluation
 
@@ -400,13 +510,14 @@ Migrations are append-only and run inside a transaction (or sequentially where t
 
 ### Product Rating (`ProductRating.rate`)
 
-- **Critical**: Nova 4, or 3 or more red flags (`CRITICAL_RED_FLAG_COUNT`)
+- **Critical**: a brand/company the user avoids, Nova 4, or 3 or more red flags (`CRITICAL_RED_FLAG_COUNT`; ingredient, nutrient, check and product rule findings all count)
 - **Warning**: 1–2 red flags, or Nova 3
 - **Unknown**: no ingredient list, no Nova score, and no nutrient-rule finding (i.e. `redFlagCount === 0`)
 - **OK**: none of the above
-- The result also carries machine-readable `reasons` (`nova`, `redFlags`, `ingredientsMissing`, `insufficientData`, `noFindings`) used to build the "why" text shown in the UI.
+- The result also carries machine-readable `reasons` (`avoidedCompany`, `nova`, `redFlags`, `ingredientsMissing`, `insufficientData`, `noFindings`) used to build the "why" text shown in the UI.
 - `rateProduct()` (`domain/analysis/rateProduct.ts`) is the single entry point used by the scanner, the product screen and the edit screen.
-- `CatalogRatingService` re-rates every stored product (in batches of 25, yielding to the UI thread) whenever the rule set or the rating logic changes. A fingerprint (`RATING_LOGIC_VERSION` + a hash of all rules) stored in `meta.rating_fingerprint` decides whether a re-rate is needed; `RATING_LOGIC_VERSION` is bumped whenever a change in the rating code would alter results, forcing a one-time recompute for existing installs.
+- `CatalogRatingService` re-rates every stored product (in batches of 25, yielding to the UI thread) whenever the rule set or the rating logic changes. A fingerprint (`RATING_LOGIC_VERSION` + a hash of all rules) stored in `meta.rating_fingerprint` decides whether a re-rate is needed; `RATING_LOGIC_VERSION` is bumped whenever a change in the rating code would alter results, forcing a one-time recompute for existing installs (currently 8).
+- `StoredProductRefreshService` completes products stored with an older Open Food Facts field set. `PRODUCT_DATA_VERSION` (stored in `products.data_version`) is bumped whenever the client requests new fields (2: categories_tags, packaging tags, brand_owner, emb_codes_tags, alcohol_100g; 3: the minerals `sodium_100g`, `calcium_100g`, `magnesium_100g`, `potassium_100g`, `bicarbonate_100g`, `chloride_100g`, `sulphate_100g`, `nitrate_100g`, `nitrite_100g`, `fluoride_100g`, `manganese_100g`). After the rules are loaded at app start, products with an older or unknown version are fetched again in the background: one request at a time, at most 10 per minute, most recently seen first. It stops when the device is offline or a request fails (e.g. HTTP 429) and continues with the remaining products on the next start. The fresh data is merged like a lookup (edited fields and USDA data are kept), re-rated and stored without counting a visit; the update is skipped if the product was edited or deleted meanwhile. A product unknown to Open Food Facts keeps its data and is only marked with the current version. Editing a product keeps its data version.
 
 ## 10. UI Design Tokens (`src/ui/theme.ts`)
 
@@ -429,8 +540,8 @@ All colours are design tokens (`colors`, `spacing`, `radius`, `typography`, `TOU
 Expo Router file-based routing in `App/app/`:
 
 - **Tabs** (in `(tabs)/` group): Scanner (`index`), Catalog, Favorites, Settings
-- **Stack screens**: `result` (Product screen, params: `ean`, `source: 'scan' | 'recent' | 'view'`), `edit/[ean]` (params: `ean`, `then: 'show'` to return to the product after saving)
-- **Settings sub-routes**: `settings/filters`, `settings/api-key` (translation provider & key), `settings/about` (guide, rating explanation, privacy, data source)
+- **Stack screens**: `result` (Product screen, params: `ean`, `source: 'scan' | 'recent' | 'view'`), `edit/[ean]` (params: `ean`, `then: 'show'` to return to the product after saving), `egg-code` (egg code reader)
+- **Settings sub-routes**: `settings/filters`, `settings/allergens`, `settings/api-key` (translation provider & key), `settings/usda-key` (USDA FoodData Central key), `settings/about` (guide, rating explanation, privacy, data sources: Open Food Facts, USDA FoodData Central and Wikidata with their licences)
 
 ### Route mapping
 
@@ -442,17 +553,21 @@ Expo Router file-based routing in `App/app/`:
 | `app/(tabs)/settings.tsx` | `/settings` |
 | `app/result.tsx` | `/result` |
 | `app/edit/[ean].tsx` | `/edit/:ean` |
+| `app/egg-code.tsx` | `/egg-code` |
+| `app/recalls.tsx` | `/recalls` |
 | `app/settings/filters.tsx` | `/settings/filters` |
+| `app/settings/allergens.tsx` | `/settings/allergens` |
 | `app/settings/api-key.tsx` | `/settings/api-key` |
+| `app/settings/usda-key.tsx` | `/settings/usda-key` |
 | `app/settings/about.tsx` | `/settings/about` |
 
 ## 12. Testing
 
 - **Framework:** Jest with the `jest-expo` preset
-- **Count:** 52 suites, 437 tests (all passing; measured with `npx jest --maxWorkers=2 --silent`)
+- **Count:** 72 suites, 847 tests (all passing; measured with `npx jest`)
 - **Location:** `__tests__/` directories alongside source files
 - **No snapshot tests** — all assertion-based `expect()` calls
-- **Real SQLite in tests:** database and repository tests run against `node:sqlite` through a test double (`src/testing/nodeSqlite.ts`, `useTestDatabase()`), not string-matching mocks; migration tests start from literal legacy schemas with seeded data and check data survival, idempotency and rollback of a failing migration
+- **Real SQLite in tests:** database and repository tests run against `node:sqlite` through a test double (`src/testing/nodeSqlite.ts`, `useTestDatabase()`), not string-matching mocks; migration tests start from literal legacy schemas with seeded data (up to the v9 schema with user rules, products and favorites for migration 10) and check data survival, idempotency, fresh install = upgrade and rollback of a failing migration
 - **Golden ratings:** `src/domain/analysis/__fixtures__/` pins the rating output (status, Nova, red flags) of 32 realistic reference products under the seeded and a customised rule set, so a refactor either reproduces the same ratings or shows a reviewed diff
 - **Run all tests:** `npm test`
 - **Run a single file:** `npm test -- --testPathPattern=RedFlagAnalyzer`
@@ -462,14 +577,15 @@ Expo Router file-based routing in `App/app/`:
 
 | Module | Test files | Focus |
 |---|---|---|
-| API Clients | OpenFoodFactsClient, OpenFoodFactsWriteClient, OffOcrClient, fetchWithTimeout, retry, debounce, config, ApiError, staging integration | HTTP, auth, timeouts, error handling |
+| API Clients | OpenFoodFactsClient, OpenFoodFactsWriteClient, OffOcrClient, UsdaClient, RecallClient, RobotoffClient, fetchWithTimeout, retry, debounce, config, ApiError, staging integration | HTTP, auth, timeouts, error handling |
 | DB / Repositories | ProductRepository, FilterRuleRepository, FavoritesRepository, migrations, BackupService | CRUD, migrations, backup/restore against real SQLite |
-| Domain Analysis | RedFlagAnalyzer, RedFlagMatching, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductRating, golden ratings | Rating rules, matching correctness |
-| Domain Product/Catalog/OCR/Barcode | productForm, catalogQuery, nutritionLabel, ocrGeometry, barcode | Validation, parsing, pure logic |
+| Domain Analysis | RedFlagAnalyzer, RedFlagMatching, IngredientParser, IngredientTaxonomy, NovaScoreEvaluator, ProductNormalizer, ProductRating, productChecks, productRules, companyRules, golden ratings | Rating rules, checks, company matching, matching correctness (incl. the alcohol shields) |
+| Domain Product/Catalog/OCR/Barcode/Eggs/Allergens | productForm, productBadges, packagerCode, almondInfo, waterInfo, catalogQuery, nutritionLabel, ocrGeometry, barcode, eggCode, allergenProfile, recallMatch | Validation, parsing, pure logic |
 | Domain Rules | ingredientTranslations, ruleGroups | Multi-language lookup, grouping/sorting |
-| Services | ProductLookupService, ProductEditService, CatalogRatingService | Cache-first lookup, edit tracking, re-rating |
+| Services | ProductLookupService, ProductEditService, CatalogRatingService, StoredProductRefreshService, CompanyLookupService, RecallService | Cache-first lookup incl. USDA fallback, edit tracking, re-rating, background refresh, Wikidata lookup, recall cache with backoff and hiding |
+| Stores / i18n | allergenStore, aboutTexts, allergenLabels | Allergen switch and profile, About texts naming every data source, allergen names |
 | OCR / Translation | OcrService, DeepLClient, MyMemoryClient | Recognition, quota/error handling |
-| Screens / Features | CatalogScreen, EditProductScreen, FilterScreen, ProductScreen, ScannerScreen, SettingsScreen, ScanGate, RuleEditorSheet, OcrCameraSheet | Screen behaviour with React Native Testing Library |
+| Screens / Features | AllergenProfileScreen, ApiKeyScreen, CatalogScreen, EditProductScreen, EggCodeScreen, FilterScreen, ProductScreen, ScannerScreen, SettingsScreen, UsdaKeyScreen, ScanGate, RuleEditor, FindingsList, IngredientsSection, OcrCameraSheet, OffAccountSetup, Toast, RecallUi | Screen behaviour with React Native Testing Library |
 
 ## 13. Commands (run from `App/`)
 
@@ -496,7 +612,15 @@ Expo Router file-based routing in `App/app/`:
 | Manual barcode entry | Done |
 | Scan result card (scan in a row without leaving the camera) | Done |
 | OFF API product lookup with offline/cache fallback | Done |
-| Red flag ingredient analysis (678 rules, additive-risk taxonomy) | Done |
+| Red flag ingredient analysis (768 rules incl. wine, beer and spirits, additive-risk taxonomy) | Done |
+| Product checks (ingredient count, can, mercury fish, rice, pesticide-risk crops, heated milk, alcohol, meat substitute, farmed fish) | Done |
+| Avoided brands/companies with optional Wikidata lookup (brand-start and spelling-variant matching) | Done |
+| Deselecting single brand names of a company rule | Planned (see [OpenTasks.md](OpenTasks.md)) |
+| Label badges, packager code, almond pollination note, water note | Done |
+| Egg code reader | Done |
+| USDA FoodData Central fallback (user's own key; fills gaps of a later sparse Open Food Facts entry) | Done |
+| Food recalls from lebensmittelwarnung.de (list, product card by barcode or conservative name match, silent backoff and hiding) | Done |
+| Background refresh of products stored with an older Open Food Facts field set (≤ 10 requests/min) | Done |
 | Nova classification and traffic-light rating (OK/Warning/Critical/Unknown) | Done |
 | Local catalog (SQLite) with search, filter, sort, undoable delete | Done |
 | Favorites with undoable remove | Done |
@@ -517,8 +641,9 @@ Expo Router file-based routing in `App/app/`:
 
 - `npm run typecheck` — clean (0 errors)
 - `npm run lint` — clean (0 errors, ESLint 10 flat config)
-- `npm test` — 52 suites, 437 tests, all passing
+- `npm test` — 72 suites, 847 tests, all passing
 - `npm run test:integration` requires network access to the OFF staging server and is not part of `npm run check`
+- Open work, open questions and known limits are tracked in [OpenTasks.md](OpenTasks.md)
 
 ## 16. Non-Functional Requirements
 
@@ -526,7 +651,25 @@ Expo Router file-based routing in `App/app/`:
 |---|---|---|
 | NF-01 | Scan-to-Result < 10s | Done (8 s request timeout, cache-first) |
 | NF-02 | No backend of the app's own | Done |
-| NF-03 | Catalog, favorites, rules and backups stay on the device; only the scanned barcode (to Open Food Facts), ingredient text you translate (to the chosen provider) and details/photos you explicitly send go elsewhere | Done |
+| NF-03 | Catalog, favorites, rules and backups stay on the device; only the scanned barcode (to Open Food Facts, and to USDA FoodData Central if a key is saved and Open Food Facts does not know it), a company name you look up (to Wikidata), the request for the recall list (to lebensmittelwarnung.de, without product data), ingredient text you translate (to the chosen provider) and details/photos you explicitly send go elsewhere | Done |
 | NF-04 | Operating cost 0€ | Done |
 | NF-05 | Modular & testable (SOLID) | Done |
 | NF-06 | No ads, no tracking, no analytics | Done |
+
+## 17. Data Sources, Licences and Limits
+
+| Source | Used for | Licence |
+|---|---|---|
+| Open Food Facts | Product data | Open Database License (ODbL) |
+| Wikidata | Brands and subsidiaries of avoided companies | CC0 |
+| USDA FoodData Central | Products unknown to Open Food Facts; every user needs their own free api.data.gov key | CC0 (public domain) |
+| lebensmittelwarnung.de | Food recalls and warnings (official RSS feed); display only | – |
+| BVL, Nationale Berichterstattung Pflanzenschutzmittelrückstände 2023 | Choice of the pesticide-risk crops (no measured values) | – |
+
+What the app cannot know:
+
+- No pesticide values per product; `pesticide_risk` only flags crops that stand out in the 2023 report, when the product has no organic label.
+- Vertical farming cannot be detected; there is no field for it in the data.
+- PFAS (e.g. Teflon coatings) in packaging or cookware cannot be detected.
+- Packager codes name the last processing or packing establishment, not the origin of the raw materials.
+- Every check depends on the categories, packaging and labels at Open Food Facts (or USDA); missing data means no finding, not a harmless product.

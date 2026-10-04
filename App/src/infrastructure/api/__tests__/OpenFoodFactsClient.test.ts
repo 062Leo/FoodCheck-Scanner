@@ -202,4 +202,41 @@ describe('OpenFoodFactsClient', () => {
       await expect(client.getProductByEan('123')).rejects.toThrow('Failed to fetch product data');
     });
   });
+
+  it('loads the mineral values of a water in g per 100 g', async () => {
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        status: 1,
+        product: {
+          product_name: 'Volvic',
+          nutriments: {
+            sodium_100g: 0.0012,
+            calcium_100g: 0.0012,
+            magnesium_100g: 0.0008,
+            potassium_100g: 0.0006,
+            bicarbonate_100g: 0.0074,
+            chloride_100g: 0.0015,
+            sulphate_100g: 0.0009,
+            nitrate_100g: 0.00073,
+            fluoride_100g: 0.00002,
+          },
+        },
+      }),
+    });
+
+    const product = await client.getProductByEan('3057640257773');
+
+    expect(product?.nutriments).toMatchObject({
+      sodium100g: 0.0012,
+      calcium100g: 0.0012,
+      magnesium100g: 0.0008,
+      potassium100g: 0.0006,
+      bicarbonate100g: 0.0074,
+      chloride100g: 0.0015,
+      sulphate100g: 0.0009,
+      nitrate100g: 0.00073,
+      fluoride100g: 0.00002,
+    });
+  });
 });

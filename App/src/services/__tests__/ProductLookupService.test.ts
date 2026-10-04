@@ -2,9 +2,11 @@ import { ProductLookupService, isStale } from '../ProductLookupService';
 import { ProductRepository } from '../../infrastructure/db/ProductRepository';
 import { ProductEditService } from '../ProductEditService';
 import { NetworkError } from '../../infrastructure/api/fetchWithTimeout';
+import { UsdaError } from '../../infrastructure/api/UsdaClient';
 import { SEEDED_RULES } from '../../domain/analysis/__fixtures__/goldenRuleSets';
 import { productRecord, useTestDatabase } from '../../testing/testDatabase';
 import type { Product } from '../../types/Product';
+import { PRODUCT_DATA_VERSION } from '../../domain/analysis/ProductNormalizer';
 
 jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
 jest.mock('@react-native-community/netinfo', () => ({
@@ -29,15 +31,21 @@ describe('ProductLookupService', () => {
   useTestDatabase();
   const repository = new ProductRepository();
   let api: { getProductByEan: jest.Mock };
+  let usda: { findByGtin: jest.Mock };
+  let usdaKey: string | null;
   let online: boolean;
   let service: ProductLookupService;
 
   beforeEach(() => {
     api = { getProductByEan: jest.fn() };
+    usda = { findByGtin: jest.fn() };
+    usdaKey = null;
     online = true;
     service = new ProductLookupService({
       repository,
       api,
+      usda,
+      getUsdaKey: async () => usdaKey,
       isOnline: async () => online,
       now: () => NOW,
     });
@@ -224,5 +232,259 @@ describe('ProductLookupService', () => {
     expect(isStale({ last_api_fetch: '2026-05-20T12:00:00.000Z' }, now)).toBe(true);
     expect(isStale({ last_api_fetch: '2026-05-30T12:00:00.000Z' }, now)).toBe(false);
     expect(isStale({ last_api_fetch: null }, now)).toBe(false);
+  });
+
+  describe('background refresh of products stored with older data', () => {
+    const oldRecord = (product: Product, overrides = {}) =>
+      productRecord({
+        ean: EAN,
+        name: product.name,
+        brands: product.brand ?? null,
+        ingredients: product.ingredientsText ?? null,
+        raw_json: JSON.stringify({ product }),
+        rating: 'OK',
+        data_version: 1,
+        ...overrides,
+      });
+
+    it('stores the new fields, re-rates and keeps visits', async () => {
+      const stored: Product = { ean: EAN, name: 'Thunfisch', ingredientsText: 'Thunfisch, Salz' };
+      await repository.saveScan(oldRecord(stored));
+      api.getProductByEan.mockResolvedValue({
+        ...stored,
+        categoriesTags: ['en:canned-foods', 'en:canned-tunas'],
+        packagingTags: ['en:can', 'en:metal'],
+      });
+
+      expect(await service.refreshStored(EAN, SEEDED_RULES)).toBe(true);
+
+      expect(api.getProductByEan).toHaveBeenCalledWith(EAN, { retries: 0 });
+      const record = await repository.findByEan(EAN);
+      expect(record).toMatchObject({
+        data_version: PRODUCT_DATA_VERSION,
+        last_api_fetch: NOW.toISOString(),
+        visit_count: 1,
+        scanned_at: '2026-01-01T10:00:00.000Z',
+      });
+      expect(record?.rating).not.toBe('OK');
+      expect(JSON.parse(record!.raw_json!).product.packagingTags).toContain('en:can');
+    });
+
+    it('keeps the fields the user edited', async () => {
+      await repository.saveEdit(
+        oldRecord({ ean: EAN, name: 'Mein Name', ingredientsText: 'Wasser' }),
+        '["name"]'
+      );
+      api.getProductByEan.mockResolvedValue({ ...freshProduct, name: 'OFF-Name' });
+
+      await service.refreshStored(EAN, SEEDED_RULES);
+
+      const record = await repository.findByEan(EAN);
+      expect(record).toMatchObject({ name: 'Mein Name', data_version: PRODUCT_DATA_VERSION });
+      expect(record?.ingredients).toBe(freshProduct.ingredientsText);
+    });
+
+    it('keeps a USDA product Open Food Facts does not know and marks it as checked', async () => {
+      const usdaOnly: Product = {
+        ean: EAN,
+        name: 'Oat Cereal Rings',
+        ingredientsText: 'WHOLE GRAIN OATS, SUGAR',
+        source: 'usda',
+      };
+      await repository.saveScan(oldRecord(usdaOnly));
+      api.getProductByEan.mockResolvedValue(null);
+
+      expect(await service.refreshStored(EAN, SEEDED_RULES)).toBe(false);
+
+      const record = await repository.findByEan(EAN);
+      expect(record).toMatchObject({
+        name: 'Oat Cereal Rings',
+        data_version: PRODUCT_DATA_VERSION,
+      });
+      expect(JSON.parse(record!.raw_json!).product.source).toBe('usda');
+      expect(usda.findByGtin).not.toHaveBeenCalled();
+    });
+
+    it('does not ask again for a product that is already up to date', async () => {
+      await repository.saveScan(oldRecord(freshProduct, { data_version: PRODUCT_DATA_VERSION }));
+
+      expect(await service.refreshStored(EAN, SEEDED_RULES)).toBe(false);
+      expect(api.getProductByEan).not.toHaveBeenCalled();
+    });
+
+    it('passes errors on and leaves the product unchanged', async () => {
+      await repository.saveScan(oldRecord(freshProduct));
+      api.getProductByEan.mockRejectedValue(new Error('HTTP 429'));
+
+      await expect(service.refreshStored(EAN, SEEDED_RULES)).rejects.toThrow('HTTP 429');
+      expect((await repository.findByEan(EAN))?.data_version).toBe(1);
+    });
+  });
+
+  describe('USDA FoodData Central fallback', () => {
+    const usdaProduct: Product = {
+      ean: EAN,
+      name: 'Oat Cereal Rings',
+      brand: 'Oat Rings',
+      ingredientsText: 'WHOLE GRAIN OATS, SUGAR, PALM OIL, SALT',
+      ingredientsTextEn: 'WHOLE GRAIN OATS, SUGAR, PALM OIL, SALT',
+      nutriments: { sugars100g: 5.1, salt100g: 1.2 },
+      source: 'usda',
+    };
+
+    it('asks USDA with the user key when Open Food Facts does not know the barcode', async () => {
+      api.getProductByEan.mockResolvedValue(null);
+      usda.findByGtin.mockResolvedValue(usdaProduct);
+      usdaKey = 'test-key';
+
+      const result = await service.lookup(EAN, 'scan', SEEDED_RULES);
+
+      expect(usda.findByGtin).toHaveBeenCalledWith(EAN, 'test-key');
+      if (result.status !== 'found') throw new Error('expected found');
+      expect(result.product.source).toBe('usda');
+      expect(result.rating.redFlags.length).toBeGreaterThan(0);
+      const stored = await repository.findByEan(EAN);
+      expect(stored).toMatchObject({ name: 'Oat Cereal Rings', visit_count: 1 });
+      expect(JSON.parse(stored!.raw_json!).product.source).toBe('usda');
+    });
+
+    it('never asks USDA without a key', async () => {
+      api.getProductByEan.mockResolvedValue(null);
+
+      expect(await service.lookup(EAN, 'scan', SEEDED_RULES)).toEqual({ status: 'not-found' });
+      expect(usda.findByGtin).not.toHaveBeenCalled();
+    });
+
+    it('does not ask USDA for products Open Food Facts knows', async () => {
+      api.getProductByEan.mockResolvedValue(freshProduct);
+      usdaKey = 'test-key';
+
+      await service.lookup(EAN, 'scan', SEEDED_RULES);
+
+      expect(usda.findByGtin).not.toHaveBeenCalled();
+    });
+
+    it('does not ask USDA when Open Food Facts cannot be reached', async () => {
+      api.getProductByEan.mockRejectedValue(new NetworkError('timeout', 'timeout'));
+      usdaKey = 'test-key';
+
+      expect(await service.lookup(EAN, 'scan', SEEDED_RULES)).toEqual({ status: 'offline' });
+      expect(usda.findByGtin).not.toHaveBeenCalled();
+    });
+
+    it('keeps the not-found flow when USDA does not know the barcode either', async () => {
+      api.getProductByEan.mockResolvedValue(null);
+      usda.findByGtin.mockResolvedValue(null);
+      usdaKey = 'test-key';
+
+      expect(await service.lookup(EAN, 'scan', SEEDED_RULES)).toEqual({ status: 'not-found' });
+    });
+
+    it.each(['invalid-key', 'rate-limit', 'timeout'] as const)(
+      'reports not-found with a hint when USDA fails (%s)',
+      async (code) => {
+        api.getProductByEan.mockResolvedValue(null);
+        usda.findByGtin.mockRejectedValue(new UsdaError(code));
+        usdaKey = 'test-key';
+
+        expect(await service.lookup(EAN, 'scan', SEEDED_RULES)).toEqual({
+          status: 'not-found',
+          usdaError: code,
+        });
+        expect(await repository.findByEan(EAN)).toBeNull();
+      }
+    );
+
+    it('shows a stored USDA product again without asking USDA or overwriting it', async () => {
+      api.getProductByEan.mockResolvedValue(null);
+      usda.findByGtin.mockResolvedValue(usdaProduct);
+      usdaKey = 'test-key';
+      await service.lookup(EAN, 'scan', SEEDED_RULES);
+      usda.findByGtin.mockClear();
+
+      const result = await service.lookup(EAN, 'view', SEEDED_RULES);
+
+      expect(usda.findByGtin).not.toHaveBeenCalled();
+      expect(result).toMatchObject({ status: 'found', source: 'device' });
+      if (result.status !== 'found') throw new Error('expected found');
+      expect(result.product).toMatchObject({ name: 'Oat Cereal Rings', source: 'usda' });
+    });
+
+    it('replaces a USDA product once Open Food Facts knows the barcode', async () => {
+      api.getProductByEan.mockResolvedValueOnce(null);
+      usda.findByGtin.mockResolvedValue(usdaProduct);
+      usdaKey = 'test-key';
+      await service.lookup(EAN, 'scan', SEEDED_RULES);
+      api.getProductByEan.mockResolvedValue(freshProduct);
+
+      const result = await service.lookup(EAN, 'view', SEEDED_RULES);
+
+      if (result.status !== 'found') throw new Error('expected found');
+      expect(result.product.name).toBe('Frische Limo');
+      expect(result.product.source).toBeUndefined();
+    });
+
+    it('keeps the USDA data when the Open Food Facts entry holds only a photo', async () => {
+      api.getProductByEan.mockResolvedValueOnce(null);
+      usda.findByGtin.mockResolvedValue(usdaProduct);
+      usdaKey = 'test-key';
+      await service.lookup(EAN, 'scan', SEEDED_RULES);
+      api.getProductByEan.mockResolvedValue({
+        ean: EAN,
+        name: '',
+        imageUrl: 'https://images.example/front.jpg',
+        nutriments: { sugars100g: undefined },
+      });
+
+      const result = await service.lookup(EAN, 'view', SEEDED_RULES);
+
+      if (result.status !== 'found') throw new Error('expected found');
+      expect(result.product).toMatchObject({
+        name: 'Oat Cereal Rings',
+        brand: 'Oat Rings',
+        ingredientsText: usdaProduct.ingredientsText,
+        nutriments: usdaProduct.nutriments,
+        imageUrl: 'https://images.example/front.jpg',
+        source: 'usda',
+      });
+      const stored = await repository.findByEan(EAN);
+      expect(stored?.ingredients).toBe(usdaProduct.ingredientsText);
+      expect(JSON.parse(stored!.raw_json!).product.source).toBe('usda');
+    });
+
+    it('fills only what Open Food Facts lacks and drops the USDA source once unused', async () => {
+      api.getProductByEan.mockResolvedValueOnce(null);
+      usda.findByGtin.mockResolvedValue({ ...usdaProduct, quantity: '12 oz' });
+      usdaKey = 'test-key';
+      await service.lookup(EAN, 'scan', SEEDED_RULES);
+      api.getProductByEan.mockResolvedValue({ ...freshProduct, brand: undefined });
+
+      const result = await service.lookup(EAN, 'view', SEEDED_RULES);
+
+      if (result.status !== 'found') throw new Error('expected found');
+      expect(result.product).toMatchObject({
+        name: 'Frische Limo',
+        brand: 'Oat Rings',
+        quantity: '12 oz',
+        ingredientsText: freshProduct.ingredientsText,
+        nutriments: { sugars100g: 9 },
+      });
+      expect(result.product.source).toBeUndefined();
+    });
+
+    it('keeps the USDA source when only the nutriments still come from USDA', async () => {
+      api.getProductByEan.mockResolvedValueOnce(null);
+      usda.findByGtin.mockResolvedValue(usdaProduct);
+      usdaKey = 'test-key';
+      await service.lookup(EAN, 'scan', SEEDED_RULES);
+      api.getProductByEan.mockResolvedValue({ ...freshProduct, nutriments: undefined });
+
+      const result = await service.lookup(EAN, 'view', SEEDED_RULES);
+
+      if (result.status !== 'found') throw new Error('expected found');
+      expect(result.product.ingredientsText).toBe(freshProduct.ingredientsText);
+      expect(result.product.nutriments).toEqual(usdaProduct.nutriments);
+      expect(result.product.source).toBe('usda');
+    });
   });
 });

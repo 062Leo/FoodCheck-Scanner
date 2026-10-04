@@ -5,6 +5,8 @@ import { formatNumber } from '../../i18n/useTranslation';
 import type { SupportedLanguage } from '../../i18n/translations';
 import { categoryLabel } from '../../i18n/categoryLabels';
 import { getIngredientTranslation } from '../../domain/rules/ingredientTranslations';
+import type { CheckDetail } from '../../domain/analysis/productChecks';
+import { productRuleReason, productRuleSources } from '../filters/ruleTexts';
 import { colors, radius, spacing, typography } from '../../ui/theme';
 
 const OPERATORS = { gt: '>', lt: '<', eq: '=' } as const;
@@ -15,11 +17,65 @@ export function findingTitle(
   language: SupportedLanguage
 ): string {
   if (finding.nutrient) return t(`nutrient.${finding.nutrient.key}`);
+  if (finding.check) return checkTitle(finding.check, t, language);
+  if (finding.company) return t('product.company.title', { name: finding.company.name });
+  if (finding.productRule)
+    return t('product.productRule.title', { name: finding.productRule.name });
   if (finding.canonicalKey) return getIngredientTranslation(finding.canonicalKey, language);
   return finding.ingredient;
 }
 
-function findingDetail(finding: RedFlagFinding, t: TranslateFn, language: SupportedLanguage) {
+function checkTitle(check: CheckDetail, t: TranslateFn, language: SupportedLanguage): string {
+  if (check.key === 'ingredient_count') {
+    const params = {
+      count: check.count ?? 0,
+      threshold: formatNumber(check.threshold ?? 0, language),
+      operator: OPERATORS[check.operator ?? 'gt'],
+    };
+    return check.operator && check.operator !== 'gt'
+      ? t('product.check.ingredient_count.titleRule', params)
+      : t('product.check.ingredient_count.title', params);
+  }
+  if (check.key === 'pesticide_risk' && check.crop) {
+    return t('product.check.pesticide_risk.title', { crop: t(`product.crop.${check.crop}`) });
+  }
+  return t(`product.check.${check.key}.title`);
+}
+
+function checkDetail(detail: CheckDetail, t: TranslateFn, language: SupportedLanguage): string {
+  if (detail.key === 'water_not_mineral' && detail.waterKind) {
+    return t(`product.check.water_not_mineral.${detail.waterKind}`);
+  }
+  if (detail.key === 'water_contaminants' && detail.exceeded?.length) {
+    const values = detail.exceeded.map((item) =>
+      t('product.check.water_contaminants.value', {
+        mineral: t(`product.mineral.${item.mineral}`),
+        value: formatNumber(item.value, language, 3),
+        limit: formatNumber(item.limit, language, 3),
+      })
+    );
+    return [t('product.check.water_contaminants.detail'), ...values].join('\n');
+  }
+  return t(`product.check.${detail.key}.detail`);
+}
+
+export function findingDetail(
+  finding: RedFlagFinding,
+  t: TranslateFn,
+  language: SupportedLanguage
+): string {
+  if (finding.check) return checkDetail(finding.check, t, language);
+  if (finding.company) return t('product.company.detail', { matched: finding.company.matched });
+  if (finding.productRule) {
+    const { reason, sources } = finding.productRule;
+    const lines = [productRuleReason(reason, language)];
+    if (sources.length > 0) {
+      lines.push(
+        t('product.productRule.source', { sources: productRuleSources(sources, language) })
+      );
+    }
+    return lines.filter(Boolean).join('\n');
+  }
   if (!finding.nutrient) return categoryLabel(finding.category, t);
   const unit = finding.nutrient.key === 'energy-kcal_100g' ? 'kcal' : 'g';
   return t('product.nutrientFinding', {

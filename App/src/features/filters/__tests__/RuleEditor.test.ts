@@ -1,6 +1,7 @@
 import { buildRuleChange, NUTRIENT_CATEGORY } from '../RuleEditorSheet';
 import { translateRuleKeyword } from '../../../services/RuleTranslationService';
 import type { FilterRule } from '../../../types/FilterRule';
+import type { CompanyData } from '../../../domain/analysis/companyRules';
 
 const customRule: FilterRule = {
   id: 7,
@@ -20,6 +21,8 @@ const form = {
   operator: 'gt' as const,
   threshold: '',
   severity: 'ok' as const,
+  companyName: '',
+  companyData: null as CompanyData | null,
 };
 
 describe('buildRuleChange', () => {
@@ -79,6 +82,99 @@ describe('buildRuleChange', () => {
     // The comparison belongs to the operator; "<5" must not silently become "> 5".
     expect(buildRuleChange(null, { ...form, type: 'nutrient', threshold: '<5' })).toEqual({
       error: 'threshold',
+    });
+  });
+
+  it('changes only the severity of a check without a limit', () => {
+    const checkRule: FilterRule = { ...customRule, type: 'check', key: 'canned' };
+
+    expect(buildRuleChange(checkRule, { ...form, type: 'check', threshold: '9' })).toEqual({
+      kind: 'update',
+      id: 7,
+      changes: { severity: 'ok' },
+      translate: false,
+    });
+  });
+
+  it('changes the ingredient limit of the ingredient count check', () => {
+    const checkRule: FilterRule = {
+      ...customRule,
+      type: 'check',
+      key: 'ingredient_count',
+      threshold: 5,
+      operator: 'gt',
+      translations: null,
+    };
+    const checkForm = { ...form, type: 'check' as const, severity: 'red_flag' as const };
+
+    expect(buildRuleChange(checkRule, { ...checkForm, threshold: ' 8 ' })).toEqual({
+      kind: 'update',
+      id: 7,
+      changes: { severity: 'red_flag', threshold: 8, operator: 'gt' },
+      translate: false,
+    });
+    for (const threshold of ['0', '2,5', '-1', '', 'viele']) {
+      expect(buildRuleChange(checkRule, { ...checkForm, threshold })).toEqual({ error: 'count' });
+    }
+  });
+
+  it('stores a company with its brands and never translates it', () => {
+    const companyData: CompanyData = { wikidataId: 'Q160746', names: ['Nestlé', 'Maggi'] };
+
+    expect(
+      buildRuleChange(null, { ...form, type: 'company', companyName: ' Nestlé ', companyData })
+    ).toEqual({
+      kind: 'add',
+      rule: {
+        type: 'company',
+        key: 'Nestlé',
+        category: 'Marken & Konzerne',
+        threshold: null,
+        operator: null,
+        severity: 'red_flag',
+        translations: JSON.stringify(companyData),
+      },
+      translate: false,
+    });
+    expect(buildRuleChange(null, { ...form, type: 'company', companyName: 'Hipp' })).toMatchObject({
+      kind: 'add',
+      rule: { key: 'Hipp', translations: null, severity: 'red_flag' },
+      translate: false,
+    });
+    expect(buildRuleChange(null, { ...form, type: 'company', companyName: ' ' })).toEqual({
+      error: 'company',
+    });
+  });
+
+  it('changes only the severity of a product rule and keeps its data', () => {
+    const product: FilterRule = {
+      ...customRule,
+      id: 9,
+      type: 'product',
+      key: 'Volvic',
+      category: 'Wasser-Tests',
+      translations: JSON.stringify({ brand: 'Volvic', nameWords: [], waterOnly: true }),
+    };
+
+    expect(buildRuleChange(product, { ...form, type: 'product' as const })).toEqual({
+      kind: 'update',
+      id: 9,
+      changes: { severity: 'ok' },
+      translate: false,
+    });
+  });
+
+  it('refuses a second rule for the same company', () => {
+    const existing: FilterRule = { ...customRule, id: 3, type: 'company', key: 'Nestlé AG' };
+    const companyForm = { ...form, type: 'company' as const, companyName: 'nestle' };
+
+    expect(buildRuleChange(null, companyForm, [customRule, existing])).toEqual({
+      error: 'duplicateCompany',
+    });
+    // Saving the rule itself again is no duplicate.
+    expect(buildRuleChange(existing, companyForm, [existing])).toMatchObject({
+      kind: 'update',
+      id: 3,
     });
   });
 });

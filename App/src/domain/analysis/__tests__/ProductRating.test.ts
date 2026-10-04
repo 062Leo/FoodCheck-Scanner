@@ -2,6 +2,7 @@ import { ProductRating } from '../ProductRating';
 import { RedFlagAnalyzer } from '../RedFlagAnalyzer';
 import { NovaScoreEvaluator } from '../NovaScoreEvaluator';
 import type { Product } from '../../../types/Product';
+import type { FilterRule } from '../../../types/FilterRule';
 import type { RedFlagRule } from '../../rules/defaultRules';
 
 describe('ProductRating', () => {
@@ -204,5 +205,117 @@ describe('ProductRating', () => {
     const result = rater.rate(product);
 
     expect(result.nova.label).toBe('Mäßig verarbeitet');
+  });
+
+  describe('with product checks and avoided companies', () => {
+    const rule = (type: FilterRule['type'], key: string, category: string): FilterRule => ({
+      id: 1,
+      type,
+      key,
+      category,
+      threshold: null,
+      operator: null,
+      severity: 'red_flag',
+      translations: null,
+      created_at: '2026-01-01T00:00:00.000Z',
+    });
+    const palmOil = rule('ingredient', 'Palmöl', 'Kritische Öle');
+    const canned = rule('check', 'canned', 'Verpackung');
+    const alcoholic = rule('check', 'alcoholic', 'Alkohol');
+    const tuna = rule('check', 'mercury_fish', 'Schadstoffe');
+    const nestle = rule('company', 'Nestlé', 'Marken & Konzerne');
+
+    it('counts check findings as red flags', () => {
+      const product: Product = {
+        ean: '1',
+        name: 'Thunfisch in Öl',
+        ingredientsText: 'Thunfisch, Palmöl, Salz',
+        packagingTags: ['en:can'],
+      };
+
+      const result = rater.rate(product, [palmOil, canned, tuna]);
+
+      expect(result.status).toBe('Critical');
+      expect(result.redFlags.map((f) => f.check?.key ?? f.ingredient)).toEqual([
+        'Palmöl',
+        'canned',
+        'mercury_fish',
+      ]);
+      expect(result.reasons).toEqual([{ code: 'redFlags', count: 3 }]);
+    });
+
+    it('rates a single check finding as a warning', () => {
+      const product: Product = { ean: '1', name: 'Mais', ingredientsText: 'Mais, Wasser' };
+
+      const result = rater.rate({ ...product, packagingTags: ['en:can'] }, [canned]);
+
+      expect(result.status).toBe('Warning');
+      expect(rater.rate(product, [canned]).status).toBe('OK');
+    });
+
+    it('rates a product of an avoided company as critical', () => {
+      const product: Product = {
+        ean: '1',
+        name: 'Suppe',
+        brand: 'Nestlé Deutschland AG',
+        ingredientsText: 'Wasser, Karotten',
+        novaScore: 1,
+      };
+
+      const result = rater.rate(product, [nestle]);
+
+      expect(result.status).toBe('Critical');
+      expect(result.reasons).toEqual([{ code: 'avoidedCompany', company: 'Nestlé' }]);
+      expect(result.redFlags).toEqual([
+        expect.objectContaining({
+          company: { name: 'Nestlé', matched: 'Nestlé Deutschland AG' },
+        }),
+      ]);
+    });
+
+    it('rates a product without ingredients by its category checks instead of Unknown', () => {
+      const product: Product = {
+        ean: '1',
+        name: 'Bier',
+        categoriesTags: ['en:alcoholic-beverages'],
+      };
+
+      const result = rater.rate(product, [alcoholic]);
+
+      expect(result.status).toBe('Warning');
+      expect(result.reasons).toEqual([
+        { code: 'redFlags', count: 1 },
+        { code: 'ingredientsMissing' },
+      ]);
+    });
+
+    it('rates a product without ingredients of an avoided company as critical', () => {
+      const result = rater.rate({ ean: '1', name: 'Riegel', brand: 'Nestlé' }, [nestle]);
+
+      expect(result.status).toBe('Critical');
+      expect(result.reasons).toEqual([
+        { code: 'avoidedCompany', company: 'Nestlé' },
+        { code: 'ingredientsMissing' },
+      ]);
+    });
+
+    it('stays Unknown without ingredients when no check applies', () => {
+      const result = rater.rate({ ean: '1', name: 'Leer' }, [canned, alcoholic, nestle]);
+
+      expect(result.status).toBe('Unknown');
+    });
+
+    it('does not match check or company rules against the ingredient text', () => {
+      const product: Product = {
+        ean: '1',
+        name: 'Test',
+        ingredientsText: 'Wasser, canned, Nestlé',
+      };
+
+      const result = rater.rate(product, [canned, nestle]);
+
+      expect(result.status).toBe('OK');
+      expect(result.redFlags).toEqual([]);
+    });
   });
 });

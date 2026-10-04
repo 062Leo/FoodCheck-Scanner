@@ -102,13 +102,24 @@ export default function ScannerScreen() {
           onClose={dismiss}
         />
       ) : null}
-      <Button
-        title={t('scanner.enterBarcode')}
-        icon="keypad-outline"
-        variant="secondary"
-        onPress={() => setManualEntry(true)}
-        testID="manual-entry-button"
-      />
+      <View style={styles.entryRow}>
+        <Button
+          title={t('scanner.enterBarcode')}
+          icon="keypad-outline"
+          variant="secondary"
+          onPress={() => setManualEntry(true)}
+          style={styles.entryButton}
+          testID="manual-entry-button"
+        />
+        <View style={styles.roundButton}>
+          <IconButton
+            icon="egg-outline"
+            label={t('scanner.checkEggCode')}
+            onPress={() => router.push('/egg-code')}
+            testID="egg-code-button"
+          />
+        </View>
+      </View>
     </View>
   );
 
@@ -229,4 +240,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   bottom: { paddingHorizontal: spacing.lg, gap: spacing.md },
+  entryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  entryButton: { flex: 1 },
 });

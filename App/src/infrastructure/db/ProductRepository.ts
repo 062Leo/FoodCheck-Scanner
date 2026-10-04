@@ -67,6 +67,12 @@ function toParams(product: ProductRecord) {
   };
 }
 
+/** Only the named parameters that `sql` uses; unused ones are an error in SQLite. */
+function usedParams<T extends Record<string, unknown>>(sql: string, params: T): Partial<T> {
+  const used = new Set(sql.match(/\$\w+/g));
+  return Object.fromEntries(Object.entries(params).filter(([key]) => used.has(key))) as Partial<T>;
+}
+
 export type RatingInput = Pick<
   ProductRecord,
   'ean' | 'name' | 'brands' | 'ingredients' | 'nova_score' | 'raw_json' | 'rating'
@@ -159,6 +165,71 @@ export class ProductRepository {
       throw new Error(`Failed to load products for rating: ${getErrorMessage(error)}`, {
         cause: error,
       });
+    }
+  }
+
+  /**
+   * EANs of products stored with an older Open Food Facts field set (or an unknown
+   * one), the most recently seen first.
+   */
+  async findEansWithDataVersionBelow(version: number): Promise<string[]> {
+    try {
+      const database = await getDatabase();
+      const rows = await database.getAllAsync<{ ean: string }>(
+        `SELECT ean FROM products
+         WHERE data_version IS NULL OR data_version < $version
+         ORDER BY COALESCE(last_seen_at, scanned_at) DESC, id DESC;`,
+        { $version: version }
+      );
+      return rows.map((row) => row.ean);
+    } catch (error) {
+      throw new Error(`Failed to load outdated products: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
+    }
+  }
+
+  /** Marks a product as up to date without changing its data (e.g. unknown to OFF). */
+  async markDataVersion(ean: string, version: number): Promise<void> {
+    try {
+      const database = await getDatabase();
+      await database.runAsync('UPDATE products SET data_version = $version WHERE ean = $ean;', {
+        $version: version,
+        $ean: ean,
+      });
+    } catch (error) {
+      throw new Error(`Failed to mark product ${ean}: ${getErrorMessage(error)}`, {
+        cause: error,
+      });
+    }
+  }
+
+  /**
+   * Stores data fetched in the background for a product that is already stored. Only
+   * updates, and only while the product's edit marker is still `editedAtWhenRead`, so it
+   * never brings back a product deleted meanwhile nor overwrites an edit made
+   * meanwhile. Visits and scan times stay unchanged. Returns false if nothing was written.
+   */
+  async saveBackgroundRefresh(
+    product: ProductRecord,
+    editedAtWhenRead: string | null
+  ): Promise<boolean> {
+    try {
+      const database = await getDatabase();
+      const sql = `
+        UPDATE products SET ${DATA_ASSIGNMENTS.replace(/excluded\.(\w+)/g, '$$$1')}
+        WHERE ean = $ean AND edited_at IS $edited_at_when_read;
+      `;
+      const result = await database.runAsync(
+        sql,
+        usedParams(sql, { ...toParams(product), $edited_at_when_read: editedAtWhenRead })
+      );
+      return result.changes > 0;
+    } catch (error) {
+      throw new Error(
+        `Failed to store refreshed product ${product.ean}: ${getErrorMessage(error)}`,
+        { cause: error }
+      );
     }
   }
 

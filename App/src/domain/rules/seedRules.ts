@@ -1,9 +1,112 @@
 // Auto-generated from docs/list.txt - do not edit manually
-// Total: 683 seed rules across 19 categories
+// Total: 768 seed rules across 24 categories
 
 import type { FilterRuleSeed } from '../../types/FilterRule';
 
 export const seedRules: FilterRuleSeed[] = [
+  // Alkohol (17)
+  {
+    key: 'Alcohol',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Beer',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Brandy',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Cognac',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Ethanol',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Kirschwasser',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Liqueur',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Marsala',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Port Wine',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Rum',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Sake',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Sherry',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Vodka',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Weinbrand',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Whiskey',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Whisky',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Wine',
+    category: 'Alkohol',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
   // Antioxidationsmittel (10)
   {
     key: 'Antioxidant',
@@ -65,7 +168,7 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
-  // E-Nummern (243)
+  // E-Nummern (267)
   {
     key: 'E102',
     category: 'E-Nummern',
@@ -92,6 +195,12 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'E1105',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E120',
     category: 'E-Nummern',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -157,13 +266,79 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'E1404',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'E141',
     category: 'E-Nummern',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
   {
+    key: 'E1410',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E1412',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E1413',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E1414',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E1420',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E1422',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E1440',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E1442',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E1450',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'E1451',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E1452',
     category: 'E-Nummern',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -194,6 +369,12 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'E151',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E1520',
     category: 'E-Nummern',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -295,7 +476,19 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'E200',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'E202',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E203',
     category: 'E-Nummern',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -325,7 +518,25 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'E214',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E215',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'E218',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E219',
     category: 'E-Nummern',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -482,12 +693,6 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'E285',
-    category: 'E-Nummern',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
-    key: 'E290',
     category: 'E-Nummern',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -919,6 +1124,48 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'E460',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E461',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E462',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E463',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E464',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E465',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E466',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'E471',
     category: 'E-Nummern',
     type: 'ingredient' as const,
@@ -961,6 +1208,12 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'E476',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'E477',
     category: 'E-Nummern',
     type: 'ingredient' as const,
@@ -980,6 +1233,30 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'E491',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E492',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E493',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E494',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E495',
     category: 'E-Nummern',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -1393,42 +1670,6 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
-    key: 'E938',
-    category: 'E-Nummern',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
-    key: 'E939',
-    category: 'E-Nummern',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
-    key: 'E941',
-    category: 'E-Nummern',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
-    key: 'E942',
-    category: 'E-Nummern',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
-    key: 'E948',
-    category: 'E-Nummern',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
-    key: 'E949',
-    category: 'E-Nummern',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
     key: 'E950',
     category: 'E-Nummern',
     type: 'ingredient' as const,
@@ -1436,6 +1677,12 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'E951',
+    category: 'E-Nummern',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'E952',
     category: 'E-Nummern',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -1524,7 +1771,7 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
-  // Emulgatoren & Stabilisatoren (19)
+  // Emulgatoren & Stabilisatoren (24)
   {
     key: 'Aluminium Stearate',
     category: 'Emulgatoren & Stabilisatoren',
@@ -1586,6 +1833,12 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'Polyglycerol Polyricinoleate',
+    category: 'Emulgatoren & Stabilisatoren',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'Potassium Stearate',
     category: 'Emulgatoren & Stabilisatoren',
     type: 'ingredient' as const,
@@ -1622,6 +1875,30 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'Sorbitan Monolaurate',
+    category: 'Emulgatoren & Stabilisatoren',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Sorbitan Monooleate',
+    category: 'Emulgatoren & Stabilisatoren',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Sorbitan Monopalmitate',
+    category: 'Emulgatoren & Stabilisatoren',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Sorbitan Tristearate',
+    category: 'Emulgatoren & Stabilisatoren',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'Stabiliser',
     category: 'Emulgatoren & Stabilisatoren',
     type: 'ingredient' as const,
@@ -1639,7 +1916,44 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
-  // Farbstoffe (32)
+  // Erhitzte Milch (6)
+  {
+    key: 'H-Milch',
+    category: 'Erhitzte Milch',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Pasteurised',
+    category: 'Erhitzte Milch',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Pasteurized',
+    category: 'Erhitzte Milch',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'UHT',
+    category: 'Erhitzte Milch',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'ultrahocherhitzt',
+    category: 'Erhitzte Milch',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'wärmebehandelt',
+    category: 'Erhitzte Milch',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  // Farbstoffe (34)
   {
     key: 'Allura Red',
     category: 'Farbstoffe',
@@ -1719,7 +2033,19 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'Carmine',
+    category: 'Farbstoffe',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'Chlorophyll',
+    category: 'Farbstoffe',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Cochineal',
     category: 'Farbstoffe',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -1900,13 +2226,13 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
-    key: 'Packaging Gas',
+    key: 'Propylene Glycol',
     category: 'Füll- & Trägerstoffe',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
   {
-    key: 'Propellants',
+    key: 'Propylenglycol',
     category: 'Füll- & Trägerstoffe',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -2152,6 +2478,19 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
+  // Gentechnik (2)
+  {
+    key: 'Genetically Modified',
+    category: 'Gentechnik',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'gentechnisch verändert',
+    category: 'Gentechnik',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
   // Geschmacksverstärker & Aromen (36)
   {
     key: 'Artificial Beef Flavor',
@@ -2369,7 +2708,38 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
-  // Konservierungsstoffe (27)
+  // Insekten (5)
+  {
+    key: 'Acheta domesticus',
+    category: 'Insekten',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Alphitobius diaperinus',
+    category: 'Insekten',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Insects',
+    category: 'Insekten',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Locusta migratoria',
+    category: 'Insekten',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Tenebrio molitor',
+    category: 'Insekten',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  // Konservierungsstoffe (32)
   {
     key: 'Borax',
     category: 'Konservierungsstoffe',
@@ -2401,6 +2771,12 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'Celery Extract',
+    category: 'Konservierungsstoffe',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'Dimethyl Dicarbonate',
     category: 'Konservierungsstoffe',
     type: 'ingredient' as const,
@@ -2414,6 +2790,12 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'Ethyl Lauroyl Arginate',
+    category: 'Konservierungsstoffe',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Ethylparaben',
     category: 'Konservierungsstoffe',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -2438,6 +2820,12 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'Nisin',
+    category: 'Konservierungsstoffe',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'PHB-Ester',
     category: 'Konservierungsstoffe',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -2497,6 +2885,12 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'Selleriesaftpulver',
+    category: 'Konservierungsstoffe',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'Sodium Benzoate',
     category: 'Konservierungsstoffe',
     type: 'ingredient' as const,
@@ -2528,6 +2922,12 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'Sodium Sulphite',
+    category: 'Konservierungsstoffe',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Sorbic Acid',
     category: 'Konservierungsstoffe',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -2732,7 +3132,7 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
-  // Phosphate & Mineralstoffe (76)
+  // Phosphate & Mineralstoffe (74)
   {
     key: 'Aluminium Ammonium Sulphate',
     category: 'Phosphate & Mineralstoffe',
@@ -2878,12 +3278,6 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
-    key: 'Carbon Dioxide',
-    category: 'Phosphate & Mineralstoffe',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
     key: 'Dicalcium Phosphate',
     category: 'Phosphate & Mineralstoffe',
     type: 'ingredient' as const,
@@ -2933,12 +3327,6 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'Monocalcium Phosphate',
-    category: 'Phosphate & Mineralstoffe',
-    type: 'ingredient' as const,
-    severity: 'red_flag' as const,
-  },
-  {
-    key: 'Nitrous Oxide',
     category: 'Phosphate & Mineralstoffe',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -3189,7 +3577,7 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
-  // Proteine & Fleischersatz (16)
+  // Proteine & Fleischersatz (24)
   {
     key: 'Casein',
     category: 'Proteine & Fleischersatz',
@@ -3209,6 +3597,24 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'Erbseneiweiß',
+    category: 'Proteine & Fleischersatz',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Fava Bean Protein',
+    category: 'Proteine & Fleischersatz',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Meat Substitute',
+    category: 'Proteine & Fleischersatz',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'Mechanically Recovered Meat',
     category: 'Proteine & Fleischersatz',
     type: 'ingredient' as const,
@@ -3222,6 +3628,24 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'Mechanically Separated Poultry',
+    category: 'Proteine & Fleischersatz',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Mycoprotein',
+    category: 'Proteine & Fleischersatz',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Pea Protein',
+    category: 'Proteine & Fleischersatz',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Seitan',
     category: 'Proteine & Fleischersatz',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -3269,6 +3693,18 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'Weizeneiweiß',
+    category: 'Proteine & Fleischersatz',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Wheat Protein',
+    category: 'Proteine & Fleischersatz',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'Whey Powder',
     category: 'Proteine & Fleischersatz',
     type: 'ingredient' as const,
@@ -3283,6 +3719,67 @@ export const seedRules: FilterRuleSeed[] = [
   {
     key: 'Whey Protein Isolate',
     category: 'Proteine & Fleischersatz',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  // Samenöle (10)
+  {
+    key: 'Canola Oil',
+    category: 'Samenöle',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Corn Oil',
+    category: 'Samenöle',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Grapeseed Oil',
+    category: 'Samenöle',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Maisöl',
+    category: 'Samenöle',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Rapeseed Oil',
+    category: 'Samenöle',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Rice Bran Oil',
+    category: 'Samenöle',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Safflower Oil',
+    category: 'Samenöle',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Sonnenblumenkernöl',
+    category: 'Samenöle',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Sunflower Oil',
+    category: 'Samenöle',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Vegetable Oil',
+    category: 'Samenöle',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
@@ -3347,7 +3844,7 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
-  // Säuren & Säureregulatoren (38)
+  // Säuren & Säureregulatoren (39)
   {
     key: 'Acidity Regulator',
     category: 'Säuren & Säureregulatoren',
@@ -3404,6 +3901,12 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'Citric Acid',
+    category: 'Säuren & Säureregulatoren',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Citronensäure',
     category: 'Säuren & Säureregulatoren',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -3576,7 +4079,7 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
-  // Süßungsmittel (35)
+  // Süßungsmittel (36)
   {
     key: 'Acesulfame K',
     category: 'Süßungsmittel',
@@ -3603,6 +4106,12 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'Aspartame',
+    category: 'Süßungsmittel',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Cyclamate',
     category: 'Süßungsmittel',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -3812,7 +4321,7 @@ export const seedRules: FilterRuleSeed[] = [
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },
-  // Verdickungs- & Geliermittel (16)
+  // Verdickungs- & Geliermittel (20)
   {
     key: 'Acacia Gum',
     category: 'Verdickungs- & Geliermittel',
@@ -3826,6 +4335,12 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'Carboxymethylcellulose',
+    category: 'Verdickungs- & Geliermittel',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'Carrageenan',
     category: 'Verdickungs- & Geliermittel',
     type: 'ingredient' as const,
@@ -3833,6 +4348,12 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'Cassia Gum',
+    category: 'Verdickungs- & Geliermittel',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Cellulose',
     category: 'Verdickungs- & Geliermittel',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -3856,6 +4377,12 @@ export const seedRules: FilterRuleSeed[] = [
     severity: 'red_flag' as const,
   },
   {
+    key: 'Hydroxypropyl Methylcellulose',
+    category: 'Verdickungs- & Geliermittel',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
     key: 'Karaya Gum',
     category: 'Verdickungs- & Geliermittel',
     type: 'ingredient' as const,
@@ -3869,6 +4396,12 @@ export const seedRules: FilterRuleSeed[] = [
   },
   {
     key: 'Locust Bean Gum',
+    category: 'Verdickungs- & Geliermittel',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'Methylcellulose',
     category: 'Verdickungs- & Geliermittel',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
@@ -3906,6 +4439,19 @@ export const seedRules: FilterRuleSeed[] = [
   {
     key: 'Xanthan Gum',
     category: 'Verdickungs- & Geliermittel',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  // Zuchtfisch (2)
+  {
+    key: 'Aquaculture',
+    category: 'Zuchtfisch',
+    type: 'ingredient' as const,
+    severity: 'red_flag' as const,
+  },
+  {
+    key: 'gezüchtet',
+    category: 'Zuchtfisch',
     type: 'ingredient' as const,
     severity: 'red_flag' as const,
   },

@@ -1,0 +1,162 @@
+import { createTranslator } from '../../../i18n/useTranslation';
+import { categoryLabel } from '../../../i18n/categoryLabels';
+import type { RedFlagFinding } from '../../../types/ScanResult';
+import { reasonText } from '../../../ui/status';
+import { findingDetail, findingTitle } from '../FindingsList';
+
+const de = createTranslator('de');
+const en = createTranslator('en');
+
+const ingredientCount: RedFlagFinding = {
+  ingredient: 'ingredient_count',
+  category: 'Verarbeitung',
+  severity: 'critical',
+  check: { key: 'ingredient_count', count: 12, threshold: 5, operator: 'gt' },
+};
+
+const pesticide: RedFlagFinding = {
+  ingredient: 'pesticide_risk',
+  category: 'Schadstoffe',
+  severity: 'critical',
+  check: { key: 'pesticide_risk', crop: 'greenBean' },
+};
+
+const company: RedFlagFinding = {
+  ingredient: 'Nestlé',
+  category: 'Marken & Konzerne',
+  severity: 'critical',
+  company: { name: 'Nestlé', matched: 'Maggi' },
+};
+
+const waterTest: RedFlagFinding = {
+  ingredient: 'Gut & Günstig Mineralwasser',
+  category: 'Wasser-Tests',
+  severity: 'critical',
+  productRule: {
+    name: 'Gut & Günstig Mineralwasser',
+    reason: { de: 'Abgewertet wegen Chrom(VI).', en: 'Downgraded for chromium(VI).' },
+    sources: [
+      { title: 't-online', url: 'https://www.t-online.de/x', date: '2025-06-26' },
+      { title: 'leinetal24', url: 'https://www.leinetal24.de/x' },
+    ],
+  },
+};
+
+describe('finding texts', () => {
+  it('shows reason and sources of a product rule in the UI language', () => {
+    expect(findingTitle(waterTest, de, 'de')).toBe(
+      'Kritisch getestet: Gut & Günstig Mineralwasser'
+    );
+    expect(findingTitle(waterTest, en, 'en')).toBe(
+      'Criticised in tests: Gut & Günstig Mineralwasser'
+    );
+    expect(findingDetail(waterTest, de, 'de')).toBe(
+      'Abgewertet wegen Chrom(VI).\nQuelle: t-online, 26.6.2025; leinetal24'
+    );
+    expect(findingDetail(waterTest, en, 'en')).toBe(
+      'Downgraded for chromium(VI).\nSource: t-online, 26/06/2025; leinetal24'
+    );
+    expect(categoryLabel('Wasser-Tests', de)).toBe('Wasser-Tests');
+    expect(categoryLabel('Wasser-Tests', en)).toBe('Water tests');
+  });
+
+  it('describes the ingredient count with the rule limit', () => {
+    expect(findingTitle(ingredientCount, de, 'de')).toBe('Mehr als 5 Zutaten (12)');
+    expect(findingTitle(ingredientCount, en, 'en')).toBe('More than 5 ingredients (12)');
+  });
+
+  it('names the crop of a pesticide finding', () => {
+    expect(findingTitle(pesticide, de, 'de')).toBe('Grüne Bohnen ohne Bio-Siegel');
+    expect(findingTitle(pesticide, en, 'en')).toBe('Green beans without organic label');
+    expect(findingDetail(pesticide, de, 'de')).toContain('BVL-Bericht 2023');
+  });
+
+  it('explains every check in both languages', () => {
+    for (const key of [
+      'canned',
+      'mercury_fish',
+      'rice_arsenic',
+      'not_raw_milk',
+      'alcoholic',
+      'meat_substitute',
+      'farmed_fish',
+    ] as const) {
+      const finding: RedFlagFinding = {
+        ingredient: key,
+        category: 'Verarbeitung',
+        severity: 'critical',
+        check: { key },
+      };
+      for (const [t, language] of [
+        [de, 'de'],
+        [en, 'en'],
+      ] as const) {
+        expect(findingTitle(finding, t, language)).not.toMatch(/^product\./);
+        expect(findingDetail(finding, t, language)).not.toMatch(/^product\./);
+      }
+    }
+  });
+
+  it('names the avoided company and the brand that matched', () => {
+    expect(findingTitle(company, de, 'de')).toBe('Marke/Konzern, den du meidest: Nestlé');
+    expect(findingDetail(company, de, 'de')).toBe('Erkannt über: Maggi');
+    expect(findingDetail(company, en, 'en')).toBe('Detected via: Maggi');
+  });
+
+  it('explains a rating by an avoided company', () => {
+    const reason = { code: 'avoidedCompany', company: 'Nestlé' } as const;
+
+    expect(reasonText(reason, de)).toBe('Von einem Konzern, den du meidest: Nestlé');
+    expect(reasonText(reason, en)).toBe('From a company you avoid: Nestlé');
+  });
+
+  it('translates the new categories', () => {
+    expect(categoryLabel('Marken & Konzerne', en)).toBe('Brands & Companies');
+    expect(categoryLabel('Erhitzte Milch', en)).toBe('Heated Milk');
+    expect(categoryLabel('Samenöle', de)).toBe('Samenöle');
+  });
+});
+
+describe('water check texts', () => {
+  const tableWater: RedFlagFinding = {
+    ingredient: 'water_not_mineral',
+    category: 'Wasser',
+    severity: 'critical',
+    check: { key: 'water_not_mineral', waterKind: 'table' },
+  };
+  const springWater: RedFlagFinding = {
+    ...tableWater,
+    check: { key: 'water_not_mineral', waterKind: 'spring' },
+  };
+  const contaminants: RedFlagFinding = {
+    ingredient: 'water_contaminants',
+    category: 'Wasser',
+    severity: 'critical',
+    check: {
+      key: 'water_contaminants',
+      exceeded: [
+        { mineral: 'sodium', value: 120, limit: 20 },
+        { mineral: 'nitrite', value: 0.05, limit: 0.02 },
+      ],
+    },
+  };
+
+  it('explains table water and spring water separately', () => {
+    expect(findingTitle(tableWater, de, 'de')).toBe('Kein natürliches Mineralwasser');
+    expect(findingDetail(tableWater, de, 'de')).toMatch(/^Tafelwasser darf/);
+    expect(findingDetail(springWater, de, 'de')).toMatch(/^Quellwasser/);
+    expect(findingDetail(springWater, en, 'en')).toMatch(/^Spring water/);
+  });
+
+  it('lists each exceeded value with its limit', () => {
+    const detail = findingDetail(contaminants, de, 'de');
+    expect(detail).toContain('Natrium: 120 mg/l (Grenzwert 20 mg/l)');
+    expect(detail).toContain('Nitrit: 0,05 mg/l (Grenzwert 0,02 mg/l)');
+    expect(findingDetail(contaminants, en, 'en')).toContain('Sodium: 120 mg/l (limit 20 mg/l)');
+  });
+
+  it('labels the category', () => {
+    expect(categoryLabel('Wasser', de)).toBe('Wasser');
+    expect(categoryLabel('Wasser', en)).toBe('Water');
+  });
+});

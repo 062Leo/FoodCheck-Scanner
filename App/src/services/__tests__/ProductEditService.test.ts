@@ -63,6 +63,15 @@ describe('ProductEditService', () => {
     });
   });
 
+  it('keeps an older data version, since an edit adds no Open Food Facts data', async () => {
+    await repository.saveScan(productRecord({ data_version: 1 }));
+    const session = await service.open(EAN);
+
+    await service.save(session, { ...session.initial, nova: '4' }, SEEDED_RULES);
+
+    expect((await repository.findByEan(EAN))?.data_version).toBe(1);
+  });
+
   it('accumulates edited fields over several saves', async () => {
     let session = await service.open(EAN);
     await service.save(session, { ...session.initial, name: 'A' }, SEEDED_RULES);

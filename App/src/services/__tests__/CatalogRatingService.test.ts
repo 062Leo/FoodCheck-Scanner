@@ -99,6 +99,36 @@ describe('CatalogRatingService', () => {
     expect(ratingFingerprint(SEEDED_RULES)).not.toBe(ratingFingerprint(changed));
   });
 
+  it('fingerprint changes when brands of a company are switched off', () => {
+    const rule = {
+      ...SEEDED_RULES[0],
+      type: 'company' as const,
+      key: 'Nestlé',
+      translations: JSON.stringify({ names: ['Nestlé', 'Lion'] }),
+    };
+    const excluded = {
+      ...rule,
+      translations: JSON.stringify({ names: ['Nestlé', 'Lion'], excluded: ['Lion'] }),
+    };
+    expect(ratingFingerprint([rule])).not.toBe(ratingFingerprint([excluded]));
+  });
+
+  it('fingerprint changes when a product rule changes', () => {
+    const rule = {
+      ...SEEDED_RULES[0],
+      type: 'product' as const,
+      key: 'Volvic',
+      translations: JSON.stringify({ brand: 'Volvic', nameWords: [], waterOnly: true }),
+    };
+    const narrowed = {
+      ...rule,
+      translations: JSON.stringify({ brand: 'Volvic', nameWords: ['Naturelle'], waterOnly: true }),
+    };
+    const switchedOff = { ...rule, severity: 'ok' as const };
+    expect(ratingFingerprint([rule])).not.toBe(ratingFingerprint([narrowed]));
+    expect(ratingFingerprint([rule])).not.toBe(ratingFingerprint([switchedOff]));
+  });
+
   it('serialises quick rule changes so the latest rules win', async () => {
     let rules = CUSTOMISED_RULES;
     const first = service.schedule(() => rules, true);

@@ -1,4 +1,11 @@
-import { generateAppUUID, USER_AGENT, STAGING_AUTH, APP_NAME, APP_VERSION } from '../config';
+import {
+  generateAppUUID,
+  USER_AGENT,
+  WIKIMEDIA_USER_AGENT,
+  STAGING_AUTH,
+  APP_NAME,
+  APP_VERSION,
+} from '../config';
 
 describe('config', () => {
   describe('USER_AGENT', () => {
@@ -6,6 +13,15 @@ describe('config', () => {
       expect(USER_AGENT).toMatch(/^[\w.]+\/[\d.]+$/);
       expect(USER_AGENT).toContain(APP_NAME);
       expect(USER_AGENT).toContain(APP_VERSION);
+    });
+  });
+
+  describe('WIKIMEDIA_USER_AGENT', () => {
+    it('adds the public project page as contact, but no e-mail address', () => {
+      expect(WIKIMEDIA_USER_AGENT).toBe(
+        `${APP_NAME}/${APP_VERSION} (https://github.com/062Leo/FoodCheck-Scanner)`
+      );
+      expect(WIKIMEDIA_USER_AGENT).not.toContain('@');
     });
   });
 
