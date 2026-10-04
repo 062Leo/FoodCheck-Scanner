@@ -59,6 +59,8 @@ Scan the QR code with Expo Go or connect a device via USB.
 
 Prefer to download the ready-built APK instead of compiling? Head to [Releases](https://github.com/062Leo/FoodCheck-Scanner/releases) and download the latest [FoodCheck_V1.0.apk](https://github.com/062Leo/FoodCheck-Scanner/releases/download/Release/FoodCheck_V1.0.apk) — install directly on your Android device.
 
+The APK contains native code for **arm64-v8a only**. It runs on current 64-bit Android phones; 32-bit (armeabi-v7a) phones and x86/x86_64 emulators are not supported.
+
 ## Tech Stack
 
 TypeScript · Expo · React Native · Zustand · expo-sqlite · Expo Router · ML Kit OCR
