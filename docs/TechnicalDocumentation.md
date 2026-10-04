@@ -1,11 +1,11 @@
-# Technical Documentation — FoodCheck
+# Technical Documentation: FoodCheck
 
 ## 1. Project Overview
 
 **FoodCheck** is a React Native (Expo) mobile app for iOS and Android that scans food product barcodes and instantly evaluates them for unhealthy ingredients and processing levels. The app uses the Open Food Facts API for product data, USDA FoodData Central as an optional fallback (with the user's own key), Wikidata for the brands of avoided companies, and on-device ML Kit for OCR.
 
 - **Language:** TypeScript (strict mode)
-- **Framework:** Expo SDK 54 (managed workflow) with Expo Router; `App/index.ts` only imports `expo-router/entry` — there is no separate root component
+- **Framework:** Expo SDK 54 (managed workflow) with Expo Router; `App/index.ts` only imports `expo-router/entry`; there is no separate root component
 - **State:** Zustand (5 stores)
 - **Database:** expo-sqlite (SQLite)
 - **OCR:** @react-native-ml-kit/text-recognition (on-device, default) + Open Food Facts Cloud Vision pipeline (opt-in, after explicit consent)
@@ -45,11 +45,11 @@ The design system lives in `src/ui/` (design tokens, base components, status com
 
 ### Layer Constraints
 
-- `domain/` — framework-agnostic: no React, React Native, Expo, Zustand, or persistence imports.
-- `infrastructure/` — wraps external dependencies (SQLite, fetch, ML Kit, SecureStore); may import from `domain/` for interfaces and types.
-- `services/` — combines repositories, API clients and domain logic into the operations a screen needs (lookup, save/edit, re-rate, translate a rule).
-- `types/` — pure, zero dependencies, imported by all layers.
-- `screens/` and `features/` — instantiate domain classes, services and infrastructure repositories directly.
+- `domain/`: framework-agnostic: no React, React Native, Expo, Zustand, or persistence imports.
+- `infrastructure/`: wraps external dependencies (SQLite, fetch, ML Kit, SecureStore); may import from `domain/` for interfaces and types.
+- `services/`: combines repositories, API clients and domain logic into the operations a screen needs (lookup, save/edit, re-rate, translate a rule).
+- `types/`: pure, zero dependencies, imported by all layers.
+- `screens/` and `features/`: instantiate domain classes, services and infrastructure repositories directly.
 
 ## 3. Directory Structure
 
@@ -443,7 +443,7 @@ Migrations are append-only and run inside a transaction (or sequentially where t
 | Timeout | via `fetchWithTimeout` | 10 s |
 | Key storage | expo-secure-store | expo-secure-store |
 
-- `domain/translation/Translator.ts` — interface with `translate(text, targetLang?)`
+- `domain/translation/Translator.ts`: interface with `translate(text, targetLang?)`
 - `DeepLClient` and `MyMemoryClient` both implement `Translator`
 - `TranslationRouter` delegates to the provider chosen in `settingsStore` (default: MyMemory)
 - MyMemory quota/input errors arrive as HTTP 200 with the error text in the translation field; only a `responseStatus` of 200 is treated as a real result
@@ -487,7 +487,7 @@ The checks only see what Open Food Facts (or USDA) provides; products stored bef
 
 ### Product Rules (`productRules.ts`)
 
-- `product` rules match when the product's brand or `brand_owner` contains `brand` as consecutive words (same normalization as company rules: accents, case, `&`, legal forms, spaces), every entry of `nameWords` appears in the product name as whole consecutive words (or written together), and — with `waterOnly` — the product is a water (`isWater`). Empty `nameWords` means the whole brand.
+- `product` rules match when the product's brand or `brand_owner` contains `brand` as consecutive words (same normalization as company rules: accents, case, `&`, legal forms, spaces), every entry of `nameWords` appears in the product name as whole consecutive words (or written together), and, with `waterOnly`, the product is a water (`isWater`). Empty `nameWords` means the whole brand.
 - A match is one red flag (severity `critical`, category `Wasser-Tests`, detail `productRule` with name, reason and sources); it is not critical on its own. Rules set to `ok` never match. The keyword analyzer and `translateRuleKeyword` only handle `ingredient` rules, so product rules are never matched against the ingredient text or translated.
 - In the rule editor only the severity can be changed; the rule can be deleted. Product rules cannot be created in the UI.
 
@@ -498,7 +498,7 @@ The checks only see what Open Food Facts (or USDA) provides; products stored bef
 
 ### Product Information (display only)
 
-- `productBadges.ts`: organic (with Demeter/Bioland/Naturland), GMO-free, contains GMO, husbandry level 1–5, free range, MSC, ASC, raw milk — from `labels_tags` and categories.
+- `productBadges.ts`: organic (with Demeter/Bioland/Naturland), GMO-free, contains GMO, husbandry level 1–5, free range, MSC, ASC, raw milk, taken from `labels_tags` and categories.
 - `packagerCode.ts`: parses `emb_codes_tags`; shown as "Verarbeitet/verpackt in" with country (and German state). The code names the last processing or packing establishment, not the origin of the raw materials.
 - `almondInfo.ts`: a pollination note for products with almonds from the USA or of unknown origin; never affects the rating.
 - `waterInfo.ts`: water detection and the water checks' helpers, plus the `WaterInfoNote` on the product page (natural mineral water, infant-food label, glass bottle without plastic, very low in minerals when at least three ion values sum below 50 mg/l, calcium > 150 or magnesium > 50 mg/l, and always the list of things product data cannot show); never affects the rating. Open Food Facts stores minerals in g per 100 g; `toMgPerLitre` multiplies by 10,000 (1 l of water ≈ 1 kg) and rounds to 4 decimals.
@@ -566,7 +566,7 @@ Expo Router file-based routing in `App/app/`:
 - **Framework:** Jest with the `jest-expo` preset
 - **Count:** 72 suites, 847 tests (all passing; measured with `npx jest`)
 - **Location:** `__tests__/` directories alongside source files
-- **No snapshot tests** — all assertion-based `expect()` calls
+- **No snapshot tests**: all assertion-based `expect()` calls
 - **Real SQLite in tests:** database and repository tests run against `node:sqlite` through a test double (`src/testing/nodeSqlite.ts`, `useTestDatabase()`), not string-matching mocks; migration tests start from literal legacy schemas with seeded data (up to the v9 schema with user rules, products and favorites for migration 10) and check data survival, idempotency, fresh install = upgrade and rollback of a failing migration
 - **Golden ratings:** `src/domain/analysis/__fixtures__/` pins the rating output (status, Nova, red flags) of 32 realistic reference products under the seeded and a customised rule set, so a refactor either reproduces the same ratings or shows a reviewed diff
 - **Run all tests:** `npm test`
@@ -602,7 +602,7 @@ Expo Router file-based routing in `App/app/`:
 | `npm run test:integration` | Run the Open Food Facts staging integration tests (opt-in) |
 | `npm run doctor` | `expo-doctor` project health check |
 | `npm run bundle:check` | `expo export` for Android, verifying the bundle builds |
-| `npm run check` | Runs typecheck, lint, format:check, test, doctor and bundle:check in sequence — the full quality gate |
+| `npm run check` | Runs typecheck, lint, format:check, test, doctor and bundle:check in sequence: the full quality gate |
 
 ## 14. Feature Status
 
@@ -639,9 +639,9 @@ Expo Router file-based routing in `App/app/`:
 
 ## 15. Known Issues
 
-- `npm run typecheck` — clean (0 errors)
-- `npm run lint` — clean (0 errors, ESLint 10 flat config)
-- `npm test` — 72 suites, 847 tests, all passing
+- `npm run typecheck`: clean (0 errors)
+- `npm run lint`: clean (0 errors, ESLint 10 flat config)
+- `npm test`: 72 suites, 847 tests, all passing
 - `npm run test:integration` requires network access to the OFF staging server and is not part of `npm run check`
 - Open work, open questions and known limits are tracked in [OpenTasks.md](OpenTasks.md)
 

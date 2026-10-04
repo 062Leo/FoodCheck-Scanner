@@ -1,4 +1,4 @@
-# FoodCheck — Features & Capabilities
+# FoodCheck: Features & Capabilities
 
 ## Screens & Navigation
 
@@ -16,7 +16,7 @@
 | `/settings/api-key` | **Übersetzung** | DeepL/MyMemory auswählen und API-Key verwalten |
 | `/settings/usda-key` | **USDA FoodData Central** | Eigenen kostenlosen api.data.gov-Schlüssel speichern/löschen |
 | `/settings/about` | **Über FoodCheck** | Anleitung, Erklärung der Ampel-Bewertung, Datenschutz, Datenquellen (Open Food Facts, USDA FoodData Central, Wikidata, jeweils mit Lizenz), Version |
-| `/edit/[ean]` | **Edit Product** | Produktdaten bearbeiten + an Open Food Facts beitragen: Zutaten (8 Sprachen), Nährwerte, Allergene, Herkunft — lokal + Upload an OFF |
+| `/edit/[ean]` | **Edit Product** | Produktdaten bearbeiten + an Open Food Facts beitragen: Zutaten (8 Sprachen), Nährwerte, Allergene, Herkunft; lokal + Upload an OFF |
 
 ---
 
@@ -46,7 +46,7 @@
 - **Neu in der Filterliste (Datenbank-Version 10)**: 15 Zutaten-Regeln in der Kategorie Alkohol – Wein (auch Rot-, Weiß- und Glühwein), Portwein, Sherry, Marsala, Sake, Bier, Brandy, Weinbrand, Cognac, Kirschwasser, Rum (auch Rumaroma), Whisky, Whiskey, Wodka und Likör. Alkoholfreies Bier und alkoholfreier Wein zählen weiterhin (bis 0,5 % vol.)
 - **Neu in der Filterliste (Datenbank-Version 11)**: 3 Prüfungen in der Kategorie Wasser – kein natürliches Mineralwasser, Wasser in Plastikflasche, Werte über den Grenzwerten für Säuglingsnahrung. Quellen: Min/TafelWV Anlage 6 (gesetze-im-internet.de/min_tafelwv), Columbia University/PNAS 2024, ANSES 2025
 - **Neu in der Filterliste (Datenbank-Version 12)**: Kategorie Wasser-Tests mit 13 Produkt-Regeln (Forstetal Calciumquelle Pure, Naturpark Quelle Naturelle, Vitrex Naturelle, Reinbeker Klosterquelle Frische Brise, Gut & Günstig Mineralwasser, Bad Harzburger Medium, Naturalis Medium, Volvic, Gerolsteiner Naturell, Perrier, Vittel, Contrex, Hépar), Quellen: Öko-Test 07/2025 und 07/2026 laut leinetal24, t-online (26.06.2025), heidelberg24, Utopia (05.08.2026), The Local (25.09.2025, 19.11.2025); dazu Nestlé als gemiedener Konzern
-- **Eigene Filter-Regeln**: Benutzer kann Zutaten- und Nährwert-Regeln sowie gemiedene Marken/Konzerne hinzufügen/ändern/löschen; Severity `Red Flag` oder `Erlaubt` (whitelistet eine Zutat oder — solange die Bedingung zutrifft — eine Nährwert-Regel; bei einer Produkt-Prüfung schaltet `Erlaubt` die Prüfung aus)
+- **Eigene Filter-Regeln**: Benutzer kann Zutaten- und Nährwert-Regeln sowie gemiedene Marken/Konzerne hinzufügen/ändern/löschen; Severity `Red Flag` oder `Erlaubt` (whitelistet eine Zutat oder, solange die Bedingung zutrifft, eine Nährwert-Regel; bei einer Produkt-Prüfung schaltet `Erlaubt` die Prüfung aus)
 - **Vier Typen**:
   - **Zutaten-Regel**: Keyword-Matching in der Zutatenliste, span-basiert (ein Treffer innerhalb eines längeren Treffers einer anderen Regel zählt nicht); mehrsprachig (de/en/fr/it/es/nl/pt/pl)
   - **Nährwert-Regel**: Schwellwert-Vergleich (gt/lt/eq) gegen die Produkt-Nährwerte (sugars_100g, fat_100g, saturated-fat_100g, salt_100g, energy-kcal_100g)
@@ -109,7 +109,7 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 
 ## Product Screen (Detailansicht)
 
-- **Ampel-Banner**: OK / Warning / Critical / Unknown, mit Text-Begründung (nicht nur Farbe) — z. B. NOVA-Stufe, Anzahl Red Flags, fehlende Zutatenliste
+- **Ampel-Banner**: OK / Warning / Critical / Unknown, mit Text-Begründung (nicht nur Farbe), z. B. NOVA-Stufe, Anzahl Red Flags, fehlende Zutatenliste
 - **Red Flags**: Liste gefundener Zutaten, Nährwert-Überschreitungen und Produkt-Prüfungen mit Schweregrad (critical/warning), Kategorie und kurzer Erklärung; gemiedene Marken/Konzerne stehen oben, mit dem Namen, über den sie erkannt wurden
 - **Kennzeichnungen (Badges)**: Bio (mit Demeter/Bioland/Naturland, auch über Öko-Kontrollstellen-Codes), Ohne Gentechnik, Enthält Gentechnik, Haltungsform 1–5, Freiland, MSC, ASC, Rohmilch – aus den Siegeln und Kategorien bei Open Food Facts
 - **Verarbeitet/verpackt in**: Land (bei deutschen Codes mit Bundesland) und Identitätskennzeichen; nennt den Betrieb, der das Produkt zuletzt verarbeitet oder verpackt hat – nicht die Herkunft der Rohstoffe
@@ -123,7 +123,7 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 - **Allergene**: die 14 EU-Allergene in der App-Sprache (Deutsch/Englisch), dazu Spuren
 - **Bildergalerie**: Swipeable (Vorderseite, Zutaten, Nährwerte, Verpackung)
 - **Zusatzinfos**: Herkunft, Herstellungsort, Geschäfte
-- **Datenquellen-Hinweis**: Fußnote statt Umschalter — zeigt an, wenn die Daten aus dem Offline-Cache stammen oder älter als 7 Tage sind
+- **Datenquellen-Hinweis**: Fußnote statt Umschalter: zeigt an, wenn die Daten aus dem Offline-Cache stammen oder älter als 7 Tage sind
 - **Favoriten**: Stern-Toggle im Header
 - **Bearbeiten**: Stift-Icon → EditProductScreen
 - **Fehler-Behandlung**: Offline (Cache oder "noch nicht gespeichert"), Nicht gefunden (Beitragen-CTA), genereller Fehler mit Retry
@@ -133,7 +133,7 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 
 ## Catalog (Produktkatalog)
 
-- **Volltextsuche**: Name, Marke, EAN — alle Suchwörter müssen treffen, gefiltert wird die bereits geladene Liste (keine SQL-Anfrage pro Tastenanschlag)
+- **Volltextsuche**: Name, Marke, EAN; alle Suchwörter müssen treffen, gefiltert wird die bereits geladene Liste (keine SQL-Anfrage pro Tastenanschlag)
 - **Zusammenfassungszeile**: Anzahl Produkte, Scans, Anteil NOVA 4
 - **Filter-Chips mit Zählern**: Alle / Critical / Warning / OK / Unknown / Ohne Zutaten
 - **Sortierung**: zuletzt gesehen, Bewertung (kritisch zuerst), Name, NOVA (am stärksten verarbeitet zuerst), Scan-Häufigkeit
@@ -161,7 +161,7 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
   - Pro Sprache: OCR-Scan (Kamera), Übersetzen (DeepL/MyMemory), Entfernen
   - Sprache hinzufügen: Auswahl aus verfügbaren Sprachen
 - **OCR-Kamera (Kamera → Zuschneiden → Prüfen)**:
-  - Erkennung standardmäßig auf dem Gerät (ML Kit) — das Foto verlässt das Telefon nicht
+  - Erkennung standardmäßig auf dem Gerät (ML Kit), das Foto verlässt das Telefon nicht
   - Zuschneide-Werkzeug optional (auch „ganzes Foto“ möglich), mit korrekter Umrechnung auf das Kamerabild
   - Erkennung durch Open Food Facts (Google Cloud Vision) nur nach ausdrücklicher Zustimmung in einem Dialog, der den Zielserver nennt; lädt das Foto öffentlich unter dem eigenen Konto hoch
   - Erkannten Text bearbeiten, neu zuschneiden, neu aufnehmen
@@ -180,7 +180,7 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 
 ## Filter Rules Management
 
-- **794 vordefinierte Regeln** (768 Zutaten-Regeln + 12 Produkt-Prüfungen + 13 Wasser-Test-Regeln + Nestlé) — automatisch bei erster DB-Erstellung, ergänzt durch spätere App-Updates; die Migrationen 9 bis 12 fügen bei bestehenden Installationen nur Regeln hinzu, die es mit gleichem Typ und Schlüssel noch nicht gibt (eigene Regeln werden weder doppelt angelegt noch überschrieben)
+- **794 vordefinierte Regeln** (768 Zutaten-Regeln + 12 Produkt-Prüfungen + 13 Wasser-Test-Regeln + Nestlé), automatisch bei erster DB-Erstellung, ergänzt durch spätere App-Updates; die Migrationen 9 bis 12 fügen bei bestehenden Installationen nur Regeln hinzu, die es mit gleichem Typ und Schlüssel noch nicht gibt (eigene Regeln werden weder doppelt angelegt noch überschrieben)
 - **Kategorie-Gruppierung**: nur Kategorien mit Regeln werden angezeigt, sortiert nach angezeigtem Namen; bei Suche werden alle Kategorien mit Treffer aufgeklappt
 - **Suche**: filtert nach Zutat/Kategorie (auch übersetzte Namen)
 - **Regel-Editor als Sheet**: Chips statt Rohschlüssel und gt/lt/eq, Komma-Schwellwerte, Validierungsmeldungen, Speicher-Fortschritt und Fehler-Feedback, Löschen direkt im Editor (nicht bei Produkt-Prüfungen)
@@ -278,8 +278,8 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 | **Zustand** | In-Memory State (6 Stores: filter, catalog, language, settings, allergen, recall) | zustand |
 
 ### Datenbank-Schema
-- **`meta`**: key (PK), value — Migrations-Tracking, Rating-Fingerprint, Backup-Einstellungen, Rückruf-Cache mit Zustand der Quelle (`recalls_state`, keine Migration nötig)
-- **`products`**: id, ean (UNIQUE), name, brands, ingredients, nova_score, nutriscore, raw_json, scanned_at, rating, data_version, last_api_fetch, image_url, image_ingredients_url, image_nutrition_url, image_packaging_url, visit_count, last_seen_at, edited_at, edited_fields — Kategorien, Verpackung, Siegel, Markeninhaber, Identitätskennzeichen, Alkoholgehalt und die Quelle (USDA) stehen in `raw_json`
+- **`meta`**: key (PK), value. Zweck: Migrations-Tracking, Rating-Fingerprint, Backup-Einstellungen, Rückruf-Cache mit Zustand der Quelle (`recalls_state`, keine Migration nötig)
+- **`products`**: id, ean (UNIQUE), name, brands, ingredients, nova_score, nutriscore, raw_json, scanned_at, rating, data_version, last_api_fetch, image_url, image_ingredients_url, image_nutrition_url, image_packaging_url, visit_count, last_seen_at, edited_at, edited_fields. Kategorien, Verpackung, Siegel, Markeninhaber, Identitätskennzeichen, Alkoholgehalt und die Quelle (USDA) stehen in `raw_json`
 - **`favorites`**: id, product_id (FK → products.id CASCADE, UNIQUE-Index), added_at
 - **`filter_rules`**: id, type (`ingredient`/`nutrient`/`check`/`company`/`product`), key, category, threshold, operator, severity, translations (JSON; bei Marken/Konzernen die Wikidata-ID, die zugehörigen Marken und die abgewählten Namen; bei Wasser-Tests Marke, Namenswörter, Begründung und Quellen), created_at
 - **12 Migrationen** (Datenbank-Version 12): initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte → Favoriten-Eindeutigkeit + edited_at → edited_fields → Filterliste aktualisiert (11 Gase entfernt, 86 Zutaten-Regeln und 9 Prüfungen ergänzt) → Alkohol-Regeln ergänzt (15 Zutaten-Regeln) → Wasser-Prüfungen ergänzt (3 Prüfungen) → Wasser-Tests (13 Produkt-Regeln) und Nestlé ergänzt
