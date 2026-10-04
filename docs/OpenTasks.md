@@ -1,4 +1,4 @@
-# Open Tasks — FoodCheck
+# Open Tasks: FoodCheck
 
 State of branch `feature/natural-food-checks` (database version 12, `RATING_LOGIC_VERSION` 8,
 794 built-in rules, 72 test suites / 847 tests). Items 01 and 02 are done; everything else below
