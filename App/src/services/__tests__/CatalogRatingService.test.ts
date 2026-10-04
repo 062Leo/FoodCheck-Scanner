@@ -113,6 +113,22 @@ describe('CatalogRatingService', () => {
     expect(ratingFingerprint([rule])).not.toBe(ratingFingerprint([excluded]));
   });
 
+  it('fingerprint changes when a product rule changes', () => {
+    const rule = {
+      ...SEEDED_RULES[0],
+      type: 'product' as const,
+      key: 'Volvic',
+      translations: JSON.stringify({ brand: 'Volvic', nameWords: [], waterOnly: true }),
+    };
+    const narrowed = {
+      ...rule,
+      translations: JSON.stringify({ brand: 'Volvic', nameWords: ['Naturelle'], waterOnly: true }),
+    };
+    const switchedOff = { ...rule, severity: 'ok' as const };
+    expect(ratingFingerprint([rule])).not.toBe(ratingFingerprint([narrowed]));
+    expect(ratingFingerprint([rule])).not.toBe(ratingFingerprint([switchedOff]));
+  });
+
   it('serialises quick rule changes so the latest rules win', async () => {
     let rules = CUSTOMISED_RULES;
     const first = service.schedule(() => rules, true);

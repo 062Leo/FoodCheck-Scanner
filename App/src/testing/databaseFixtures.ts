@@ -301,6 +301,26 @@ export const CHECK_KEYS_ADDED_IN_V11 = [
   'water_contaminants',
 ];
 
+/** Keys of the product rules migration 12 adds (category Wasser-Tests). */
+export const PRODUCT_RULE_KEYS_ADDED_IN_V12 = [
+  'Forstetal Calciumquelle Pure',
+  'Naturpark Quelle Naturelle',
+  'Vitrex Naturelle',
+  'Reinbeker Klosterquelle Frische Brise',
+  'Gut & Günstig Mineralwasser',
+  'Bad Harzburger Medium',
+  'Naturalis Medium',
+  'Volvic',
+  'Gerolsteiner Naturell',
+  'Perrier',
+  'Vittel',
+  'Contrex',
+  'Hépar',
+];
+
+/** Number of rules migration 12 adds to a database that has none of them. */
+export const RULES_ADDED_IN_V12 = PRODUCT_RULE_KEYS_ADDED_IN_V12.length;
+
 /** raw_json as written by the product screen after a scan (camelCase API data). */
 export const SCANNED_RAW_JSON = JSON.stringify({
   product: { ean: '4000000000101', name: 'Müsli', ingredientsText: 'Hafer, Rosinen', novaScore: 1 },

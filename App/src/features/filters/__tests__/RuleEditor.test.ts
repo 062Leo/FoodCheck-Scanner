@@ -146,6 +146,24 @@ describe('buildRuleChange', () => {
     });
   });
 
+  it('changes only the severity of a product rule and keeps its data', () => {
+    const product: FilterRule = {
+      ...customRule,
+      id: 9,
+      type: 'product',
+      key: 'Volvic',
+      category: 'Wasser-Tests',
+      translations: JSON.stringify({ brand: 'Volvic', nameWords: [], waterOnly: true }),
+    };
+
+    expect(buildRuleChange(product, { ...form, type: 'product' as const })).toEqual({
+      kind: 'update',
+      id: 9,
+      changes: { severity: 'ok' },
+      translate: false,
+    });
+  });
+
   it('refuses a second rule for the same company', () => {
     const existing: FilterRule = { ...customRule, id: 3, type: 'company', key: 'Nestlé AG' };
     const companyForm = { ...form, type: 'company' as const, companyName: 'nestle' };

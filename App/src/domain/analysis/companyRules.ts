@@ -129,7 +129,7 @@ export function activeCompanyNameCount(data: CompanyData | null): number {
 }
 
 /** True if `words` contains `needle` as consecutive whole words. */
-function containsWords(words: string[], needle: string[]): boolean {
+export function containsWords(words: string[], needle: string[]): boolean {
   if (needle.length === 0 || needle.length > words.length) return false;
   for (let i = 0; i + needle.length <= words.length; i++) {
     if (needle.every((word, j) => words[i + j] === word)) return true;
@@ -138,7 +138,7 @@ function containsWords(words: string[], needle: string[]): boolean {
 }
 
 /** The product's brands and brand owner as entered at Open Food Facts. */
-function companyNamesOf(product: Product): string[] {
+export function companyNamesOf(product: Product): string[] {
   const brands = (product.brand ?? '')
     .split(',')
     .map((brand) => brand.trim())
@@ -147,7 +147,7 @@ function companyNamesOf(product: Product): string[] {
 }
 
 /** A normalized name without spaces, so "Kit Kat" and "KitKat" are the same brand. */
-function compactName(name: string): string {
+export function compactName(name: string): string {
   return normalizeCompanyName(name).replace(/ /g, '');
 }
 
@@ -163,7 +163,7 @@ function startsWithCompact(words: string[], compact: string): boolean {
 }
 
 /** True if consecutive whole words of `words`, written together, are `compact`. */
-function containsCompact(words: string[], compact: string): boolean {
+export function containsCompact(words: string[], compact: string): boolean {
   return words.some((_, i) => startsWithCompact(words.slice(i), compact));
 }
 

@@ -32,6 +32,7 @@ export const CATEGORY_TRANSLATION_KEYS: Record<string, TranslationKey> = {
   Alkohol: 'filter.preset.alcohol',
   Zuchtfisch: 'filter.preset.farmedFish',
   Wasser: 'filter.preset.water',
+  'Wasser-Tests': 'filter.preset.waterTests',
   'Marken & Konzerne': 'filter.preset.companies',
   Gentechnik: 'filter.preset.gmo',
   Insekten: 'filter.preset.insects',

@@ -43,6 +43,15 @@ export interface RedFlagFinding {
   check?: CheckDetail;
   /** Set when the product belongs to a brand or company the user avoids. */
   company?: CompanyFindingDetail;
+  /** Set for findings produced by a product rule (brand and product name). */
+  productRule?: ProductRuleFindingDetail;
+}
+
+export interface ProductRuleFindingDetail {
+  /** The rule's name, e.g. "Volvic". */
+  name: string;
+  reason: { de: string; en: string };
+  sources: { title: string; url: string; date?: string }[];
 }
 
 export interface CompanyFindingDetail {

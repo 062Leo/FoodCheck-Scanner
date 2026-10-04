@@ -28,7 +28,38 @@ const company: RedFlagFinding = {
   company: { name: 'Nestlé', matched: 'Maggi' },
 };
 
+const waterTest: RedFlagFinding = {
+  ingredient: 'Gut & Günstig Mineralwasser',
+  category: 'Wasser-Tests',
+  severity: 'critical',
+  productRule: {
+    name: 'Gut & Günstig Mineralwasser',
+    reason: { de: 'Abgewertet wegen Chrom(VI).', en: 'Downgraded for chromium(VI).' },
+    sources: [
+      { title: 't-online', url: 'https://www.t-online.de/x', date: '2025-06-26' },
+      { title: 'leinetal24', url: 'https://www.leinetal24.de/x' },
+    ],
+  },
+};
+
 describe('finding texts', () => {
+  it('shows reason and sources of a product rule in the UI language', () => {
+    expect(findingTitle(waterTest, de, 'de')).toBe(
+      'Kritisch getestet: Gut & Günstig Mineralwasser'
+    );
+    expect(findingTitle(waterTest, en, 'en')).toBe(
+      'Criticised in tests: Gut & Günstig Mineralwasser'
+    );
+    expect(findingDetail(waterTest, de, 'de')).toBe(
+      'Abgewertet wegen Chrom(VI).\nQuelle: t-online, 26.6.2025; leinetal24'
+    );
+    expect(findingDetail(waterTest, en, 'en')).toBe(
+      'Downgraded for chromium(VI).\nSource: t-online, 26/06/2025; leinetal24'
+    );
+    expect(categoryLabel('Wasser-Tests', de)).toBe('Wasser-Tests');
+    expect(categoryLabel('Wasser-Tests', en)).toBe('Water tests');
+  });
+
   it('describes the ingredient count with the rule limit', () => {
     expect(findingTitle(ingredientCount, de, 'de')).toBe('Mehr als 5 Zutaten (12)');
     expect(findingTitle(ingredientCount, en, 'en')).toBe('More than 5 ingredients (12)');

@@ -6,6 +6,7 @@ import type { SupportedLanguage } from '../../i18n/translations';
 import { categoryLabel } from '../../i18n/categoryLabels';
 import { getIngredientTranslation } from '../../domain/rules/ingredientTranslations';
 import type { CheckDetail } from '../../domain/analysis/productChecks';
+import { productRuleReason, productRuleSources } from '../filters/ruleTexts';
 import { colors, radius, spacing, typography } from '../../ui/theme';
 
 const OPERATORS = { gt: '>', lt: '<', eq: '=' } as const;
@@ -18,6 +19,8 @@ export function findingTitle(
   if (finding.nutrient) return t(`nutrient.${finding.nutrient.key}`);
   if (finding.check) return checkTitle(finding.check, t, language);
   if (finding.company) return t('product.company.title', { name: finding.company.name });
+  if (finding.productRule)
+    return t('product.productRule.title', { name: finding.productRule.name });
   if (finding.canonicalKey) return getIngredientTranslation(finding.canonicalKey, language);
   return finding.ingredient;
 }
@@ -63,6 +66,16 @@ export function findingDetail(
 ): string {
   if (finding.check) return checkDetail(finding.check, t, language);
   if (finding.company) return t('product.company.detail', { matched: finding.company.matched });
+  if (finding.productRule) {
+    const { reason, sources } = finding.productRule;
+    const lines = [productRuleReason(reason, language)];
+    if (sources.length > 0) {
+      lines.push(
+        t('product.productRule.source', { sources: productRuleSources(sources, language) })
+      );
+    }
+    return lines.filter(Boolean).join('\n');
+  }
   if (!finding.nutrient) return categoryLabel(finding.category, t);
   const unit = finding.nutrient.key === 'energy-kcal_100g' ? 'kcal' : 'g';
   return t('product.nutrientFinding', {

@@ -257,4 +257,38 @@ describe('FilterScreen', () => {
     expect(mockTranslate).not.toHaveBeenCalled();
     expect(await screen.findByText('Regel gespeichert – Katalog wird neu bewertet.')).toBeTruthy();
   });
+
+  it('shows a water test rule with its reason and sources and changes its severity', async () => {
+    render(<FilterScreen />);
+
+    fireEvent.changeText(await screen.findByTestId('rule-search'), 'Gerolsteiner');
+    expect(await screen.findByText('Wasser-Tests')).toBeTruthy();
+    expect(
+      screen.getByText('Wasser der Marke „Gerolsteiner“ mit „Naturell“ im Namen')
+    ).toBeTruthy();
+    fireEvent.press(screen.getByText('Gerolsteiner Naturell'));
+
+    expect(screen.getByText('Begründung')).toBeTruthy();
+    expect(
+      screen.getByText('Öko-Test 07/2025: nur „befriedigend“ – erhöhtes Chrom(VI).')
+    ).toBeTruthy();
+    expect(screen.getByText('Quellen')).toBeTruthy();
+    expect(screen.getByText(/www\.heidelberg24\.de\/verbraucher/)).toBeTruthy();
+    expect(screen.queryByTestId('rule-keyword')).toBeNull();
+    expect(screen.getByText('Löschen')).toBeTruthy();
+    fireEvent.press(screen.getByText('Erlaubt'));
+    expect(
+      screen.getByText('Diese Regel ist ausgeschaltet und zählt nie als Red Flag.')
+    ).toBeTruthy();
+    fireEvent.press(screen.getByTestId('rule-save'));
+
+    await waitFor(async () =>
+      expect(await storedRule('product', 'Gerolsteiner Naturell')).toMatchObject({
+        severity: 'ok',
+        category: 'Wasser-Tests',
+        translations: expect.stringContaining('"brand":"Gerolsteiner"'),
+      })
+    );
+    expect(mockTranslate).not.toHaveBeenCalled();
+  });
 });

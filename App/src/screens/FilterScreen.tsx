@@ -14,7 +14,12 @@ import {
   RuleEditorSheet,
   type RuleChange,
 } from '../features/filters/RuleEditorSheet';
-import { checkRuleDetail, checkRuleTitle, companyRuleDetail } from '../features/filters/ruleTexts';
+import {
+  checkRuleDetail,
+  checkRuleTitle,
+  companyRuleDetail,
+  productRuleScope,
+} from '../features/filters/ruleTexts';
 import { Toast } from '../components/Toast';
 import { Button, EmptyState, IconButton, ScreenHeader } from '../ui/components';
 import { colors, radius, spacing, typography, TOUCH_TARGET } from '../ui/theme';
@@ -38,8 +43,8 @@ export default function FilterScreen() {
     (rule: FilterRule) => {
       if (rule.type === 'nutrient') return t(`nutrient.${rule.key}` as 'nutrient.sugars_100g');
       if (rule.type === 'check') return checkRuleTitle(rule, t, language);
-      // A company rule's translations column holds its brands, not translations.
-      if (rule.type === 'company') return rule.key;
+      // Company and product rules keep their data in the translations column.
+      if (rule.type === 'company' || rule.type === 'product') return rule.key;
       return getIngredientTranslation(rule.key, language, rule.translations);
     },
     [language, t]
@@ -80,6 +85,7 @@ export default function FilterScreen() {
     }
     if (rule.type === 'check') return checkRuleDetail(rule, t);
     if (rule.type === 'company') return companyRuleDetail(rule, t);
+    if (rule.type === 'product') return productRuleScope(rule, t);
     return rule.key !== ruleLabel(rule) ? rule.key : undefined;
   };
 

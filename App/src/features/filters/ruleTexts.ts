@@ -1,9 +1,10 @@
 import type { FilterRule } from '../../types/FilterRule';
 import type { TranslateFn } from '../../i18n/useTranslation';
-import { formatNumber } from '../../i18n/useTranslation';
+import { formatDate, formatNumber } from '../../i18n/useTranslation';
 import type { SupportedLanguage } from '../../i18n/translations';
 import { DEFAULT_INGREDIENT_LIMIT, isCheckKey } from '../../domain/analysis/productChecks';
 import { parseCompanyData } from '../../domain/analysis/companyRules';
+import { parseProductRuleData, type ProductRuleSource } from '../../domain/analysis/productRules';
 
 const OPERATORS = { gt: '>', lt: '<', eq: '=' } as const;
 
@@ -41,4 +42,40 @@ export function companyRuleDetail(rule: FilterRule, t: TranslateFn): string {
   const count = parseCompanyData(rule.translations)?.names.length ?? 0;
   if (count === 0) return t('filter.company.describeNameOnly');
   return count === 1 ? t('filter.company.describeOne') : t('filter.company.describe', { n: count });
+}
+
+/** What a product rule applies to, e.g. "Wasser der Marke „Naturalis“ mit „Medium“ im Namen". */
+export function productRuleScope(rule: FilterRule, t: TranslateFn): string | undefined {
+  const data = parseProductRuleData(rule.translations);
+  if (!data) return undefined;
+  if (data.nameWords.length === 0) {
+    return t(data.waterOnly ? 'filter.productRule.brand' : 'filter.productRule.brandAll', {
+      brand: data.brand,
+    });
+  }
+  return t(data.waterOnly ? 'filter.productRule.product' : 'filter.productRule.productAll', {
+    brand: data.brand,
+    words: data.nameWords.join(' '),
+  });
+}
+
+/** The reason of a product rule in the UI language. */
+export function productRuleReason(
+  reason: { de: string; en: string },
+  language: SupportedLanguage
+): string {
+  return (language === 'de' ? reason.de : reason.en) || reason.de || reason.en;
+}
+
+/** "t-online, 26.06.2025; Utopia, 05.08.2026" */
+export function productRuleSources(
+  sources: readonly ProductRuleSource[],
+  language: SupportedLanguage
+): string {
+  return sources
+    .map((source) => {
+      const date = source.date ? formatDate(source.date, language) || source.date : '';
+      return date ? `${source.title}, ${date}` : source.title;
+    })
+    .join('; ');
 }

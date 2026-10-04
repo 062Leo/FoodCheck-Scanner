@@ -5,6 +5,7 @@ import { RedFlagAnalyzer } from './RedFlagAnalyzer';
 import { NovaScoreEvaluator } from './NovaScoreEvaluator';
 import { runProductChecks } from './productChecks';
 import { findAvoidedCompanies } from './companyRules';
+import { findProductRuleMatches } from './productRules';
 
 /** Number of red flags from which a product is rated critical. */
 export const CRITICAL_RED_FLAG_COUNT = 3;
@@ -31,10 +32,16 @@ export class ProductRating {
     const taxonomyFlags = ingredientsText
       ? this.redFlagAnalyzer.analyzeTaxonomy(ingredientsText, activeRules)
       : [];
-    // Product checks count like ingredient red flags; an avoided company alone is critical.
+    // Product checks and product rules count like ingredient red flags; an avoided
+    // company alone is critical.
     const checkFlags = runProductChecks(product, rules ?? []);
+    const productRuleFlags = findProductRuleMatches(product, rules ?? []);
     const companyFlags = findAvoidedCompanies(product, rules ?? []);
-    const redFlags = [...this.mergeFindings(keywordFlags, taxonomyFlags), ...checkFlags];
+    const redFlags = [
+      ...this.mergeFindings(keywordFlags, taxonomyFlags),
+      ...checkFlags,
+      ...productRuleFlags,
+    ];
     const companies = companyFlags.map((flag) => flag.company?.name ?? flag.ingredient);
 
     const novaScore = toNovaScore(product.novaScore);

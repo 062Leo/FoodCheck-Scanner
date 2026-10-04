@@ -4,7 +4,7 @@ import { seedRules } from '../../domain/rules/seedRules';
 import { getErrorMessage } from '../../shared/errors';
 
 export const DATABASE_NAME = 'foodscanner.db';
-export const DATABASE_VERSION = 11;
+export const DATABASE_VERSION = 12;
 const META_SCHEMA_VERSION_KEY = 'schema_version';
 
 type Migration = (database: SQLite.SQLiteDatabase) => Promise<void>;
@@ -34,6 +34,7 @@ const migrations: Record<number, Migration> = {
   9: updateFilterList,
   10: addAlcoholRules,
   11: addWaterChecks,
+  12: addWaterTestRules,
 };
 
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -716,6 +717,181 @@ async function addWaterChecks(database: SQLite.SQLiteDatabase): Promise<void> {
     }
   } catch (error) {
     throw new Error(`Failed to add the water checks: ${getErrorMessage(error)}`, {
+      cause: error,
+    });
+  }
+}
+
+/** v12: sources of the seeded product rules. */
+const V12_SOURCES = {
+  leinetal24: {
+    title: 'leinetal24',
+    url: 'https://www.leinetal24.de/verbraucher/test-wasser-news-aktuell-uran-kassel-oeko-test-still-zr-90005521.html',
+  },
+  tOnline: {
+    title: 't-online',
+    url: 'https://www.t-online.de/leben/testberichte/id_100787666/-oeko-test-stille-mineralwasser-mit-bedenklichen-inhaltsstoffen.html',
+    date: '2025-06-26',
+  },
+  utopia: {
+    title: 'Utopia',
+    url: 'https://utopia.de/news/mineralwasser-test-stiftung-warentest',
+    date: '2026-08-05',
+  },
+  heidelberg24: {
+    title: 'heidelberg24',
+    url: 'https://www.heidelberg24.de/verbraucher/einkauf-test/das-beste-stilles-wasser-oekotest-discounter-vergleich-mineralwasser-fluorid-94355632.html',
+  },
+  theLocalBan: {
+    title: 'The Local',
+    url: 'https://www.thelocal.fr/20250925/french-consumer-group-seeks-perrier-sales-ban',
+    date: '2025-09-25',
+  },
+  theLocalCourt: {
+    title: 'The Local',
+    url: 'https://www.thelocal.fr/20251119/french-court-says-perrier-can-be-sold-as-natural-mineral-water',
+    date: '2025-11-19',
+  },
+} as const;
+
+const V12_URANIUM = {
+  de: 'Öko-Test 07/2025: „ungenügend“ – erhöhter Urangehalt.',
+  en: 'Öko-Test 07/2025: “insufficient” – elevated uranium content.',
+};
+
+const V12_NESTLE_TREATMENT = {
+  de: 'Nestlé räumte 2024 ein, diese Wässer verboten mit Aktivkohle und UV aufbereitet zu haben.',
+  en: 'In 2024 Nestlé admitted to having treated these waters with activated carbon and UV, which is not allowed.',
+};
+
+/**
+ * v12: waters criticised in tests or for prohibited treatment, a frozen copy. Each one
+ * is a rule of type "product" whose data (brand, name words, reason, sources) is stored
+ * as JSON in the `translations` column.
+ */
+const V12_PRODUCT_RULES: {
+  key: string;
+  brand: string;
+  nameWords: string[];
+  reason: { de: string; en: string };
+  sources: { title: string; url: string; date?: string }[];
+}[] = [
+  {
+    key: 'Forstetal Calciumquelle Pure',
+    brand: 'Forstetal',
+    nameWords: ['Calciumquelle', 'Pure'],
+    reason: V12_URANIUM,
+    sources: [V12_SOURCES.leinetal24],
+  },
+  {
+    key: 'Naturpark Quelle Naturelle',
+    brand: 'Naturpark Quelle',
+    nameWords: ['Naturelle'],
+    reason: V12_URANIUM,
+    sources: [V12_SOURCES.leinetal24],
+  },
+  {
+    key: 'Vitrex Naturelle',
+    brand: 'Vitrex',
+    nameWords: ['Naturelle'],
+    reason: V12_URANIUM,
+    sources: [V12_SOURCES.leinetal24],
+  },
+  {
+    key: 'Reinbeker Klosterquelle Frische Brise',
+    brand: 'Reinbeker Klosterquelle',
+    nameWords: ['Frische Brise'],
+    reason: {
+      de: 'Öko-Test 07/2025: „ungenügend“ – erhöhte Keimzahl, Süßstoffe und Chrom(VI).',
+      en: 'Öko-Test 07/2025: “insufficient” – elevated germ count, sweeteners and chromium(VI).',
+    },
+    sources: [V12_SOURCES.tOnline],
+  },
+  {
+    key: 'Gut & Günstig Mineralwasser',
+    brand: 'Gut & Günstig',
+    nameWords: ['Mineralwasser'],
+    reason: {
+      de: 'Öko-Test 2025/2026: Still und Medium abgewertet wegen Chrom(VI) und TFA.',
+      en: 'Öko-Test 2025/2026: still and medium variants downgraded for chromium(VI) and TFA.',
+    },
+    sources: [V12_SOURCES.tOnline, V12_SOURCES.utopia],
+  },
+  {
+    key: 'Bad Harzburger Medium',
+    brand: 'Bad Harzburger',
+    nameWords: ['Medium'],
+    reason: {
+      de: 'Öko-Test 07/2026: „mangelhaft“ – Arsen deutlich über dem Orientierungswert, erhöhte TFA.',
+      en: 'Öko-Test 07/2026: “poor” – arsenic well above the guideline value, elevated TFA.',
+    },
+    sources: [V12_SOURCES.utopia],
+  },
+  {
+    key: 'Naturalis Medium',
+    brand: 'Naturalis',
+    nameWords: ['Medium'],
+    reason: {
+      de: 'Öko-Test 07/2026: „ungenügend“ – Chrom(VI).',
+      en: 'Öko-Test 07/2026: “insufficient” – chromium(VI).',
+    },
+    sources: [V12_SOURCES.utopia],
+  },
+  {
+    key: 'Volvic',
+    brand: 'Volvic',
+    nameWords: [],
+    reason: {
+      de: 'Öko-Test 07/2025: nur „ausreichend“ – erhöhter Nitratgehalt.',
+      en: 'Öko-Test 07/2025: only “sufficient” – elevated nitrate content.',
+    },
+    sources: [V12_SOURCES.heidelberg24],
+  },
+  {
+    key: 'Gerolsteiner Naturell',
+    brand: 'Gerolsteiner',
+    nameWords: ['Naturell'],
+    reason: {
+      de: 'Öko-Test 07/2025: nur „befriedigend“ – erhöhtes Chrom(VI).',
+      en: 'Öko-Test 07/2025: only “satisfactory” – elevated chromium(VI).',
+    },
+    sources: [V12_SOURCES.heidelberg24],
+  },
+  ...['Perrier', 'Vittel', 'Contrex', 'Hépar'].map((brand) => ({
+    key: brand,
+    brand,
+    nameWords: [],
+    reason: V12_NESTLE_TREATMENT,
+    sources: [V12_SOURCES.theLocalBan, V12_SOURCES.theLocalCourt],
+  })),
+];
+
+/**
+ * v12: adds the product rules for criticised waters, unless a product rule with the
+ * same name (any case, any severity) already exists, so a rule the user switched off
+ * or deleted and re-added is neither duplicated nor overridden.
+ */
+async function addWaterTestRules(database: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    const existing = await database.getAllAsync<{ key: string }>(
+      "SELECT key FROM filter_rules WHERE type = 'product'"
+    );
+    const existingKeys = new Set(existing.map(({ key }) => key.toLowerCase()));
+    const now = new Date().toISOString();
+
+    for (const { key, brand, nameWords, reason, sources } of V12_PRODUCT_RULES) {
+      if (existingKeys.has(key.toLowerCase())) continue;
+      const data = { brand, nameWords, waterOnly: true, reason, sources };
+      await database.runAsync(
+        `
+          INSERT INTO filter_rules (type, key, category, threshold, operator, severity, translations, created_at)
+          VALUES ('product', $key, 'Wasser-Tests', NULL, NULL, 'red_flag', $translations, $created_at);
+        `,
+        { $key: key, $translations: JSON.stringify(data), $created_at: now }
+      );
+    }
+  } catch (error) {
+    throw new Error(`Failed to add the water test rules: ${getErrorMessage(error)}`, {
       cause: error,
     });
   }
