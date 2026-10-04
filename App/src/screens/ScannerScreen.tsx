@@ -111,14 +111,14 @@ export default function ScannerScreen() {
           style={styles.entryButton}
           testID="manual-entry-button"
         />
-        <Button
-          title={t('scanner.checkEggCode')}
-          icon="egg-outline"
-          variant="secondary"
-          onPress={() => router.push('/egg-code')}
-          style={styles.entryButton}
-          testID="egg-code-button"
-        />
+        <View style={styles.roundButton}>
+          <IconButton
+            icon="egg-outline"
+            label={t('scanner.checkEggCode')}
+            onPress={() => router.push('/egg-code')}
+            testID="egg-code-button"
+          />
+        </View>
       </View>
     </View>
   );
@@ -240,6 +240,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   bottom: { paddingHorizontal: spacing.lg, gap: spacing.md },
-  entryRow: { flexDirection: 'row', gap: spacing.md },
-  entryButton: { flex: 1, paddingHorizontal: spacing.md },
+  entryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  entryButton: { flex: 1 },
 });

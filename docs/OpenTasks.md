@@ -57,8 +57,8 @@ Check:
   official notices, recall card on a product named in a current warning; flight mode keeps the
   cached list; nothing shows up while the source fails. The feature reads only the official
   RSS feed.
-- **Layout** of the buttons "Barcode eingeben" and "Eiercode prüfen" on narrow screens
-  (wrapping, truncation, touch targets).
+- **Layout** of the full-width "Barcode eingeben" button and the small egg icon next to it on
+  narrow screens (truncation, touch target).
 
 <a id="t04"></a>
 ## 04 Push and pull request 👤 🔒

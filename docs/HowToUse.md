@@ -29,7 +29,7 @@ Scan the QR code with Expo Go, or connect a device via USB.
 - Optional: with **Settings → Allergen-Warnung / Allergen warning** switched on (off by default), a product that declares an allergen from **Meine Allergene / My allergens** shows it in an extra line ("Enthält Milch", "Kann Spuren enthalten: Erdnüsse").
 - Tap the card to open the full Product screen; the close button dismisses it without leaving the scanner.
 - No camera, or the code won't scan? Use **"Barcode eingeben" / "Enter barcode"** to type it in manually.
-- **"Eiercode prüfen" / "Check egg code"** next to it opens the egg code reader (see [Egg Code](#8-egg-code)).
+- The small **egg icon** ("Eiercode prüfen" / "Check egg code") at the right end of that row opens the egg code reader (see [Egg Code](#8-egg-code)).
 - A barcode Open Food Facts doesn't know is looked up at USDA FoodData Central, but only if you saved your own key (see [USDA FoodData Central](#9-usda-fooddata-central)); if that lookup fails, the "not found" message says why (invalid key, limit reached, no answer, no connection).
 - The offline badge ("Offline – nur gespeicherte Produkte") appears whenever there is no network; a lookup then falls back to a previously saved product if there is one.
 
@@ -91,7 +91,7 @@ Scan the QR code with Expo Go, or connect a device via USB.
 
 ## 8. Egg Code
 
-- Open it from the **Scanner** ("Eiercode prüfen") or **Settings → Hilfe & Info → Eiercode prüfen**.
+- Open it from the **Scanner** (egg icon next to "Barcode eingeben") or **Settings → Hilfe & Info → Eiercode prüfen**.
 - Type in the code printed on the egg, e.g. `0-DE-0312345`. Works offline.
 - The first digit is the housing system: 0 organic, 1 free range, 2 barn, 3 cage (enriched colony cage). The app shows it with a short explanation.
 - Then follows the country code; German codes also show the state, farm number and stall number.

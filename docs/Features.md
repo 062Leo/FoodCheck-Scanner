@@ -30,7 +30,7 @@
 - **Online-Fallback**: Bei Netzwerkfehler oder Timeout (8 s) wird, falls vorhanden, das zwischengespeicherte Produkt gezeigt
 - **USDA-Fallback**: Kennt Open Food Facts einen Barcode nicht und ist das Produkt nicht gespeichert, fragt die App USDA FoodData Central – nur mit dem eigenen Schlüssel des Nutzers (siehe [USDA FoodData Central](#usda-fooddata-central-settingsusda-key)); schlägt die USDA-Abfrage fehl (Schlüssel ungültig, Limit erreicht, keine Antwort, keine Verbindung), nennt die Nicht-gefunden-Meldung den Grund
 - **Manuelle Eingabe**: Barcode über Ziffernblock eingeben, auch ohne Kamerazugriff nutzbar
-- **Eiercode prüfen**: Button neben „Barcode eingeben“ öffnet den [Eiercode-Leser](#eiercode-prüfen-egg-code)
+- **Eiercode prüfen**: kleines Ei-Symbol rechts neben „Barcode eingeben“ öffnet den [Eiercode-Leser](#eiercode-prüfen-egg-code)
 - **Haptisches Feedback**: unterschiedlich für Erfolg / Warnung / Fehler
 - **Taschenlampe** (nur Rückkamera); der Frontkamera-Wechsel und die pulsierende Rahmenanimation wurden entfernt
 - **Offline-Badge** bei Netzwerkausfall

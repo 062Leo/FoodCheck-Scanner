@@ -258,7 +258,8 @@ describe('ScannerScreen', () => {
 
     fireEvent.press(screen.getByTestId('egg-code-button'));
 
-    expect(screen.getByText('Eiercode prüfen')).toBeTruthy();
+    expect(screen.getByLabelText('Eiercode prüfen')).toBeTruthy();
+    expect(screen.queryByText('Eiercode prüfen')).toBeNull();
     expect(mockRouter.push).toHaveBeenCalledWith('/egg-code');
   });
 
