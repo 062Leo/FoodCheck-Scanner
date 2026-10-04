@@ -134,7 +134,7 @@ npx eas-cli build --platform android --profile production
 
 ```bash
 cd App
-npm test                 # Jest (65 suites, 746 tests)
+npm test                 # Jest (66 suites, 755 tests)
 npm run test:integration # Open Food Facts staging integration tests (opt-in)
 npm run typecheck        # TypeScript type-check
 npm run lint             # ESLint
