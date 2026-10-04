@@ -51,6 +51,18 @@ describe('countIngredients', () => {
     expect(countIngredients('Zutaten: Haferflocken, Wasser')).toBe(2);
   });
 
+  it('does not count processing notes and footnotes as ingredients', () => {
+    expect(
+      countIngredients(
+        'Bio frische fettarme Milch¹, pasteurisiert, homogenisiert, 1,5% Fett, länger haltbar*\n\n¹aus kontrolliert ökologischer Landwirtschaft\n*hocherhitzt'
+      )
+    ).toBe(1);
+    expect(countIngredients('Vollmilch, ultrahocherhitzt, 3,5 % Fettgehalt')).toBe(1);
+    expect(countIngredients('Whole milk, pasteurized, homogenized, UHT, 3.5% fat')).toBe(1);
+    expect(countIngredients('Lait entier, pasteurisé, 3,6 % matière grasse')).toBe(1);
+    expect(countIngredients('Vollmilch, Butterfett, Sahne')).toBe(3);
+  });
+
   it('ignores notes that are not ingredients', () => {
     expect(
       countIngredients(

@@ -99,6 +99,27 @@ const parser = new IngredientParser();
 const NOT_AN_INGREDIENT =
   /^(\*|kann |kann$|enthält|may contain|contains|hergestellt|produziert|aus kontrolliert|aus ökolog|aus biolog|von kontrolliert|zutaten aus|spuren|traces|peut contenir|issu de l'agriculture|from organic|organic farming)/;
 
+/**
+ * Processing and quality notes that appear as list items but are not ingredients:
+ * "pasteurisiert", "homogenisiert", "länger haltbar", "1,5 % Fett", "UHT", "matière grasse".
+ * Only whole items match, so "Vollmilch" or "Butterfett" still count.
+ */
+const PROCESSING_NOTE =
+  /^(?:(?:mild |schonend |kurzzeit[- ]?)?(?:pasteurisiert|homogenisiert|ultrahocherhitzt|ultra[- ]?hocherhitzt|hocherhitzt|wärmebehandelt|pasteuri[sz]ed|homogeni[sz]ed|ultra[- ]heat[- ]treated|ultra[- ]pasteuri[sz]ed|uht|esl|pasteurisée?|homogénéisée?|stérilisée? uht)|länger haltbar|laenger haltbar|extended shelf life|fettarm|teilentrahmt|[\d\s]*% ?(?:fett(?:gehalt)?|fat|mat(?:ière|iere)s? grasses?)|(?:fett(?:gehalt)?|fat|mat(?:ière|iere)s? grasses?):? ?[\d\s]*%)$/;
+
+/** Footnote markers such as "¹" or "*" in front of a note ("¹aus kontrolliert ..."). */
+const FOOTNOTE_MARKER = /^[*¹²³⁴⁵⁶⁷⁸⁹⁰†]+\s*/u;
+
+function isNotAnIngredient(normalized: string): boolean {
+  const text = normalized
+    .replace(FOOTNOTE_MARKER, '')
+    .replace(/[*¹²³⁴⁵⁶⁷⁸⁹⁰†]+$/u, '')
+    .trim();
+  return (
+    NOT_AN_INGREDIENT.test(normalized) || NOT_AN_INGREDIENT.test(text) || PROCESSING_NOTE.test(text)
+  );
+}
+
 /** Separators besides , ; . : line breaks and a dash between spaces ("Wasser - Salz"). */
 const LIST_SEPARATOR = /[,;.]|\r?\n|\s+[-–—]\s+/gu;
 /**
@@ -142,14 +163,14 @@ export function countIngredients(ingredientsText: string): number {
   const collapsed = ingredientsText.replace(/(\d)[,.](\d)/g, '$1$2');
   const text = splitTopLevel(collapsed, LIST_SEPARATOR)
     .flatMap((segment) =>
-      NOT_AN_INGREDIENT.test(parser.normalizeIngredient(segment))
+      isNotAnIngredient(parser.normalizeIngredient(segment))
         ? [segment]
         : splitTopLevel(segment, CONJUNCTION)
     )
     .join(', ');
   const tokens = parser
     .parse(text)
-    .filter((token) => token.normalized.length > 1 && !NOT_AN_INGREDIENT.test(token.normalized))
+    .filter((token) => token.normalized.length > 1 && !isNotAnIngredient(token.normalized))
     .filter((token) => !/^[\d\s%]+$/.test(token.normalized));
   const parents = new Set(
     tokens.filter((token) => token.parentToken).map((token) => token.parentToken!.toLowerCase())
