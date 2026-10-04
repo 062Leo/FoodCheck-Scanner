@@ -77,6 +77,7 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 - **Abgleich** gegen Marke(n) und Markeninhaber (`brand_owner`) des Produkts; Rechtsformen und Zusätze (GmbH, AG, Deutschland …) und Schreibweisen ohne Leerzeichen oder Bindestrich („Kit Kat“/„KitKat“, „Coca-Cola“/„CocaCola“) werden ausgeglichen
 - **Markenanfang**: Der Name der Regel darf irgendwo in der Marke stehen („Nestlé Deutschland AG“); bei Wikidata gesammelte Namen müssen der ganzen Marke oder ihren ersten ganzen Wörtern entsprechen („Maggi“ trifft „Maggi Fix“, „Lion“ trifft nicht „Golden Lion Foods“)
 - **Optionale Wikidata-Abfrage**: Konzern bei Wikidata suchen, passenden Eintrag wählen; die App sammelt Marken und Tochterfirmen (bis zu 3 Ebenen, höchstens 1.000 Namen) und speichert sie mit der Regel, sodass der Abgleich offline funktioniert; „Erneut abfragen“ aktualisiert die Liste. Daten: Wikidata (CC0)
+- **Einzelne Marken abwählen**: Unter „Namen anzeigen“ ist jeder gesammelte Name ein Eintrag zum An- und Ausschalten (Zähler „N von M Marken aktiv“, Filterfeld und seitenweise je 50 Namen bei langen Listen); abgewählte Namen treffen keine Produkte mehr (normalisierter Vergleich). Der Name der Regel selbst bleibt immer aktiv. „Erneut abfragen“ behält die Abwahl für Namen, die weiterhin gefunden werden
 - **Ohne Abfrage** (oder wenn Wikidata nicht erreichbar ist) wird nur der Name selbst erkannt, nicht die Marken des Konzerns
 - Eine Marke bzw. ein Konzern kann nur einmal in der Liste stehen
 
@@ -172,7 +173,7 @@ Die Prüfungen lesen Kategorien, Verpackung, Siegel und Nährwerte so, wie Open 
 - **Regel hinzufügen/bearbeiten**:
   - **Zutaten-Regel**: Keyword + Kategorie (25 Presets)
   - **Nährwert-Regel**: Nährwert (5 Optionen) + Operator (gt/lt/eq) + Grenzwert + feste Kategorie „Nährwerte“
-  - **Marke / Konzern**: Name + optionale Wikidata-Abfrage (Eintrag wählen, zugehörige Marken ansehen) + feste Kategorie „Marken & Konzerne“
+  - **Marke / Konzern**: Name + optionale Wikidata-Abfrage (Eintrag wählen, zugehörige Marken ansehen und einzeln abwählen) + feste Kategorie „Marken & Konzerne“
   - **Produkt-Prüfung** (nur bearbeiten): Erklärung, wann die Prüfung anschlägt; Severity; bei der Zutatenzahl das Limit (ganze Zahl ab 1); kein Löschen-Button, stattdessen der Hinweis, die Prüfung mit „Erlaubt“ auszuschalten (eine gelöschte Prüfung ließe sich nicht wiederherstellen)
   - **Severity**: RED FLAG / Erlaubt (mit Erklärung der jeweiligen Wirkung)
 - **Bearbeiten ohne Datenverlust**: eine gespeicherte Übersetzung bleibt erhalten, solange sich das Keyword nicht ändert
@@ -265,7 +266,7 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 - **`meta`**: key (PK), value — Migrations-Tracking, Rating-Fingerprint, Backup-Einstellungen
 - **`products`**: id, ean (UNIQUE), name, brands, ingredients, nova_score, nutriscore, raw_json, scanned_at, rating, data_version, last_api_fetch, image_url, image_ingredients_url, image_nutrition_url, image_packaging_url, visit_count, last_seen_at, edited_at, edited_fields — Kategorien, Verpackung, Siegel, Markeninhaber, Identitätskennzeichen, Alkoholgehalt und die Quelle (USDA) stehen in `raw_json`
 - **`favorites`**: id, product_id (FK → products.id CASCADE, UNIQUE-Index), added_at
-- **`filter_rules`**: id, type (`ingredient`/`nutrient`/`check`/`company`), key, category, threshold, operator, severity, translations (JSON; bei Marken/Konzernen die Wikidata-ID und die zugehörigen Marken), created_at
+- **`filter_rules`**: id, type (`ingredient`/`nutrient`/`check`/`company`), key, category, threshold, operator, severity, translations (JSON; bei Marken/Konzernen die Wikidata-ID, die zugehörigen Marken und die abgewählten Namen), created_at
 - **10 Migrationen** (Datenbank-Version 10): initiales Schema → Seed Rules → Produkt-Spalten → Visit-Tracking → Kategorie-Spalte → Translations-Spalte → Favoriten-Eindeutigkeit + edited_at → edited_fields → Filterliste aktualisiert (11 Gase entfernt, 86 Zutaten-Regeln und 9 Prüfungen ergänzt) → Alkohol-Regeln ergänzt (15 Zutaten-Regeln)
 - **Neu-Bewertung**: `RATING_LOGIC_VERSION` 5 – gespeicherte Produkte werden nach dem Update einmal neu bewertet
 - **Daten nachladen**: `PRODUCT_DATA_VERSION` 2 – Produkte, die vor den neuen Open-Food-Facts-Feldern (Kategorien, Verpackung, Markeninhaber, Identitätskennzeichen, Alkoholgehalt) gespeichert wurden, werden nach dem App-Start im Hintergrund neu geladen und bewertet: höchstens 10 Anfragen pro Minute, nacheinander; offline oder bei einem Fehler geht es beim nächsten Start weiter. Eigene Änderungen und USDA-Daten bleiben erhalten.

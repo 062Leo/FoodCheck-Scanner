@@ -331,7 +331,7 @@ CREATE TABLE IF NOT EXISTS filter_rules (
   created_at   TEXT NOT NULL
 );
 ```
-`check` rules are the product checks (`key` = check key such as `ingredient_count`; only `ingredient_count` uses `threshold`/`operator`). `company` rules store the avoided name in `key`, the fixed category `Marken & Konzerne`, and in `translations` the Wikidata lookup result (`{ wikidataId, names }`) instead of translations.
+`check` rules are the product checks (`key` = check key such as `ingredient_count`; only `ingredient_count` uses `threshold`/`operator`). `company` rules store the avoided name in `key`, the fixed category `Marken & Konzerne`, and in `translations` the Wikidata lookup result (`{ wikidataId, names, excluded? }`) instead of translations. `excluded` holds the names the user switched off; JSON without it still parses. A refresh keeps exclusions of names that are still collected (`keepExclusions`).
 
 New product fields (categories, packaging, labels, brand owner, packager codes, alcohol content, `source: 'usda'`) are not columns; they live in `raw_json`.
 
@@ -469,7 +469,7 @@ The checks only see what Open Food Facts (or USDA) provides; products stored bef
 
 ### Avoided Companies (`companyRules.ts`)
 
-- `company` rules are matched against the product's brands and `brand_owner`. The avoided name itself may appear inside a brand ("Nestlé Deutschland AG"); names collected from Wikidata must match a whole brand or its first whole words ("Maggi" matches "Maggi Fix", "Lion" does not match "Golden Lion Foods"). Both are also compared without spaces and hyphens ("Kit Kat" = "KitKat", "Coca-Cola" = "CocaCola"). Legal forms and regional suffixes (GmbH, AG, Deutschland, …) are ignored.
+- `company` rules are matched against the product's brands and `brand_owner`. The avoided name itself may appear inside a brand ("Nestlé Deutschland AG"); names collected from Wikidata must match a whole brand or its first whole words ("Maggi" matches "Maggi Fix", "Lion" does not match "Golden Lion Foods"). Both are also compared without spaces and hyphens ("Kit Kat" = "KitKat", "Coca-Cola" = "CocaCola"). Legal forms and regional suffixes (GmbH, AG, Deutschland, …) are ignored. Names the user switched off (`excluded`, compared normalized) are skipped; the rule's own name can never be switched off. Because `excluded` lives in `translations`, which `ratingFingerprint` hashes, switching a name re-rates the catalog.
 - A match makes the product **Critical** on its own and adds an `avoidedCompany` reason.
 
 ### Product Information (display only)

@@ -14,6 +14,8 @@ export interface CompanyData {
   wikidataId?: string;
   /** Names of brands and companies that belong to it. */
   names: string[];
+  /** Names the user switched off; they no longer match products. */
+  excluded?: string[];
 }
 
 export function parseCompanyData(json: string | null | undefined): CompanyData | null {
@@ -26,6 +28,11 @@ export function parseCompanyData(json: string | null | undefined): CompanyData |
     return {
       wikidataId: typeof data.wikidataId === 'string' ? data.wikidataId : undefined,
       names: data.names.filter((name): name is string => typeof name === 'string'),
+      ...(Array.isArray(data.excluded)
+        ? {
+            excluded: data.excluded.filter((name): name is string => typeof name === 'string'),
+          }
+        : {}),
     };
   } catch {
     return null;
@@ -82,6 +89,43 @@ export function companyWords(name: string): string[] {
 
 export function normalizeCompanyName(name: string): string {
   return companyWords(name).join(' ');
+}
+
+/** True if `name` is the rule's own name, which can never be switched off. */
+export function isOwnCompanyName(name: string, ruleName: string): boolean {
+  const own = compactName(ruleName);
+  return own.length > 0 && compactName(name) === own;
+}
+
+/** True if the user switched `name` off (compared normalized). */
+export function isExcludedCompanyName(data: CompanyData | null, name: string): boolean {
+  const compact = compactName(name);
+  return (data?.excluded ?? []).some((excluded) => compactName(excluded) === compact);
+}
+
+/** Switches a single collected name on or off; the rule's own name stays on. */
+export function toggleCompanyName(data: CompanyData, name: string, ruleName: string): CompanyData {
+  if (isOwnCompanyName(name, ruleName)) return data;
+  const compact = compactName(name);
+  const excluded = data.excluded ?? [];
+  const next = isExcludedCompanyName(data, name)
+    ? excluded.filter((other) => compactName(other) !== compact)
+    : [...excluded, name];
+  return { ...data, excluded: next };
+}
+
+/**
+ * Carries the exclusions of `previous` over to a fresh lookup result: exclusions of names
+ * that are still present are kept, those of vanished names are dropped.
+ */
+export function keepExclusions(previous: CompanyData | null, next: CompanyData): CompanyData {
+  const excluded = next.names.filter((name) => isExcludedCompanyName(previous, name));
+  return excluded.length > 0 ? { ...next, excluded } : next;
+}
+
+/** Number of collected names that are switched on. */
+export function activeCompanyNameCount(data: CompanyData | null): number {
+  return (data?.names ?? []).filter((name) => !isExcludedCompanyName(data, name)).length;
 }
 
 /** True if `words` contains `needle` as consecutive whole words. */
@@ -146,10 +190,14 @@ export function findAvoidedCompanies(product: Product, rules: FilterRule[]): Red
   for (const rule of companyRules) {
     const ownWords = companyWords(rule.key);
     const ownCompact = ownWords.join('');
+    const data = parseCompanyData(rule.translations);
+    const excluded = new Set(
+      (data?.excluded ?? []).map(compactName).filter((name) => name !== ownCompact)
+    );
     const aliases = new Set(
-      (parseCompanyData(rule.translations)?.names ?? [])
+      (data?.names ?? [])
         .map(compactName)
-        .filter((alias) => alias.length > 1)
+        .filter((alias) => alias.length > 1 && !excluded.has(alias))
     );
     const match = candidates.find(
       (candidate) =>

@@ -167,7 +167,8 @@ describe('FilterScreen', () => {
     expect(mockSearchCompanies).toHaveBeenCalledWith('Nestlé', 'de', expect.anything());
     expect(mockCollectCompanyNames).toHaveBeenCalledWith('Q160746', expect.anything());
     fireEvent.press(screen.getByText('Namen anzeigen'));
-    expect(screen.getByText('Nestlé, Maggi, Thomy')).toBeTruthy();
+    expect(screen.getByText('3 von 3 Marken aktiv')).toBeTruthy();
+    expect(screen.getByTestId('company-name-Thomy')).toBeTruthy();
     fireEvent.press(screen.getByTestId('rule-save'));
 
     await waitFor(async () => {

@@ -596,7 +596,11 @@ const de = {
   'filter.company.foundOne': '1 zugehörige Marke gefunden',
   'filter.company.showNames': 'Namen anzeigen',
   'filter.company.hideNames': 'Namen ausblenden',
-  'filter.company.more': '… und {{n}} weitere',
+  'filter.company.active': '{{active}} von {{total}} Marken aktiv',
+  'filter.company.filter': 'Namen filtern',
+  'filter.company.showMore': 'Weitere {{n}} anzeigen',
+  'filter.company.ownName': 'eigener Name, immer aktiv',
+  'filter.company.toggleHint': 'Tippe einen Namen an, um ihn aus- oder wieder einzuschalten.',
   'filter.company.nameOnlyHint':
     'Ohne Abfrage wird nur der Name selbst erkannt, nicht die Marken des Konzerns.',
   'filter.company.lookupFailed':
@@ -1270,7 +1274,11 @@ const en: Translations = {
   'filter.company.foundOne': '1 related brand found',
   'filter.company.showNames': 'Show names',
   'filter.company.hideNames': 'Hide names',
-  'filter.company.more': '… and {{n}} more',
+  'filter.company.active': '{{active}} of {{total}} brands active',
+  'filter.company.filter': 'Filter names',
+  'filter.company.showMore': 'Show {{n}} more',
+  'filter.company.ownName': 'own name, always active',
+  'filter.company.toggleHint': 'Tap a name to switch it off or on again.',
   'filter.company.nameOnlyHint':
     'Without a lookup only the name itself is recognised, not the brands of the company.',
   'filter.company.lookupFailed':

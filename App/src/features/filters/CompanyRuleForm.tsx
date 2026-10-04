@@ -2,7 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { TranslateFn } from '../../i18n/useTranslation';
 import type { SupportedLanguage } from '../../i18n/translations';
-import type { CompanyData } from '../../domain/analysis/companyRules';
+import {
+  activeCompanyNameCount,
+  companyWords,
+  isExcludedCompanyName,
+  isOwnCompanyName,
+  keepExclusions,
+  toggleCompanyName,
+  type CompanyData,
+} from '../../domain/analysis/companyRules';
 import {
   collectCompanyNames,
   CompanyLookupError,
@@ -11,10 +19,14 @@ import {
 } from '../../services/CompanyLookupService';
 import { Button } from '../../ui/components';
 import { FormField } from '../../ui/FormField';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing, typography, TOUCH_TARGET } from '../../ui/theme';
 
-/** Names shown before the list is cut off with "… and N more". */
-export const VISIBLE_NAMES = 30;
+/**
+ * Names rendered per page. The sheet is a ScrollView, so the list is plain rows paged
+ * in steps (a FlatList there would be a nested VirtualizedList).
+ */
+export const NAMES_PAGE_SIZE = 50;
 
 /**
  * Name of an avoided brand or company, with an optional Wikidata lookup of the brands
@@ -39,6 +51,8 @@ export function CompanyRuleForm({
   const [busy, setBusy] = useState<'search' | 'collect' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showNames, setShowNames] = useState(false);
+  const [nameFilter, setNameFilter] = useState('');
+  const [visibleCount, setVisibleCount] = useState(NAMES_PAGE_SIZE);
   const request = useRef<AbortController | null>(null);
 
   // A lookup still running when the sheet closes is cancelled.
@@ -88,11 +102,17 @@ export function CompanyRuleForm({
   const collect = async (wikidataId: string) => {
     setCandidates(null);
     const collected = await run('collect', (signal) => collectCompanyNames(wikidataId, { signal }));
-    if (collected) onChange({ companyData: collected });
+    // A refresh keeps the user's exclusions for names that are still collected.
+    if (collected) onChange({ companyData: keepExclusions(data, collected) });
   };
 
   const names = data?.names ?? [];
-  const hidden = names.length - VISIBLE_NAMES;
+  const filterWords = companyWords(nameFilter).join('');
+  const filtered = filterWords
+    ? names.filter((entry) => companyWords(entry).join('').includes(filterWords))
+    : names;
+  const shown = filtered.slice(0, visibleCount);
+  const hidden = filtered.length - shown.length;
 
   return (
     <>
@@ -193,10 +213,66 @@ export function CompanyRuleForm({
             </Text>
           </Pressable>
           {showNames ? (
-            <Text style={styles.names}>
-              {names.slice(0, VISIBLE_NAMES).join(', ')}
-              {hidden > 0 ? ` ${t('filter.company.more', { n: hidden })}` : ''}
-            </Text>
+            <>
+              <Text style={styles.label} testID="company-active-count">
+                {t('filter.company.active', {
+                  active: activeCompanyNameCount(data),
+                  total: names.length,
+                })}
+              </Text>
+              <Text style={styles.hint}>{t('filter.company.toggleHint')}</Text>
+              {names.length > NAMES_PAGE_SIZE ? (
+                <FormField
+                  label={t('filter.company.filter')}
+                  value={nameFilter}
+                  onChangeText={(text) => {
+                    setNameFilter(text);
+                    setVisibleCount(NAMES_PAGE_SIZE);
+                  }}
+                  testID="company-names-filter"
+                />
+              ) : null}
+              {shown.map((entry, index) => {
+                const own = isOwnCompanyName(entry, name);
+                const active = own || !isExcludedCompanyName(data, entry);
+                return (
+                  <Pressable
+                    key={`${index}-${entry}`}
+                    onPress={() =>
+                      data && onChange({ companyData: toggleCompanyName(data, entry, name) })
+                    }
+                    disabled={own}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: active, disabled: own }}
+                    accessibilityLabel={own ? `${entry}, ${t('filter.company.ownName')}` : entry}
+                    style={({ pressed }) => [styles.nameRow, pressed && styles.pressed]}
+                    testID={`company-name-${entry}`}
+                  >
+                    <Ionicons
+                      name={active ? 'checkbox' : 'square-outline'}
+                      size={22}
+                      color={active ? colors.accent : colors.textMuted}
+                    />
+                    <Text style={[styles.nameText, !active && styles.nameOff]}>
+                      {entry}
+                      {own ? ` (${t('filter.company.ownName')})` : ''}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              {hidden > 0 ? (
+                <Pressable
+                  onPress={() => setVisibleCount((count) => count + NAMES_PAGE_SIZE)}
+                  accessibilityRole="button"
+                  style={styles.link}
+                  testID="company-show-more"
+                >
+                  <Text style={styles.linkText}>
+                    {t('filter.company.showMore', { n: Math.min(hidden, NAMES_PAGE_SIZE) })}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </>
           ) : null}
         </View>
       ) : (
@@ -233,5 +309,13 @@ const styles = StyleSheet.create({
   resultTitle: { ...typography.bodyStrong, color: colors.text },
   link: { minHeight: TOUCH_TARGET, justifyContent: 'center' },
   linkText: { ...typography.label, color: colors.accent },
-  names: { ...typography.caption, color: colors.textSecondary },
+  nameRow: {
+    minHeight: TOUCH_TARGET,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.sm,
+  },
+  nameText: { ...typography.body, color: colors.text, flex: 1 },
+  nameOff: { color: colors.textMuted, textDecorationLine: 'line-through' },
 });

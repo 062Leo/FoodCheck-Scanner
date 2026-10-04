@@ -1,6 +1,14 @@
 import type { FilterRule } from '../../../types/FilterRule';
 import type { Product } from '../../../types/Product';
-import { COMPANY_CATEGORY, findAvoidedCompanies } from '../companyRules';
+import {
+  activeCompanyNameCount,
+  COMPANY_CATEGORY,
+  findAvoidedCompanies,
+  keepExclusions,
+  parseCompanyData,
+  toggleCompanyName,
+  type CompanyData,
+} from '../companyRules';
 
 function companyRule(key: string, names: string[] = []): FilterRule {
   return {
@@ -90,5 +98,51 @@ describe('findAvoidedCompanies', () => {
     const rule = { ...companyRule('Nestlé'), severity: 'ok' as const };
 
     expect(findAvoidedCompanies(product({ brand: 'Nestlé' }), [rule])).toEqual([]);
+  });
+});
+
+describe('company name exclusions', () => {
+  const allNames = ['Nestlé', 'Maggi', 'Lion', 'Kit Kat'];
+  const nestle = (excluded?: string[]): FilterRule => ({
+    ...companyRule('Nestlé', allNames),
+    translations: JSON.stringify({ names: allNames, excluded }),
+  });
+
+  it('parses old JSON without exclusions and new JSON with them', () => {
+    expect(parseCompanyData('{"wikidataId":"Q1","names":["A"]}')).toEqual({
+      wikidataId: 'Q1',
+      names: ['A'],
+    });
+    expect(parseCompanyData('{"names":["A","B"],"excluded":["B",3]}')).toEqual({
+      wikidataId: undefined,
+      names: ['A', 'B'],
+      excluded: ['B'],
+    });
+  });
+
+  it('ignores excluded names, compared normalized', () => {
+    const rules = [nestle(['LION', 'KitKat'])];
+    expect(findAvoidedCompanies(product({ brand: 'Lion' }), rules)).toEqual([]);
+    expect(findAvoidedCompanies(product({ brand: 'Kit Kat' }), rules)).toEqual([]);
+    expect(findAvoidedCompanies(product({ brand: 'Maggi' }), rules)).toHaveLength(1);
+  });
+
+  it('never excludes the name of the rule itself', () => {
+    expect(findAvoidedCompanies(product({ brand: 'Nestle' }), [nestle(['Nestlé'])])).toHaveLength(
+      1
+    );
+    const data: CompanyData = { names: ['Nestlé', 'Maggi'] };
+    expect(toggleCompanyName(data, 'Nestlé', 'Nestle')).toBe(data);
+    expect(toggleCompanyName(data, 'Maggi', 'Nestlé').excluded).toEqual(['Maggi']);
+  });
+
+  it('keeps exclusions of names that are still present after a refresh', () => {
+    const previous: CompanyData = { names: ['Maggi', 'Lion', 'Plus'], excluded: ['Lion', 'Plus'] };
+    expect(keepExclusions(previous, { names: ['Maggi', 'lion'] })).toEqual({
+      names: ['Maggi', 'lion'],
+      excluded: ['lion'],
+    });
+    expect(keepExclusions(previous, { names: ['Maggi'] })).toEqual({ names: ['Maggi'] });
+    expect(activeCompanyNameCount(previous)).toBe(1);
   });
 });
