@@ -6,6 +6,7 @@ import { UsdaError } from '../../infrastructure/api/UsdaClient';
 import { SEEDED_RULES } from '../../domain/analysis/__fixtures__/goldenRuleSets';
 import { productRecord, useTestDatabase } from '../../testing/testDatabase';
 import type { Product } from '../../types/Product';
+import { PRODUCT_DATA_VERSION } from '../../domain/analysis/ProductNormalizer';
 
 jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
 jest.mock('@react-native-community/netinfo', () => ({
@@ -260,7 +261,7 @@ describe('ProductLookupService', () => {
       expect(api.getProductByEan).toHaveBeenCalledWith(EAN, { retries: 0 });
       const record = await repository.findByEan(EAN);
       expect(record).toMatchObject({
-        data_version: 2,
+        data_version: PRODUCT_DATA_VERSION,
         last_api_fetch: NOW.toISOString(),
         visit_count: 1,
         scanned_at: '2026-01-01T10:00:00.000Z',
@@ -279,7 +280,7 @@ describe('ProductLookupService', () => {
       await service.refreshStored(EAN, SEEDED_RULES);
 
       const record = await repository.findByEan(EAN);
-      expect(record).toMatchObject({ name: 'Mein Name', data_version: 2 });
+      expect(record).toMatchObject({ name: 'Mein Name', data_version: PRODUCT_DATA_VERSION });
       expect(record?.ingredients).toBe(freshProduct.ingredientsText);
     });
 
@@ -296,13 +297,16 @@ describe('ProductLookupService', () => {
       expect(await service.refreshStored(EAN, SEEDED_RULES)).toBe(false);
 
       const record = await repository.findByEan(EAN);
-      expect(record).toMatchObject({ name: 'Oat Cereal Rings', data_version: 2 });
+      expect(record).toMatchObject({
+        name: 'Oat Cereal Rings',
+        data_version: PRODUCT_DATA_VERSION,
+      });
       expect(JSON.parse(record!.raw_json!).product.source).toBe('usda');
       expect(usda.findByGtin).not.toHaveBeenCalled();
     });
 
     it('does not ask again for a product that is already up to date', async () => {
-      await repository.saveScan(oldRecord(freshProduct, { data_version: 2 }));
+      await repository.saveScan(oldRecord(freshProduct, { data_version: PRODUCT_DATA_VERSION }));
 
       expect(await service.refreshStored(EAN, SEEDED_RULES)).toBe(false);
       expect(api.getProductByEan).not.toHaveBeenCalled();

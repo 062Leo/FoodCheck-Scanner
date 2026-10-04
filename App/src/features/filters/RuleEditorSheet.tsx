@@ -61,6 +61,7 @@ export const CATEGORY_PRESETS = [
   'Zuchtfisch',
   'Alkohol',
   'Erhitzte Milch',
+  'Wasser',
 ] as const;
 
 /** Stored category of nutrient rules (a fixed value, displayed translated). */

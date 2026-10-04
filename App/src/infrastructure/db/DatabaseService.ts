@@ -4,7 +4,7 @@ import { seedRules } from '../../domain/rules/seedRules';
 import { getErrorMessage } from '../../shared/errors';
 
 export const DATABASE_NAME = 'foodscanner.db';
-export const DATABASE_VERSION = 10;
+export const DATABASE_VERSION = 11;
 const META_SCHEMA_VERSION_KEY = 'schema_version';
 
 type Migration = (database: SQLite.SQLiteDatabase) => Promise<void>;
@@ -33,6 +33,7 @@ const migrations: Record<number, Migration> = {
   8: addEditedFieldsColumn,
   9: updateFilterList,
   10: addAlcoholRules,
+  11: addWaterChecks,
 };
 
 export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
@@ -678,6 +679,43 @@ async function addAlcoholRules(database: SQLite.SQLiteDatabase): Promise<void> {
     }
   } catch (error) {
     throw new Error(`Failed to add the alcohol rules: ${getErrorMessage(error)}`, {
+      cause: error,
+    });
+  }
+}
+
+/** v11: the water checks, a frozen copy of the `CHECK_SEEDS` entries added at this version. */
+const V11_ADDED_CHECK_RULES: { key: string; category: string }[] = [
+  { key: 'water_not_mineral', category: 'Wasser' },
+  { key: 'water_plastic_bottle', category: 'Wasser' },
+  { key: 'water_contaminants', category: 'Wasser' },
+];
+
+/**
+ * v11: adds the water checks, unless a check rule with the same key (any case, any
+ * severity) already exists, so the user's own settings are neither duplicated nor
+ * overridden.
+ */
+async function addWaterChecks(database: SQLite.SQLiteDatabase): Promise<void> {
+  try {
+    const existing = await database.getAllAsync<{ key: string }>(
+      "SELECT key FROM filter_rules WHERE type = 'check'"
+    );
+    const existingKeys = new Set(existing.map(({ key }) => key.toLowerCase()));
+    const now = new Date().toISOString();
+
+    for (const { key, category } of V11_ADDED_CHECK_RULES) {
+      if (existingKeys.has(key.toLowerCase())) continue;
+      await database.runAsync(
+        `
+          INSERT INTO filter_rules (type, key, category, threshold, operator, severity, created_at)
+          VALUES ('check', $key, $category, NULL, NULL, 'red_flag', $created_at);
+        `,
+        { $key: key, $category: category, $created_at: now }
+      );
+    }
+  } catch (error) {
+    throw new Error(`Failed to add the water checks: ${getErrorMessage(error)}`, {
       cause: error,
     });
   }

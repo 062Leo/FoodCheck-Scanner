@@ -15,9 +15,11 @@ import { FindingsList } from '../features/product/FindingsList';
 import { IngredientsSection } from '../features/product/IngredientsSection';
 import { ProductBadges } from '../features/product/ProductBadges';
 import { AlmondPollinationNote } from '../features/product/AlmondPollinationNote';
+import { WaterInfoNote } from '../features/product/WaterInfoNote';
 import { productBadges } from '../domain/product/productBadges';
 import { parsePackagerCodes } from '../domain/product/packagerCode';
 import { almondPollinationInfo } from '../domain/product/almondInfo';
+import { waterInfo } from '../domain/product/waterInfo';
 import { describePackagerCode } from '../i18n/countryNames';
 import { AllergenWarning } from '../features/allergens/AllergenWarning';
 import { RecallWarning } from '../features/recalls/RecallWarning';
@@ -147,6 +149,7 @@ function ProductDetails({
   const gallery = useMemo(() => galleryImages(product, t), [product, t]);
   const badges = useMemo(() => productBadges(product), [product]);
   const almondInfo = useMemo(() => almondPollinationInfo(product), [product]);
+  const water = useMemo(() => waterInfo(product), [product]);
   const packagedIn = useMemo(
     () =>
       parsePackagerCodes(product.embCodesTags)
@@ -297,6 +300,7 @@ function ProductDetails({
         )}
 
         {almondInfo && <AlmondPollinationNote origin={almondInfo.origin} t={t} />}
+        {water && <WaterInfoNote info={water} t={t} />}
 
         {product.origins || product.manufacturingPlaces || product.stores || packagedIn ? (
           <Accordion

@@ -2,6 +2,7 @@ import { REFRESH_INTERVAL_MS, StoredProductRefreshService } from '../StoredProdu
 import { NetworkError } from '../../infrastructure/api/fetchWithTimeout';
 import { ApiError } from '../../infrastructure/api/ApiError';
 import { SEEDED_RULES } from '../../domain/analysis/__fixtures__/goldenRuleSets';
+import { PRODUCT_DATA_VERSION } from '../../domain/analysis/ProductNormalizer';
 
 jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }));
 jest.mock('@react-native-community/netinfo', () => ({
@@ -38,7 +39,7 @@ describe('StoredProductRefreshService', () => {
     const done = service.start(() => SEEDED_RULES, onRefreshed);
 
     await jest.advanceTimersByTimeAsync(0);
-    expect(repository.findEansWithDataVersionBelow).toHaveBeenCalledWith(2);
+    expect(repository.findEansWithDataVersionBelow).toHaveBeenCalledWith(PRODUCT_DATA_VERSION);
     expect(lookup.refreshStored).not.toHaveBeenCalled();
 
     await jest.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS);

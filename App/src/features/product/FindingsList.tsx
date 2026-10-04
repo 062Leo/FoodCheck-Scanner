@@ -39,12 +39,29 @@ function checkTitle(check: CheckDetail, t: TranslateFn, language: SupportedLangu
   return t(`product.check.${check.key}.title`);
 }
 
+function checkDetail(detail: CheckDetail, t: TranslateFn, language: SupportedLanguage): string {
+  if (detail.key === 'water_not_mineral' && detail.waterKind) {
+    return t(`product.check.water_not_mineral.${detail.waterKind}`);
+  }
+  if (detail.key === 'water_contaminants' && detail.exceeded?.length) {
+    const values = detail.exceeded.map((item) =>
+      t('product.check.water_contaminants.value', {
+        mineral: t(`product.mineral.${item.mineral}`),
+        value: formatNumber(item.value, language, 3),
+        limit: formatNumber(item.limit, language, 3),
+      })
+    );
+    return [t('product.check.water_contaminants.detail'), ...values].join('\n');
+  }
+  return t(`product.check.${detail.key}.detail`);
+}
+
 export function findingDetail(
   finding: RedFlagFinding,
   t: TranslateFn,
   language: SupportedLanguage
 ): string {
-  if (finding.check) return t(`product.check.${finding.check.key}.detail`);
+  if (finding.check) return checkDetail(finding.check, t, language);
   if (finding.company) return t('product.company.detail', { matched: finding.company.matched });
   if (!finding.nutrient) return categoryLabel(finding.category, t);
   const unit = finding.nutrient.key === 'energy-kcal_100g' ? 'kcal' : 'g';

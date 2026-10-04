@@ -15,6 +15,7 @@ import {
   LEGACY_V2_SCHEMA,
   SCANNED_RAW_JSON,
   SEED_KEYS_ADDED_IN_V10,
+  CHECK_KEYS_ADDED_IN_V11,
   SEED_KEYS_ADDED_IN_V9,
   SEED_RULES_REMOVED_IN_V9,
   V6_SCHEMA,
@@ -407,6 +408,9 @@ describe('migration 9: filter list update', () => {
   });
 });
 
+/** The product checks of v9 and v10: before the water checks of v11. */
+const V10_CHECK_SEEDS = CHECK_SEEDS.filter((seed) => !CHECK_KEYS_ADDED_IN_V11.includes(seed.key));
+
 /** The rules a v9 installation has: before the alcohol rules of v10. */
 const V9_SEED_RULES = seedRules.filter((rule) => !SEED_KEYS_ADDED_IN_V10.includes(rule.key));
 
@@ -420,7 +424,7 @@ function createV9Database(skip: string[] = []): NodeSqliteDatabase {
   for (const rule of V9_SEED_RULES) {
     if (!skip.includes(rule.key)) insert.run('ingredient', rule.key, rule.category, null, null);
   }
-  for (const check of CHECK_SEEDS) {
+  for (const check of V10_CHECK_SEEDS) {
     insert.run('check', check.key, check.category, check.threshold ?? null, check.operator ?? null);
   }
   return database;
@@ -471,7 +475,9 @@ describe('migration 10: alcohol rules', () => {
 
     await initDatabase();
 
-    expect(await getSchemaVersion(database as unknown as SQLite.SQLiteDatabase)).toBe(10);
+    expect(await getSchemaVersion(database as unknown as SQLite.SQLiteDatabase)).toBe(
+      DATABASE_VERSION
+    );
     expect(await database.getAllAsync('SELECT * FROM products ORDER BY id')).toEqual(
       productsBefore
     );
@@ -502,7 +508,9 @@ describe('migration 10: alcohol rules', () => {
     ]);
     expect(byKey('Alcohol')).toEqual([]);
     expect(byKey('Ethanol')).toEqual([expect.objectContaining({ severity: 'ok' })]);
-    expect(rulesAfter).toHaveLength(rulesBefore.length + SEED_KEYS_ADDED_IN_V10.length - 1);
+    expect(rulesAfter).toHaveLength(
+      rulesBefore.length + SEED_KEYS_ADDED_IN_V10.length - 1 + CHECK_KEYS_ADDED_IN_V11.length
+    );
   });
 
   it('gives fresh installs and upgraded installs the same rules', async () => {
@@ -525,6 +533,132 @@ describe('migration 10: alcohol rules', () => {
     const before = await ruleSet(database);
 
     database.native.exec("UPDATE meta SET value = '9' WHERE key = 'schema_version'");
+    resetDatabaseState();
+    await initDatabase();
+
+    expect(await ruleSet(database)).toEqual(before);
+  });
+});
+
+/** A v10 database: all seed rules and the v10 product checks, except the checks in `skip`. */
+function createV10Database(skip: string[] = []): NodeSqliteDatabase {
+  const database = createDatabase(V9_SCHEMA);
+  database.native.exec("UPDATE meta SET value = '10' WHERE key = 'schema_version'");
+  const insert = database.native.prepare(
+    `INSERT INTO filter_rules (type, key, category, threshold, operator, severity, created_at)
+     VALUES (?, ?, ?, ?, ?, 'red_flag', '2025-01-01T00:00:00.000Z')`
+  );
+  for (const seed of seedRules) {
+    insert.run('ingredient', seed.key, seed.category, null, null);
+  }
+  for (const check of V10_CHECK_SEEDS) {
+    if (!skip.includes(check.key)) {
+      insert.run(
+        'check',
+        check.key,
+        check.category,
+        check.threshold ?? null,
+        check.operator ?? null
+      );
+    }
+  }
+  return database;
+}
+
+describe('migration 11: water checks', () => {
+  beforeEach(() => {
+    resetDatabaseState();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('adds the water checks and keeps user data, custom and changed rules', async () => {
+    // The user allowed canned food and already has an allowed water_contaminants check
+    // (other case, own category).
+    const database = createV10Database(['canned']);
+    database.native.exec(`
+      INSERT INTO products (ean, name, ingredients, raw_json, scanned_at, rating, visit_count,
+                            last_seen_at, edited_at, edited_fields)
+      VALUES
+        ('4000000000101', 'Müsli', 'Hafer, Rosinen', '${SCANNED_RAW_JSON}',
+         '2025-01-02T10:00:00.000Z', 'OK', 3, '2025-02-01T10:00:00.000Z', NULL, NULL),
+        ('4000000000102', 'Eigener Name', 'Wasser, Zucker', '${EDITED_RAW_JSON}',
+         '2025-01-02T10:00:00.000Z', 'Warning', 1, NULL, '2025-01-05T10:00:00.000Z',
+         '["name"]');
+      INSERT INTO favorites (product_id, added_at) VALUES (2, '2025-01-06T00:00:00.000Z');
+      INSERT INTO filter_rules (type, key, category, threshold, operator, severity, translations,
+                                created_at)
+      VALUES
+        ('check', 'canned', 'Verpackung', NULL, NULL, 'ok', NULL, '2025-03-01T00:00:00.000Z'),
+        ('check', 'Water_Contaminants', 'Eigene', NULL, NULL, 'ok', NULL,
+         '2025-03-01T00:00:00.000Z'),
+        ('ingredient', 'Meine Zutat', 'Eigene', NULL, NULL, 'red_flag', '{"fr":"Mon ingrédient"}',
+         '2025-03-01T00:00:00.000Z');
+    `);
+    const productsBefore = await database.getAllAsync('SELECT * FROM products ORDER BY id');
+    const favoritesBefore = await database.getAllAsync('SELECT * FROM favorites ORDER BY id');
+    const rulesBefore = await database.getAllAsync('SELECT * FROM filter_rules ORDER BY id');
+    useDatabase(database);
+
+    await initDatabase();
+
+    expect(await getSchemaVersion(database as unknown as SQLite.SQLiteDatabase)).toBe(11);
+    expect(await database.getAllAsync('SELECT * FROM products ORDER BY id')).toEqual(
+      productsBefore
+    );
+    expect(await database.getAllAsync('SELECT * FROM favorites ORDER BY id')).toEqual(
+      favoritesBefore
+    );
+    const rulesAfter = await database.getAllAsync('SELECT * FROM filter_rules ORDER BY id');
+    expect(rulesAfter.slice(0, rulesBefore.length)).toEqual(rulesBefore);
+    expect(rulesAfter).toHaveLength(rulesBefore.length + 2);
+
+    const rows = await database.getAllAsync<RuleRow>(
+      "SELECT type, key, category, threshold, operator, severity FROM filter_rules WHERE type = 'check'"
+    );
+    const byKey = (key: string) => rows.filter((r) => r.key.toLowerCase() === key);
+    expect(byKey('water_not_mineral')).toEqual([
+      {
+        type: 'check',
+        key: 'water_not_mineral',
+        category: 'Wasser',
+        threshold: null,
+        operator: null,
+        severity: 'red_flag',
+      },
+    ]);
+    expect(byKey('water_plastic_bottle')).toEqual([
+      expect.objectContaining({ category: 'Wasser', severity: 'red_flag' }),
+    ]);
+    expect(byKey('water_contaminants')).toEqual([
+      expect.objectContaining({ key: 'Water_Contaminants', severity: 'ok', category: 'Eigene' }),
+    ]);
+    expect(byKey('canned')).toEqual([expect.objectContaining({ severity: 'ok' })]);
+  });
+
+  it('gives fresh installs and upgraded installs the same rules', async () => {
+    const fresh = new NodeSqliteDatabase();
+    useDatabase(fresh);
+    await initDatabase();
+
+    resetDatabaseState();
+    const upgraded = createV10Database();
+    useDatabase(upgraded);
+    await initDatabase();
+
+    expect(await ruleSet(upgraded)).toEqual(await ruleSet(fresh));
+  });
+
+  it('adds nothing twice when it runs again', async () => {
+    const database = createV10Database();
+    useDatabase(database);
+    await initDatabase();
+    const before = await ruleSet(database);
+
+    database.native.exec("UPDATE meta SET value = '10' WHERE key = 'schema_version'");
     resetDatabaseState();
     await initDatabase();
 

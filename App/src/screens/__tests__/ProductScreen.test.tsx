@@ -304,6 +304,37 @@ describe('ProductScreen', () => {
     expect(screen.queryByTestId('almond-note')).toBeNull();
   });
 
+  it('shows the water note for a natural mineral water in glass', async () => {
+    mockLookup.mockResolvedValue(
+      found({
+        ...limo,
+        ingredientsText: undefined,
+        categoriesTags: ['en:beverages', 'en:waters', 'en:natural-mineral-waters'],
+        packagingTags: ['de:glasflasche'],
+        nutriments: { calcium100g: 0.0348, magnesium100g: 0.0108, sodium100g: 0.0012 },
+      })
+    );
+
+    render(<ProductScreen />);
+
+    expect(await screen.findByTestId('water-note')).toBeTruthy();
+    expect(
+      screen.getByText(/amtlich anerkannt, aus einer ursprünglich reinen Quelle/)
+    ).toBeTruthy();
+    expect(screen.getByText(/Lack der Kronkorken/)).toBeTruthy();
+    expect(screen.getByText('Calciumreich: mehr als 150 mg/l Calcium.')).toBeTruthy();
+    expect(screen.getByText(/Uran, Arsen, Pestizid-Abbauprodukte/)).toBeTruthy();
+    expect(screen.queryByText(/Sehr mineralarm/)).toBeNull();
+  });
+
+  it('shows no water note for other products', async () => {
+    mockLookup.mockResolvedValue(found(limo));
+
+    render(<ProductScreen />);
+    await screen.findByText('Zitronenlimo');
+    expect(screen.queryByTestId('water-note')).toBeNull();
+  });
+
   it('toggles the favorite', async () => {
     mockLookup.mockResolvedValue(found(limo));
 

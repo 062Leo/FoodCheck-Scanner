@@ -85,3 +85,47 @@ describe('finding texts', () => {
     expect(categoryLabel('Samenöle', de)).toBe('Samenöle');
   });
 });
+
+describe('water check texts', () => {
+  const tableWater: RedFlagFinding = {
+    ingredient: 'water_not_mineral',
+    category: 'Wasser',
+    severity: 'critical',
+    check: { key: 'water_not_mineral', waterKind: 'table' },
+  };
+  const springWater: RedFlagFinding = {
+    ...tableWater,
+    check: { key: 'water_not_mineral', waterKind: 'spring' },
+  };
+  const contaminants: RedFlagFinding = {
+    ingredient: 'water_contaminants',
+    category: 'Wasser',
+    severity: 'critical',
+    check: {
+      key: 'water_contaminants',
+      exceeded: [
+        { mineral: 'sodium', value: 120, limit: 20 },
+        { mineral: 'nitrite', value: 0.05, limit: 0.02 },
+      ],
+    },
+  };
+
+  it('explains table water and spring water separately', () => {
+    expect(findingTitle(tableWater, de, 'de')).toBe('Kein natürliches Mineralwasser');
+    expect(findingDetail(tableWater, de, 'de')).toMatch(/^Tafelwasser darf/);
+    expect(findingDetail(springWater, de, 'de')).toMatch(/^Quellwasser/);
+    expect(findingDetail(springWater, en, 'en')).toMatch(/^Spring water/);
+  });
+
+  it('lists each exceeded value with its limit', () => {
+    const detail = findingDetail(contaminants, de, 'de');
+    expect(detail).toContain('Natrium: 120 mg/l (Grenzwert 20 mg/l)');
+    expect(detail).toContain('Nitrit: 0,05 mg/l (Grenzwert 0,02 mg/l)');
+    expect(findingDetail(contaminants, en, 'en')).toContain('Sodium: 120 mg/l (limit 20 mg/l)');
+  });
+
+  it('labels the category', () => {
+    expect(categoryLabel('Wasser', de)).toBe('Wasser');
+    expect(categoryLabel('Wasser', en)).toBe('Water');
+  });
+});

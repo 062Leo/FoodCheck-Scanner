@@ -257,3 +257,55 @@ describe('product checks', () => {
     expect(keysOf(p, [checkRule('canned'), checkRule('canned', { id: 2 })])).toEqual(['canned']);
   });
 });
+
+describe('water checks', () => {
+  const gerolsteiner = product({
+    categoriesTags: [
+      'en:beverages',
+      'en:waters',
+      'en:spring-waters',
+      'en:mineral-waters',
+      'en:natural-mineral-waters',
+    ],
+    packagingTags: ['en:einwegpfand', 'en:kunststoff', 'en:pet-polyethylenterephtalat'],
+    nutriments: { sodium100g: 0.012, calcium100g: 0.0348, magnesium100g: 0.0108 },
+  });
+
+  it('flags plastic and the sodium above the infant-food limit, not the mineral water', () => {
+    expect(keysOf(gerolsteiner)).toEqual(['water_plastic_bottle', 'water_contaminants']);
+    const finding = runProductChecks(gerolsteiner, ALL_CHECKS).find(
+      (f) => f.ingredient === 'water_contaminants'
+    );
+    expect(finding?.check?.exceeded).toEqual([{ mineral: 'sodium', value: 120, limit: 20 }]);
+    expect(finding?.category).toBe('Wasser');
+  });
+
+  it('flags table water with its kind', () => {
+    const findings = runProductChecks(
+      product({ categoriesTags: ['en:waters', 'en:table-waters'], packagingTags: ['en:glass'] }),
+      ALL_CHECKS
+    );
+    expect(findings.map((f) => f.check)).toEqual([
+      { key: 'water_not_mineral', waterKind: 'table' },
+    ]);
+  });
+
+  it('does not run the water checks on other products', () => {
+    expect(
+      keysOf(
+        product({
+          categoriesTags: ['en:sodas'],
+          packagingTags: ['en:plastic'],
+          nutriments: { sodium100g: 0.1 },
+        })
+      )
+    ).toEqual([]);
+  });
+
+  it('does not flag a water check that the user allowed', () => {
+    const rules = ALL_CHECKS.map((r) =>
+      r['key'] === 'water_plastic_bottle' ? { ...r, severity: 'ok' as const } : r
+    );
+    expect(keysOf(gerolsteiner, rules)).toEqual(['water_contaminants']);
+  });
+});

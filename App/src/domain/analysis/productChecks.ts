@@ -2,6 +2,14 @@ import type { FilterRule, FilterRuleOperator } from '../../types/FilterRule';
 import type { Product } from '../../types/Product';
 import type { RedFlagFinding } from '../../types/ScanResult';
 import { mentionsRawMilk } from '../product/rawMilk';
+import {
+  exceededInfantFoodLimits,
+  hasPlasticPackaging,
+  isWater,
+  nonMineralWaterKind,
+  type ExceededValue,
+  type WaterKind,
+} from '../product/waterInfo';
 import { IngredientParser } from './IngredientParser';
 
 /**
@@ -18,7 +26,10 @@ export type CheckKey =
   | 'not_raw_milk'
   | 'alcoholic'
   | 'meat_substitute'
-  | 'farmed_fish';
+  | 'farmed_fish'
+  | 'water_not_mineral'
+  | 'water_plastic_bottle'
+  | 'water_contaminants';
 
 export const CHECK_KEYS: readonly CheckKey[] = [
   'ingredient_count',
@@ -30,6 +41,9 @@ export const CHECK_KEYS: readonly CheckKey[] = [
   'alcoholic',
   'meat_substitute',
   'farmed_fish',
+  'water_not_mineral',
+  'water_plastic_bottle',
+  'water_contaminants',
 ];
 
 export function isCheckKey(key: string): key is CheckKey {
@@ -48,6 +62,10 @@ export interface CheckDetail {
   operator?: FilterRuleOperator;
   /** pesticide_risk: the crop that matched. */
   crop?: PesticideCrop;
+  /** water_not_mineral: table water, spring water or other water. */
+  waterKind?: WaterKind;
+  /** water_contaminants: values above the infant-food limits, in mg/l. */
+  exceeded?: ExceededValue[];
 }
 
 export interface CheckSeed {
@@ -68,6 +86,9 @@ export const CHECK_SEEDS: readonly CheckSeed[] = [
   { key: 'alcoholic', category: 'Alkohol' },
   { key: 'meat_substitute', category: 'Proteine & Fleischersatz' },
   { key: 'farmed_fish', category: 'Zuchtfisch' },
+  { key: 'water_not_mineral', category: 'Wasser' },
+  { key: 'water_plastic_bottle', category: 'Wasser' },
+  { key: 'water_contaminants', category: 'Wasser' },
 ];
 
 export const DEFAULT_INGREDIENT_LIMIT = 5;
@@ -273,6 +294,10 @@ function isFarmedFish(product: Product): boolean {
   );
 }
 
+function isWaterInPlastic(product: Product): boolean {
+  return isWater(product) && hasPlasticPackaging(product);
+}
+
 function compare(value: number, operator: FilterRuleOperator, threshold: number): boolean {
   if (operator === 'lt') return value < threshold;
   if (operator === 'eq') return value === threshold;
@@ -307,6 +332,16 @@ function evaluate(rule: FilterRule, product: Product, lowerText: string): CheckD
       return isMeatSubstitute(product) ? { key } : null;
     case 'farmed_fish':
       return isFarmedFish(product) ? { key } : null;
+    case 'water_not_mineral': {
+      const waterKind = nonMineralWaterKind(product);
+      return waterKind ? { key, waterKind } : null;
+    }
+    case 'water_plastic_bottle':
+      return isWaterInPlastic(product) ? { key } : null;
+    case 'water_contaminants': {
+      const exceeded = exceededInfantFoodLimits(product);
+      return exceeded.length > 0 ? { key, exceeded } : null;
+    }
     default:
       return null;
   }

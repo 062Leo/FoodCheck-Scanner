@@ -279,6 +279,7 @@ const de = {
   'filter.preset.heatedMilk': 'Erhitzte Milch',
   'filter.preset.alcohol': 'Alkohol',
   'filter.preset.farmedFish': 'Zuchtfisch',
+  'filter.preset.water': 'Wasser',
   'filter.preset.companies': 'Marken & Konzerne',
   'filter.preset.gmo': 'Gentechnik',
   'filter.preset.insects': 'Insekten',
@@ -385,6 +386,45 @@ const de = {
     'Herkunft der Mandeln unbekannt – möglicherweise aus Kalifornien.',
   'product.almond.notRated': 'Nur zur Information – fließt nicht in die Bewertung ein.',
   'product.almond.sources': 'Quellen: UC Berkeley (2025), SARE, KTTC (Okt. 2025)',
+  'product.check.water_not_mineral.title': 'Kein natürliches Mineralwasser',
+  'product.check.water_not_mineral.detail':
+    'Nur natürliches Mineralwasser ist amtlich anerkannt und stammt aus einer ursprünglich reinen Quelle.',
+  'product.check.water_not_mineral.table':
+    'Tafelwasser darf aus verschiedenen Wässern gemischt, aufbereitet und mit Salzen versetzt sein; es braucht keine amtliche Anerkennung und keine ursprünglich reine Quelle.',
+  'product.check.water_not_mineral.spring':
+    'Quellwasser stammt zwar aus einer unterirdischen Quelle, braucht aber keine amtliche Anerkennung; es muss nur die Anforderungen an Trinkwasser erfüllen.',
+  'product.check.water_not_mineral.other':
+    'Nicht als natürliches Mineralwasser gekennzeichnet. Nur dieses braucht eine amtliche Anerkennung und eine ursprünglich reine Quelle.',
+  'product.check.water_plastic_bottle.title': 'Wasser in Plastikflasche',
+  'product.check.water_plastic_bottle.detail':
+    'Columbia University (PNAS, Jan. 2024) fand im Schnitt rund 240.000 Mikro- und Nanoplastikpartikel pro Liter Flaschenwasser.',
+  'product.check.water_contaminants.title': 'Über den Grenzwerten für Säuglingsnahrung',
+  'product.check.water_contaminants.detail':
+    'Mindestens ein Wert liegt über dem Grenzwert für die Zubereitung von Säuglingsnahrung (Min/TafelWV Anlage 6).',
+  'product.check.water_contaminants.value':
+    '{{mineral}}: {{value}} mg/l (Grenzwert {{limit}} mg/l)',
+  'product.mineral.nitrate': 'Nitrat',
+  'product.mineral.nitrite': 'Nitrit',
+  'product.mineral.sodium': 'Natrium',
+  'product.mineral.sulphate': 'Sulfat',
+  'product.mineral.fluoride': 'Fluorid',
+  'product.mineral.manganese': 'Mangan',
+  'product.water.title': 'Hintergrund: Wasser',
+  'product.water.naturalMineral':
+    'Natürliches Mineralwasser: amtlich anerkannt, aus einer ursprünglich reinen Quelle.',
+  'product.water.infantLabel':
+    'Laut Kennzeichnung geeignet für die Zubereitung von Säuglingsnahrung.',
+  'product.water.glass':
+    'Glas ist besser als PET, aber ANSES (2025) fand in Glasflaschen Mikroplastik aus dem Lack der Kronkorken; Rückstände aus der Flaschenwäsche sind nicht prüfbar.',
+  'product.water.mineralPoor':
+    'Sehr mineralarm: Die angegebenen Mineralstoffe ergeben zusammen weniger als 50 mg/l (Näherung aus den vorhandenen Werten).',
+  'product.water.calciumRich': 'Calciumreich: mehr als 150 mg/l Calcium.',
+  'product.water.magnesiumRich': 'Magnesiumreich: mehr als 50 mg/l Magnesium.',
+  'product.water.notDetectable':
+    'Uran, Arsen, Pestizid-Abbauprodukte (z. B. TFA), Mikroplastik und Reinigungsrückstände lassen sich aus den Produktdaten nicht erkennen.',
+  'product.water.notRated': 'Nur zur Information – fließt nicht in die Bewertung ein.',
+  'product.water.sources':
+    'Quellen: Min/TafelWV Anlage 6 (gesetze-im-internet.de/min_tafelwv), Columbia University/PNAS (2024), ANSES (2025)',
   'common.retry': 'Erneut versuchen',
   'common.back': 'Zurück',
   'a11y.editProduct': 'Produkt bearbeiten',
@@ -639,6 +679,12 @@ const de = {
     'Schlägt an bei Fleischersatzprodukten. Sie sind meist hochverarbeitet und aus isolierten Proteinen, Ölen und Zusatzstoffen zusammengesetzt.',
   'filter.check.farmed_fish.explanation':
     'Schlägt an bei Fisch aus Aquakultur, erkannt an Kategorie oder Aquakultur-Siegel.',
+  'filter.check.water_not_mineral.explanation':
+    'Schlägt an bei Wasser, das kein natürliches Mineralwasser ist, z. B. Tafelwasser oder Quellwasser. Tafelwasser darf gemischt, aufbereitet und mit Salzen versetzt sein; natürliches Mineralwasser braucht eine amtliche Anerkennung und eine ursprünglich reine Quelle.',
+  'filter.check.water_plastic_bottle.explanation':
+    'Schlägt an bei Wasser in Plastik- oder PET-Flaschen laut Verpackungsangaben. Columbia University (PNAS, Jan. 2024) fand im Schnitt rund 240.000 Mikro- und Nanoplastikpartikel pro Liter Flaschenwasser.',
+  'filter.check.water_contaminants.explanation':
+    'Schlägt an, wenn angegebene Werte über den Grenzwerten für Säuglingsnahrung liegen (Min/TafelWV Anlage 6): Nitrat 10, Nitrit 0,02, Natrium 20, Sulfat 240, Fluorid 0,7, Mangan 0,05 mg/l. Fehlen die Werte, schlägt die Prüfung nicht an.',
 
   // Egg code
   'scanner.checkEggCode': 'Eiercode prüfen',
@@ -979,6 +1025,7 @@ const en: Translations = {
   'filter.preset.heatedMilk': 'Heated Milk',
   'filter.preset.alcohol': 'Alcohol',
   'filter.preset.farmedFish': 'Farmed Fish',
+  'filter.preset.water': 'Water',
   'filter.preset.companies': 'Brands & Companies',
   'filter.preset.gmo': 'Genetic Engineering',
   'filter.preset.insects': 'Insects',
@@ -1083,6 +1130,43 @@ const en: Translations = {
   'product.almond.unknownOrigin': 'Origin of the almonds unknown – possibly from California.',
   'product.almond.notRated': 'For information only – not part of the rating.',
   'product.almond.sources': 'Sources: UC Berkeley (2025), SARE, KTTC (Oct. 2025)',
+  'product.check.water_not_mineral.title': 'Not a natural mineral water',
+  'product.check.water_not_mineral.detail':
+    'Only natural mineral water is officially recognised and comes from an originally pure source.',
+  'product.check.water_not_mineral.table':
+    'Table water may be mixed from different waters, treated and have salts added; it needs no official recognition and no originally pure source.',
+  'product.check.water_not_mineral.spring':
+    'Spring water comes from an underground source but needs no official recognition; it only has to meet the requirements for drinking water.',
+  'product.check.water_not_mineral.other':
+    'Not labelled as natural mineral water. Only that needs official recognition and an originally pure source.',
+  'product.check.water_plastic_bottle.title': 'Water in a plastic bottle',
+  'product.check.water_plastic_bottle.detail':
+    'Columbia University (PNAS, Jan. 2024) found about 240,000 micro- and nanoplastic particles per litre of bottled water on average.',
+  'product.check.water_contaminants.title': 'Above the limits for infant food',
+  'product.check.water_contaminants.detail':
+    'At least one value is above the limit for preparing infant food (German Min/TafelWV, annex 6).',
+  'product.check.water_contaminants.value': '{{mineral}}: {{value}} mg/l (limit {{limit}} mg/l)',
+  'product.mineral.nitrate': 'Nitrate',
+  'product.mineral.nitrite': 'Nitrite',
+  'product.mineral.sodium': 'Sodium',
+  'product.mineral.sulphate': 'Sulphate',
+  'product.mineral.fluoride': 'Fluoride',
+  'product.mineral.manganese': 'Manganese',
+  'product.water.title': 'Background: water',
+  'product.water.naturalMineral':
+    'Natural mineral water: officially recognised, from an originally pure source.',
+  'product.water.infantLabel': 'Labelled as suitable for preparing infant food.',
+  'product.water.glass':
+    'Glass is better than PET, but ANSES (2025) found microplastics from the paint of the bottle caps in glass bottles; residues from bottle washing cannot be checked.',
+  'product.water.mineralPoor':
+    'Very low in minerals: the given minerals add up to less than 50 mg/l (an approximation from the available values).',
+  'product.water.calciumRich': 'Rich in calcium: more than 150 mg/l calcium.',
+  'product.water.magnesiumRich': 'Rich in magnesium: more than 50 mg/l magnesium.',
+  'product.water.notDetectable':
+    'Uranium, arsenic, pesticide metabolites (e.g. TFA), microplastics and cleaning residues cannot be detected from product data.',
+  'product.water.notRated': 'For information only – not part of the rating.',
+  'product.water.sources':
+    'Sources: German Min/TafelWV annex 6 (gesetze-im-internet.de/min_tafelwv), Columbia University/PNAS (2024), ANSES (2025)',
   'common.retry': 'Try again',
   'common.back': 'Back',
   'a11y.editProduct': 'Edit product',
@@ -1332,6 +1416,12 @@ const en: Translations = {
     'Applies to meat substitutes. They are mostly highly processed and made from isolated proteins, oils and additives.',
   'filter.check.farmed_fish.explanation':
     'Applies to fish from aquaculture, recognised by category or an aquaculture label.',
+  'filter.check.water_not_mineral.explanation':
+    'Flags water that is not a natural mineral water, e.g. table water or spring water. Table water may be mixed, treated and have salts added; natural mineral water needs official recognition and an originally pure source.',
+  'filter.check.water_plastic_bottle.explanation':
+    'Flags water in plastic or PET bottles according to the packaging data. Columbia University (PNAS, Jan. 2024) found about 240,000 micro- and nanoplastic particles per litre of bottled water on average.',
+  'filter.check.water_contaminants.explanation':
+    'Flags given values above the limits for infant food (German Min/TafelWV, annex 6): nitrate 10, nitrite 0.02, sodium 20, sulphate 240, fluoride 0.7, manganese 0.05 mg/l. Without values the check does not flag.',
 
   // Egg code
   'scanner.checkEggCode': 'Check egg code',

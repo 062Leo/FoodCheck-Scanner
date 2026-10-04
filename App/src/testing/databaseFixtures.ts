@@ -294,6 +294,13 @@ export const SEED_KEYS_ADDED_IN_V10 = [
   'Liqueur',
 ];
 
+/** Check keys that the water checks (v11) added. */
+export const CHECK_KEYS_ADDED_IN_V11 = [
+  'water_not_mineral',
+  'water_plastic_bottle',
+  'water_contaminants',
+];
+
 /** raw_json as written by the product screen after a scan (camelCase API data). */
 export const SCANNED_RAW_JSON = JSON.stringify({
   product: { ean: '4000000000101', name: 'Müsli', ingredientsText: 'Hafer, Rosinen', novaScore: 1 },
