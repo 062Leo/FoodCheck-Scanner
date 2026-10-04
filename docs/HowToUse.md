@@ -138,6 +138,7 @@ npx eas-cli build --platform android --profile production
 
 - Requires an **Expo account** and the **EAS CLI** configured (`eas-cli` is included as a dev dependency).
 - The **production** profile builds an installable `.apk` (see `App/eas.json`) — there is currently no separate `preview` profile.
+- The APK is built for **arm64-v8a only** (config plugin `App/plugins/withArm64Only.js`: sets `reactNativeArchitectures=arm64-v8a` and `ndk.abiFilters "arm64-v8a"`, so prebuilt libraries such as ML Kit drop their other ABIs too). 32-bit phones and x86/x86_64 emulators are not supported; to test on an emulator use an arm64 system image or remove the plugin from `app.json` for a local build.
 - Find the download link in the Expo dashboard or terminal output after the build completes.
 
 ## 13. Development Commands
