@@ -45,7 +45,7 @@ Check:
 
 - **Migrations 9 and 10** on the existing test database (a v8 installation with user data):
   rules, products and favorites survive; new rules are added once; no duplicates.
-- **Migration 12:** category Wasser-Tests with 13 rules and the Nestlé rule (216 names, 195
+- **Migration 12:** category Wasser-Tests with 13 rules and the Nestlé rule (216 names, 197
   active) appear once; an existing own Nestlé rule is kept and not duplicated; findings on a
   real Volvic, Perrier or Gut & Günstig water show reason and sources.
 - **Background refresh** of stored products (`StoredProductRefreshService`): runs after start,
@@ -114,7 +114,7 @@ The branch is local only. Push it and open a pull request only after the owner's
   - Hépar is not linked to Nestlé in Wikidata; it was added to the frozen Nestlé names by hand.
   - Pre-excluded Nestlé names (generic or non-food, switch on in the editor): Arpège, Lanvin,
     Nintendo Cereal System, Teenage Mutant Ninja Turtles Cereal, Petfinder, Plus, Lion, Nuts,
-    Crisp, Fab, Fitness, Orion, Felix, Tip Top, Baton, Mirage, Cabana, Jede, Boost, Panna,
+    Crisp, Fab, Fitness, Orion, Felix, Tip Top, Baton, Mirage, Cabana, Jede,
     Eskimo.
   - The golden rule sets contain no product or company rules, so the golden baseline did not
     change.

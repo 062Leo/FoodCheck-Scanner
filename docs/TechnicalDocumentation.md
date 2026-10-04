@@ -351,7 +351,7 @@ New product fields (categories, packaging, labels, brand owner, packager codes, 
 | 9 | `updateFilterList` | Remove 11 packaging/propellant gas rules; add 86 ingredient rules and the 9 product checks (frozen copies), skipping any rule whose type and key (any case, any severity) already exists |
 | 10 | `addAlcoholRules` | Add 15 alcohol ingredient rules (wine, beer, spirits; frozen copy), skipping any key that already exists as an ingredient rule (any case, any severity) |
 | 11 | `addWaterChecks` | Add the 3 water checks `water_not_mineral`, `water_plastic_bottle`, `water_contaminants` (category Wasser; frozen copy), skipping any key that already exists as a check rule (any case, any severity) |
-| 12 | `migrateToV12` | Add the 13 water test rules of type `product` (category Wasser-Tests; frozen copy, JSON data in `translations`), skipping any name that already exists as a product rule (any case, any severity); add the company rule Nestlé (Wikidata Q160746, 216 frozen names incl. Hépar, 21 pre-excluded) unless a company rule with the same normalized name exists |
+| 12 | `migrateToV12` | Add the 13 water test rules of type `product` (category Wasser-Tests; frozen copy, JSON data in `translations`), skipping any name that already exists as a product rule (any case, any severity); add the company rule Nestlé (Wikidata Q160746, 216 frozen names incl. Hépar, 19 pre-excluded) unless a company rule with the same normalized name exists |
 
 Migrations are append-only and run inside a transaction (or sequentially where the platform has no transaction API); a database newer than the app's `DATABASE_VERSION` is left untouched with a warning instead of being downgraded.
 

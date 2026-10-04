@@ -275,7 +275,7 @@ describe('FilterScreen', () => {
     expect(await screen.findByText('Marke/Konzern · 216 zugehörige Marken')).toBeTruthy();
     fireEvent.press(screen.getByText('Nestlé'));
     fireEvent.press(screen.getByText('Namen anzeigen'));
-    expect(screen.getByText('195 von 216 Marken aktiv')).toBeTruthy();
+    expect(screen.getByText('197 von 216 Marken aktiv')).toBeTruthy();
   });
 
   it('shows a water test rule with its reason and sources and changes its severity', async () => {

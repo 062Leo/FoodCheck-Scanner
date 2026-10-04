@@ -1141,8 +1141,6 @@ const V12_NESTLE_EXCLUDED: readonly string[] = [
   'Mirage',
   'Cabana',
   'Jede',
-  'Boost',
-  'Panna',
   'Eskimo',
 ];
 
