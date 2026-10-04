@@ -250,18 +250,7 @@ export default function SettingsScreen() {
           )}
         </Group>
 
-        <Group title={t('settings.language')}>
-          <View style={styles.chips}>
-            {LANGUAGES.map((lang) => (
-              <Chip
-                key={lang.code}
-                label={lang.label}
-                selected={language === lang.code}
-                onPress={() => changeLanguage(lang.code)}
-              />
-            ))}
-          </View>
-          <View style={styles.divider} />
+        <Group title={t('settings.group.dataSources')}>
           <ListRow
             icon="language-outline"
             title={t('settings.translation')}
@@ -275,6 +264,19 @@ export default function SettingsScreen() {
             description={t('settings.usdaHint')}
             onPress={() => router.push('/settings/usda-key')}
           />
+        </Group>
+
+        <Group title={t('settings.language')}>
+          <View style={styles.chips}>
+            {LANGUAGES.map((lang) => (
+              <Chip
+                key={lang.code}
+                label={lang.label}
+                selected={language === lang.code}
+                onPress={() => changeLanguage(lang.code)}
+              />
+            ))}
+          </View>
         </Group>
 
         <Group title={t('settings.offAccount')}>

@@ -92,7 +92,7 @@ Scan the QR code with Expo Go, or connect a device via USB.
 
 ## 9. USDA FoodData Central
 
-- **Settings → USDA FoodData Central**: an optional fallback for barcodes Open Food Facts doesn't know, mostly products from the USA (data from the US Department of Agriculture, public domain/CC0).
+- **Settings → Datenquellen & Schlüssel → USDA FoodData Central**: an optional fallback for barcodes Open Food Facts doesn't know, mostly products from the USA (data from the US Department of Agriculture, public domain/CC0).
 - **You need your own free key** from api.data.gov ("Kostenlosen Schlüssel anfordern" opens the sign-up page). The app ships no key; without one, USDA is never asked.
 - Paste the key and save it; it is stored in the device secure store and can be deleted again.
 - A product found at USDA is saved like any other product and shows a data-source note. It is not looked up at USDA again; once Open Food Facts knows the barcode, its data is used, and whatever is missing there (e.g. ingredients or nutrition facts) still comes from the saved USDA data, with the data-source note shown as long as it does.
@@ -161,8 +161,8 @@ npm run check            # typecheck + lint + format:check + test + doctor + bun
 - **Peer dependency errors on `npm install`**: use `--legacy-peer-deps`.
 - **Haptics not working (simulator)**: test on a real device.
 - **Camera permission denied**: re-enable it in the system settings (the app links there directly after a permanent denial).
-- **Credentials lost**: Open Food Facts account credentials, translation API keys and the USDA key are stored in the device secure store; re-enter them if you clear app data.
-- **USDA lookup fails**: "Schlüssel ungültig" means the key was rejected — check it in Settings → USDA FoodData Central; "Limit erreicht" means the request limit of your api.data.gov key is used up for now.
+- **Credentials lost**: Open Food Facts account credentials, translation API keys and the USDA key are stored in the device secure store; re-enter them (keys under **Settings → Datenquellen & Schlüssel / Data sources & keys**) if you clear app data.
+- **USDA lookup fails**: "Schlüssel ungültig" means the key was rejected — check it in Settings → Datenquellen & Schlüssel → USDA FoodData Central; "Limit erreicht" means the request limit of your api.data.gov key is used up for now.
 - **Wikidata lookup fails**: you can still save the brand/company rule; it then only recognises the name itself. Open the rule later and run the lookup again.
 - **A backup file is rejected on restore**: it must be an unmodified `.db` file created by FoodCheck's own backup; your existing data is left untouched.
 - **Lint errors about `␍` (CRLF)**: Prettier is configured with `endOfLine: auto`, so this should no longer happen; run `npm run format` if it does.

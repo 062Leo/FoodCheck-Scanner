@@ -7,7 +7,7 @@
 | `(tabs)/` | **Scanner** | Live-Kamera mit Barcode-Erkennung (EAN-8/13, UPC-A), Ergebniskarte über der Kamera, manuelle Eingabe, Eiercode prüfen, Offline-Badge |
 | `(tabs)/catalog` | **Catalog** | Alle gescannten Produkte durchsuchen, filtern (OK/Warning/Critical/Unknown/Ohne Zutaten), sortieren |
 | `(tabs)/favorites` | **Favorites** | Favorisierte Produkte anzeigen, entfavorisieren, bearbeiten, löschen |
-| `(tabs)/settings` | **Settings** | Filter-Regeln, Allergene, Sprache, Übersetzung, USDA-Schlüssel, Open-Food-Facts-Konto, Backup, Eiercode, Anleitung |
+| `(tabs)/settings` | **Settings** | Filter-Regeln, Allergene, Übersetzung, USDA-Schlüssel, Sprache, Open-Food-Facts-Konto, Backup, Eiercode, Anleitung |
 | `/result` | **Product** | Vollständige Produktanalyse: Ampel mit Begründung, Red Flags und Produkt-Prüfungen, gemiedene Marken/Konzerne, Kennzeichnungen (Bio, Gentechnik, Haltungsform, MSC/ASC, Rohmilch), Verarbeitungs-/Verpackungsbetrieb, NOVA, Nährwerte, Allergene, Zutaten (mehrsprachig), KI-Erkenntnisse, Bildergalerie |
 | `/egg-code` | **Eiercode prüfen** | Haltungsform und Herkunft aus dem Erzeugercode auf dem Ei (offline) |
 | `/settings/filters` | **Filter Rules** | Vordefinierte + eigene Zutaten-/Nährwert-Regeln, Produkt-Prüfungen und gemiedene Marken/Konzerne verwalten |
@@ -191,7 +191,8 @@ Die Einstellungen sind als gruppierte Liste aufgebaut:
 | Gruppe | Beschreibung |
 |-------------|-------------|
 | **Bewertung** | Filter-Regeln mit Anzahl der aktiven Regeln; Schalter **Allergen-Warnung** (standardmäßig aus), darunter **Meine Allergene**, solange sie an ist |
-| **Sprache** | DE ↔ EN (App-UI umschaltbar); darunter der Zugang zur Übersetzungs-Einstellung und zu **USDA FoodData Central** |
+| **Datenquellen & Schlüssel** | Übersetzung (Anbieter und API-Key) und **USDA FoodData Central** (eigener Schlüssel) |
+| **Sprache** | DE ↔ EN (App-UI umschaltbar) |
 | **Open Food Facts Konto** | Login/Logout für Produktbeiträge, zeigt den Zielserver |
 | **Datenbank-Backup** | Speicherort wählen (Android), Backup erstellen, automatisches Backup, Wiederherstellen |
 | **Hilfe & Info** | Eiercode prüfen, Anleitung & Über FoodCheck |

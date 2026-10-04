@@ -1,4 +1,4 @@
-import { Alert, Platform } from 'react-native';
+import { Alert, Platform, Text } from 'react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { mockRouter } from '../../testing/screenMocks';
 import { useTestDatabase } from '../../testing/testDatabase';
@@ -48,6 +48,22 @@ describe('SettingsScreen', () => {
     fireEvent.press(await screen.findByText('USDA FoodData Central'));
 
     expect(mockRouter.push).toHaveBeenCalledWith('/settings/usda-key');
+  });
+
+  it('groups the API keys in their own section directly after the rating rules', async () => {
+    render(<SettingsScreen />);
+    await screen.findByText('Datenquellen & Schlüssel');
+
+    const texts = screen
+      .UNSAFE_getAllByType(Text)
+      .map((node) => [node.props.children].flat().join(''));
+    const at = (text: string) => texts.indexOf(text);
+
+    expect(at('Bewertung')).toBeLessThan(at('Datenquellen & Schlüssel'));
+    expect(at('Datenquellen & Schlüssel')).toBeLessThan(at('Übersetzung'));
+    expect(at('Übersetzung')).toBeLessThan(at('USDA FoodData Central'));
+    expect(at('USDA FoodData Central')).toBeLessThan(at('Sprache'));
+    expect(at('Sprache')).toBeLessThan(at('Open Food Facts Konto'));
   });
 
   it('switches the app language immediately', async () => {
